@@ -19,6 +19,23 @@ JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 deck = []
 handsize = 8
 
+class Card:
+    def __init__(self, image):
+        self.image = image
+        self.rect = image.get_rect()
+        self.selected = False
+        self.current_offset = 0
+        self.target_offset = 0
+    def update(self, speed=2):
+        if self.current_offset < self.target_offset:
+            self.current_offset += speed
+            if self.current_offset > self.target_offset:
+                self.current_offset = self.target_offset
+        elif self.current_offset > self.target_offset:
+            self.current_offset -= speed
+            if self.current_offset < self.target_offset:
+                self.current_offset = self.target_offset
+
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -28,7 +45,7 @@ for root, dirs, files in os.walk(SUITS_DIR):
 
 random.shuffle(deck)
 
-hand = [deck.pop() for _ in range(handsize)]
+hand = [Card(deck.pop()) for _ in range(handsize)]
 
 currentFrame = 0
 spacing = 600 / handsize
@@ -46,8 +63,9 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         t = i / (n - 1) if n > 1 else 0.5
         x = start_x + i * spread
         y = center_y - max_vertical_offset * 4 * (t - 0.5)**2 + max_vertical_offset
+        y -= card.current_offset
         angle = (t - 0.5) * -2 * angle_range
-        rotated = pygame.transform.rotate(card, angle)
+        rotated = pygame.transform.rotate(card.image, angle)
         rect = rotated.get_rect(center=(x, y))
         surface.blit(rotated, rect.topleft)
 
@@ -90,7 +108,12 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = pygame.mouse.get_pos()
+            for card in hand:
+                if card.rect.collidepoint(mouse_pos):
+                    card.selected = not card.selected
+                    card.target_offset = 40 if card.selected else 0
     screen.fill(green)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=15)
@@ -99,5 +122,8 @@ while running:
 
     clock.tick(60)
     currentFrame += 1
+
+    for card in hand:
+        card.update(speed=2)
     
 pygame.quit()
