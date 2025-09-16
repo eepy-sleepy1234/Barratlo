@@ -50,7 +50,7 @@ hand = [Card(deck.pop()) for _ in range(handsize)]
 currentFrame = 0
 spacing = 600 / handsize
 
-def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=15):
+def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
     n = len(cards)
     if n == 0:
         return
@@ -62,7 +62,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     for i, card in enumerate(cards):
         t = i / (n - 1) if n > 1 else 0.5
         x = start_x + i * spread
-        y = center_y - max_vertical_offset * 4 * (t - 0.5)**2 + max_vertical_offset
+        y = center_y - max_vertical_offset * 2 * (t - 0.5)**2 + max_vertical_offset
         y -= card.current_offset
         angle = (t - 0.5) * -2 * angle_range
         rotated = pygame.transform.rotate(card.image, angle)
@@ -123,7 +123,7 @@ while running:
                         selected_count += 1
     screen.fill(green)
 
-    draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=15)
+    draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
     
     pygame.display.flip()
 
