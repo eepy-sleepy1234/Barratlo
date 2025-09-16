@@ -26,7 +26,7 @@ class Card:
         self.selected = False
         self.current_offset = 0
         self.target_offset = 0
-    def update(self, speed=2):
+    def update(self, speed=5):
         if self.current_offset < self.target_offset:
             self.current_offset += speed
             if self.current_offset > self.target_offset:
@@ -68,6 +68,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         rotated = pygame.transform.rotate(card.image, angle)
         rect = rotated.get_rect(center=(x, y))
         surface.blit(rotated, rect.topleft)
+        card.rect = rect
 
 class Joker_Animation():
     def __init__(self,sprite_name, frame_width, frame_height, fps, frames, xpos, ypos,setWidth, setHeight):
@@ -110,10 +111,16 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = pygame.mouse.get_pos()
+            selected_count = sum(1 for card in hand if card.selected)
             for card in hand:
                 if card.rect.collidepoint(mouse_pos):
-                    card.selected = not card.selected
-                    card.target_offset = 40 if card.selected else 0
+                    if card.selected:
+                        card.selected = False
+                        card.target_offset = 0
+                    elif selected_count < 5:
+                        card.selected = True
+                        card.target_offset = 40
+                        selected_count += 1
     screen.fill(green)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=15)
@@ -124,6 +131,6 @@ while running:
     currentFrame += 1
 
     for card in hand:
-        card.update(speed=2)
+        card.update(speed=5)
     
 pygame.quit()
