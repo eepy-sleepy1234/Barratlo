@@ -16,6 +16,9 @@ ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
 SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
 JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 
+#Playhand_img = pygame.image.load(os.path.join(ASSETS_DIR, "PlayHandButton.png"))
+#Discardhand_img = pygame.image.load(os.path.join(ASSETS_DIR, "DiscardHandButton.png"))
+
 deck = []
 handsize = 8
 
@@ -109,18 +112,23 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_pos = pygame.mouse.get_pos()
-            selected_count = sum(1 for card in hand if card.selected)
-            for card in hand:
-                if card.rect.collidepoint(mouse_pos):
-                    if card.selected:
-                        card.selected = False
-                        card.target_offset = 0
-                    elif selected_count < 5:
-                        card.selected = True
-                        card.target_offset = 40
-                        selected_count += 1
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_pos = pygame.mouse.get_pos()
+                selected_count = sum(1 for card in hand if card.selected)
+                for card in hand:
+                    if card.rect.collidepoint(mouse_pos):
+                        if card.selected:
+                            card.selected = False
+                            card.target_offset = 0
+                        elif selected_count < 5:
+                            card.selected = True
+                            card.target_offset = 40
+                            selected_count += 1
+            if event.button == 3:
+                for card in hand:
+                    card.selected = False
+                    card.target_offset = 0
     screen.fill(green)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
