@@ -16,20 +16,26 @@ ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
 SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
 JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 
-#Playhand_img = pygame.image.load(os.path.join(ASSETS_DIR, "PlayHandButton.png"))
-#Discardhand_img = pygame.image.load(os.path.join(ASSETS_DIR, "DiscardHandButton.png"))
+Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS_DIR, "PlayHandButton.png")), (120, 50))
+Playhand_rect = pygame.Rect(50, HEIGHT - 130, 120, 50)
+Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS_DIR, "DiscardHandButton.png")), (120, 50))
+Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
 
 deck = []
 handsize = 8
+speed = 5
 
 class Card:
     def __init__(self, image):
         self.image = image
         self.rect = image.get_rect()
         self.selected = False
+        self.played = False
         self.current_offset = 0
         self.target_offset = 0
-    def update(self, speed=5):
+        self.current_x = 0
+        self.target_x = 0
+    def update(self, speed):
         if self.current_offset < self.target_offset:
             self.current_offset += speed
             if self.current_offset > self.target_offset:
@@ -38,6 +44,14 @@ class Card:
             self.current_offset -= speed
             if self.current_offset < self.target_offset:
                 self.current_offset = self.target_offset
+        if self.current_x < self.target_x:
+            self.current_x += speed
+            if self.current_x > self.target_x:
+                self.current_x = self.target_x
+        elif self.current_x > self.target_x:
+            self.current_x -= speed
+            if self.current_x < self.target_x:
+                self.current_x = self.target_x
 
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
@@ -60,14 +74,17 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     start_angle = -angle_range / 2
     angle_step = angle_range / (n - 1) if n > 1 else 0
     total_width = (n - 1) * spread + 80
-    start_x = center_x - total_width / 2
+    start_x = center_x - total_width / 2 + 20
 
     for i, card in enumerate(cards):
         t = i / (n - 1) if n > 1 else 0.5
         x = start_x + i * spread
+        x -= card.current_x
         y = center_y - max_vertical_offset * 2 * (t - 0.5)**2 + max_vertical_offset
         y -= card.current_offset
         angle = (t - 0.5) * -2 * angle_range
+        if card.played:
+           angle = 0 
         rotated = pygame.transform.rotate(card.image, angle)
         rect = rotated.get_rect(center=(x, y))
         surface.blit(rotated, rect.topleft)
@@ -109,6 +126,7 @@ class Joker_Animation():
 
 running = True
 while running:
+    speed = 5
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -121,15 +139,44 @@ while running:
                         if card.selected:
                             card.selected = False
                             card.target_offset = 0
-                        elif selected_count < 5:
+                        elif selected_count < 5 and not card.played:
                             card.selected = True
                             card.target_offset = 40
                             selected_count += 1
+                if Playhand_rect.collidepoint(mouse_pos):
+                    speed = 20
+                    PCC = 0
+                    selected_cards = [card for card in hand if card.selected]
+                    num_selected = len(selected_cards)
+                    start_x = (WIDTH / 8) - (num_selected - 1) * 60 / 2
+                    start_y = HEIGHT / 2
+                    for card in hand:
+                        if card.selected:
+                            card.selected = False
+                            card.played = True
+                            card.target_offset = 300
+                            card.target_x = -start_x - PCC * 60
+                            card.target_y = start_y + PCC * 15
+                            card.angle = 0
+                            PCC += 1
+                            
+                if Discardhand_rect.collidepoint(mouse_pos):
+                    speed = 20
+                    for card in hand:
+                        if card.selected:
+                            card.selected = False
+                            card.played = True
+                            card.target_offset = 1000
+                            card.target_x = -WIDTH - 100
+                            card.angle = 0
             if event.button == 3:
                 for card in hand:
                     card.selected = False
                     card.target_offset = 0
     screen.fill(green)
+
+    screen.blit(Playhand_img, (50, HEIGHT - 130))
+    screen.blit(Discardhand_img, (WIDTH - 170, HEIGHT - 130))
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
     
@@ -139,6 +186,6 @@ while running:
     currentFrame += 1
 
     for card in hand:
-        card.update(speed=5)
+        card.update(speed)
     
 pygame.quit()
