@@ -17,24 +17,26 @@ SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
 JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
 
-Playhand_img = pygame.image.load(os.path.join(ASSETS_DIR, "PlayHandButton.png"))
+Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(50, HEIGHT - 130, 120, 50)
-Discardhand_img = pygame.image.load(os.path.join(ASSETS_DIR, "DiscardHandButton.png"))
+Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
 Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
 
 deck = []
 handsize = 8
 
 class Card:
-    def __init__(self, image):
+    def __init__(self, image, slot):
         self.image = image
         self.rect = image.get_rect()
-        self.selected = False
-        self.played = False
+        self.state = "hand"
+        self.slot = slot
         self.x = 0
         self.target_x = 0
         self.y = 0
+        self.angle = 0
         self.target_y = 0
+        self.play_timer = 0
     def update(self, lerp_factor=0.2):
         self.x += (self.target_x - self.x) * lerp_factor
         self.y += (self.target_y - self.y) * lerp_factor
@@ -48,7 +50,7 @@ for root, dirs, files in os.walk(SUITS_DIR):
 
 random.shuffle(deck)
 
-hand = [Card(deck.pop()) for _ in range(handsize)]
+hand = [Card(deck.pop(), i) for i in range(handsize)]
 for card in hand:
     card.x, card.y = WIDTH + 100, HEIGHT - 170
 
@@ -57,22 +59,37 @@ spacing = 600 / handsize
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
     n = len(cards)
-    if n == 0:
+    if not cards:
         return
     start_angle = -angle_range / 2
     angle_step = angle_range / (n - 1) if n > 1 else 0
     total_width = (n - 1) * spread + 80
     start_x = center_x - total_width / 2
+    for card in cards:
+        i = card.slot
+        t = i / (n - 1) if n > 1 else 0.5
 
     for i, card in enumerate(cards):
         t = i / (n - 1) if n > 1 else 0.5
         target_x = start_x + i * spread
         target_y = center_y - max_vertical_offset * 2 * (t - 0.5)**2 + max_vertical_offset
-        if card.selected:
+        if card.state == "selected":
             target_y -= 40
+        elif card.state == "played":
+            target_y -= 260
+        elif card.state == "discarded":
+            target_y -= 100
+            target_x += 1000
+            card.angle -= 15
+        elif card.state == "scored":
+            target_y -= 500
+            target_x += 1000
+            card.angle -= 5
         card.target_x = target_x
         card.target_y = target_y
-        angle = (t - 0.5) * -2 * angle_range
+        if card.state == "hand":
+            card.angle = (t - 0.5) * -2 * angle_range
+        angle = card.angle
         rotated = pygame.transform.rotate(card.image, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated, rect.topleft)
@@ -120,45 +137,51 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
-                selected_count = sum(1 for card in hand if card.selected)
+                selected_count = sum(1 for card in hand if card.state == "selected")
                 for card in hand:
-                    if card.rect.collidepoint(mouse_pos):
-                        if card.selected:
-                            card.selected = False
-                        elif selected_count < 5:
-                            card.selected = True
-                            selected_count += 1
+                    if card.state == "hand" or card.state == "selected":
+                        if card.rect.collidepoint(mouse_pos):
+                            if card.state == "selected":
+                                card.state = "hand"
+                            elif selected_count < 5:
+                                card.state = "selected"
+                                selected_count += 1
                 if Playhand_rect.collidepoint(mouse_pos):
                     card.lerp_factor = 0.3
                     PCC = 0
-                    selected_cards = [card for card in hand if card.selected]
+                    selected_cards = [card for card in hand if card.state == "selected"]
                     num_selected = len(selected_cards)
                     start_x = (WIDTH / 8) - (num_selected - 1) * 60 / 2
                     start_y = HEIGHT / 2
                     for card in hand:
-                        if card.selected:
-                            card.selected = False
-                            card.played = True
-                            card.target_x = -start_x - PCC * 60
-                            card.target_y = start_y + PCC * 15
+                        if card.state == "selected":
+                            card.state = "played"
+                            card.target_x = 0
+                            card.target_y = 0
                             card.angle = 0
                             PCC += 1
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
                     lerp_factor = 0.3
-                    for card in hand:
-                        if card.selected:
-                            card.selected = False
-                            card.played = True
-                            card.target_x = WIDTH + 100
-                            card.angle = 0
+                    to_discard = [card for card in hand if card.state == "selected"]
+                    for card in to_discard:
+                       index = card.slot
+                       hand.remove(card)
+                       card.state = "discarded"
+                       for c in hand:
+                           if c.slot > index:
+                               c.slot -= 1
+                       if deck:
+                            new_card = Card(deck.pop(), slot=len(hand))
+                            new_card.x, new_card.y = WIDTH / 4, HEIGHT
+                            hand.append(new_card)
             if event.button == 3:
                 for card in hand:
-                    card.selected = False
+                    card.state = "hand"
     screen.fill(green)
 
-    screen.blit(Playhand_img, (50, HEIGHT - 130))
-    screen.blit(Discardhand_img, (WIDTH - 170, HEIGHT - 130))
+    screen.blit(Playhand_img, (25, HEIGHT - 130))
+    screen.blit(Discardhand_img, (WIDTH - 195, HEIGHT - 130))
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
     
@@ -168,6 +191,22 @@ while running:
     currentFrame += 1
 
     for card in hand:
-        card.update(lerp_factor=0.2)
+        card.update(lerp_factor=0.1)
+
+        if card.state == "played":
+            card.play_timer += 1
+            if card.play_timer > 120:
+                card.state = "scored"
+        if card.state == "scored":
+            if card.x > WIDTH:
+                index = card.slot
+                hand.remove(card)
+                for c in hand:
+                    if c.slot > index:
+                        c.slot -= 1
+                if deck:
+                    new_card = Card(deck.pop(), slot=index)
+                    new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+                    hand.append(new_card)
     
 pygame.quit()
