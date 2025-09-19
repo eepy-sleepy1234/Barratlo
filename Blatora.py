@@ -138,14 +138,15 @@ while running:
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
                 selected_count = sum(1 for card in hand if card.state == "selected")
-                for card in hand:
-                    if card.state == "hand" or card.state == "selected":
-                        if card.rect.collidepoint(mouse_pos):
-                            if card.state == "selected":
-                                card.state = "hand"
-                            elif selected_count < 5:
-                                card.state = "selected"
-                                selected_count += 1
+                for card in reversed(hand):
+                    if card.state in ("selected", "hand") and card.rect.collidepoint(mouse_pos):
+                        if card.state == "selected":
+                            card.state = "hand"
+                            break
+                        elif selected_count < 5:
+                            card.state = "selected"
+                            selected_count += 1
+                            break
                 if Playhand_rect.collidepoint(mouse_pos):
                     card.lerp_factor = 0.3
                     PCC = 0
@@ -165,16 +166,7 @@ while running:
                     lerp_factor = 0.3
                     to_discard = [card for card in hand if card.state == "selected"]
                     for card in to_discard:
-                       index = card.slot
-                       hand.remove(card)
                        card.state = "discarded"
-                       for c in hand:
-                           if c.slot > index:
-                               c.slot -= 1
-                       if deck:
-                            new_card = Card(deck.pop(), slot=len(hand))
-                            new_card.x, new_card.y = WIDTH / 4, HEIGHT
-                            hand.append(new_card)
             if event.button == 3:
                 for card in hand:
                     card.state = "hand"
@@ -197,7 +189,7 @@ while running:
             card.play_timer += 1
             if card.play_timer > 120:
                 card.state = "scored"
-        if card.state == "scored":
+        if card.state == "scored" or card.state == "discarded":
             if card.x > WIDTH:
                 index = card.slot
                 hand.remove(card)
