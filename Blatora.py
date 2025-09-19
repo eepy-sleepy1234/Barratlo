@@ -24,6 +24,10 @@ Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
 
 deck = []
 handsize = 8
+chips = 0
+mult = 0
+hands = 4
+discards = 4
 
 class Card:
     def __init__(self, image, slot):
@@ -79,11 +83,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= 260
         elif card.state == "discarded":
             target_y -= 100
-            target_x += 1000
+            target_x += WIDTH + 200
             card.angle -= 15
         elif card.state == "scored":
             target_y -= 500
-            target_x += 1000
+            target_x += WIDTH + 200
             card.angle -= 5
         card.target_x = target_x
         card.target_y = target_y
@@ -148,25 +152,31 @@ while running:
                             selected_count += 1
                             break
                 if Playhand_rect.collidepoint(mouse_pos):
-                    card.lerp_factor = 0.3
-                    PCC = 0
-                    selected_cards = [card for card in hand if card.state == "selected"]
-                    num_selected = len(selected_cards)
-                    start_x = (WIDTH / 8) - (num_selected - 1) * 60 / 2
-                    start_y = HEIGHT / 2
-                    for card in hand:
-                        if card.state == "selected":
-                            card.state = "played"
-                            card.target_x = 0
-                            card.target_y = 0
-                            card.angle = 0
-                            PCC += 1
+                    if hands > 0:
+                        card.lerp_factor = 0.3
+                        PCC = 0
+                        selected_cards = [card for card in hand if card.state == "selected"]
+                        num_selected = len(selected_cards)
+                        start_x = (WIDTH / 8) - (num_selected - 1) * 60 / 2
+                        start_y = HEIGHT / 2
+                        for card in hand:
+                            if card.state == "selected":
+                                card.state = "played"
+                                card.target_x = 0
+                                card.target_y = 0
+                                card.angle = 0
+                                PCC += 1
+                        if len(selected_cards) > 0:
+                            hands -= 1
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
-                    lerp_factor = 0.3
-                    to_discard = [card for card in hand if card.state == "selected"]
-                    for card in to_discard:
-                       card.state = "discarded"
+                    if discards > 0:
+                        lerp_factor = 0.3
+                        to_discard = [card for card in hand if card.state == "selected"]
+                        for card in to_discard:
+                           card.state = "discarded"
+                        if len(to_discard) > 0:
+                            discards -= 1
             if event.button == 3:
                 for card in hand:
                     card.state = "hand"
@@ -184,13 +194,12 @@ while running:
 
     for card in hand:
         card.update(lerp_factor=0.1)
-
         if card.state == "played":
             card.play_timer += 1
             if card.play_timer > 120:
                 card.state = "scored"
         if card.state == "scored" or card.state == "discarded":
-            if card.x > WIDTH:
+            if card.x > WIDTH + 200:
                 index = card.slot
                 hand.remove(card)
                 for c in hand:
@@ -200,5 +209,5 @@ while running:
                     new_card = Card(deck.pop(), slot=index)
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
-    
+
 pygame.quit()
