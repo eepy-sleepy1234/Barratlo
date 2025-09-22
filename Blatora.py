@@ -33,11 +33,11 @@ hands = 4
 discards = 4
 
 SCORED_POSITIONS = [
-    (WIDTH//2 - 200, HEIGHT//2 - 50),
-    (WIDTH//2 - 100, HEIGHT//2 - 50),
-    (WIDTH//2,     HEIGHT//2 - 50),
-    (WIDTH//2 + 100, HEIGHT//2 - 50),
-    (WIDTH//2 + 200, HEIGHT//2 - 50)
+    (WIDTH//2 - 150, HEIGHT//2 - 50),
+    (WIDTH//2 - 50, HEIGHT//2 - 50),
+    (WIDTH//2 + 50, HEIGHT//2 - 50),
+    (WIDTH//2 + 150, HEIGHT//2 - 50),
+    (WIDTH//2 + 250, HEIGHT//2 - 50)
 ]
 
 SUITS = ["hearts", "diamonds", "clubs", "spades"]
@@ -103,6 +103,7 @@ spacing = 600 / handsize
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
     n = len(cards)
+    scored_counter = 0
     if not cards:
         return
     start_angle = -angle_range / 2
@@ -123,8 +124,9 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             scored_cards = [c for c in hand if c.state == "scored"]
             index = len(scored_cards)
             if index < len(SCORED_POSITIONS):
-                abs_x, abs_y = SCORED_POSITIONS[index]
+                abs_x, abs_y = SCORED_POSITIONS[scored_counter]
                 target_x, target_y = card.x + (abs_x - card.x), card.y + (abs_y - card.y)
+                scored_counter += 1
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
