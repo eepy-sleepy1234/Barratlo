@@ -191,19 +191,27 @@ def detect_hand(cards):
         is_straight = True
         values = [1, 2, 3, 4, 5]
     if is_flush and is_straight and values[-1] == 14:
-        return "Royal Flush"
+        contributing = cards
+        return "Royal Flush", contributing
     elif is_flush and is_straight:
-        return "Straight Flush"
+        contributing = cards
+        return "Straight Flush", contributing
     elif 4 in value_counts.values():
-        return "Four of a Kind"
+        four_value = [val for val, count in value_counts.items() if count == 4][0]
+        contributing = [c for c in cards if c.value == four_value]
+        return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
-        return "Full House"
+        contributing = cards
+        return "Full House", contributing
     elif is_flush:
-        return "Flush"
+        contributing = cards
+        return "Flush", contributing
     elif is_straight:
-        return "Straight"
+        contributing = cards
+        return "Straight", contributing
     elif 3 in value_counts.values():
-        return "Three of a Kind"
+        three_value = [val for val, count in value_counts.items() if count == 3][0]
+        return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
         return "Two Pair"
     elif 2 in value_counts.values():
