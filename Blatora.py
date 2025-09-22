@@ -3,9 +3,29 @@ import pygame
 import random
 import math
 from collections import Counter
+import math
+import sys
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+WIDTH, HEIGHT = screen.get_size()
 
-WIDTH, HEIGHT = 1000, 800
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+
+####VARIABLES FOR STARTING SCREEN
+LETTERW = WIDTH/12
+LETTERH = WIDTH/12
+CENTERLETTERW = (WIDTH/2)-(LETTERW/2)
+CENTERLETTERH = (HEIGHT/2)-(LETTERH/2)
+currentFrame = 0
+card_x = -WIDTH  
+card_target_x = 0  
+card_animating = False  
+card_speed = 15
+letter_images = {}
+fade_alpha = 255
+letters = []
+letter_animation = True
+endBG = False
+
 
 green = (0, 120, 0)
 white = (255, 255, 255)
@@ -18,13 +38,159 @@ ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
 SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
 JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
+LETTERS_DIR = os.path.join(GUI_DIR,'Letters')
 
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
 Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
 Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
 HandBackground_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
+STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
+STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
+SPINNINGBGIMG = pygame.image.load(os.path.join(GUI_DIR, 'StartBackground.png')).convert_alpha()
+STARTBUTTON = pygame.image.load(os.path.join(GUI_DIR, 'StartButton.png')).convert_alpha()
+STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON,(int(WIDTH/4.4),int(HEIGHT/10)))
+STARTBUTTON_X = int((WIDTH/2)- ((WIDTH/4.4)/2))
+STARTBUTTON_Y = (HEIGHT/2)+CENTERLETTERH/2
+start_button_rect = STARTBUTTON.get_rect()
+start_button_rect.topleft = (STARTBUTTON_X, STARTBUTTON_Y)
+for root, dirs, files in os.walk(LETTERS_DIR):
+    for filename in files:
+        if filename.endswith(".png"):
+            filepath = os.path.join(root, filename)
+            letter_name = os.path.splitext(filename)[0]
+            image = pygame.transform.scale(pygame.image.load(filepath).convert_alpha(), (int(LETTERW), int(LETTERH)))
+            letter_images[letter_name] = image
+StartingBimg = letter_images['StartBimg']
+StartingAimg = letter_images['StartAimg']
+StartingLimg = letter_images['StartLimg']
+StartingA2img = letter_images['StartAimg']
+StartingTimg = letter_images['StartTimg']
+StartingRimg = letter_images['StartRimg']
+StartingOimg = letter_images['StartOimg']
 
+
+class starting_letters():
+    def __init__(self,sprite_name,xpos,ypos):
+        self.xpos = xpos
+        self.ypos = ypos
+        self.sprite_name = sprite_name
+        self.move_speed = 0.2
+        self.target_x = 0
+        self.target_y = LETTERH
+        self.is_moving = False
+        self.move_progress = 0.0
+        self.animation = False
+        self.main_ypos = CENTERLETTERH
+        self.delay  = 0
+        self.delay_timer = 0
+
+    def draw(self):
+        screen.blit(self.sprite_name,(int(self.xpos),int(self.ypos)))
+    def updatex(self, lerp_factor=0.05):
+        self.xpos += (self.target_x - self.xpos) * lerp_factor
+    def updatey(self, lerp_factor=0.05):
+        self.ypos += (self.target_y - self.ypos) * lerp_factor
+
+    def animate(self):
+        if self.delay > 0:
+            self.delay -= 1
+            return
+    
+        if not hasattr(self, 'bob_timer'):
+            self.bob_timer = 0
+    
+        if startAnimation:
+            self.bob_timer += 0.05  
+            bob_offset = math.sin(self.bob_timer) * (LETTERH/3)  
+            self.ypos = self.main_ypos + bob_offset
+def update_card_animation():
+    global endBG
+    global card_x, card_animating
+    
+    if card_animating:
+        if card_x < WIDTH:  
+            card_x += card_speed
+            if card_x >= WIDTH:
+                card_x = WIDTH
+                card_animating = False
+        if card_x >= 0:  
+            endBG = True
+        
+def letter_classes():
+    
+    global LetterPosx
+    
+    
+    LetterPosx = [(CENTERLETTERW - LETTERW*3),
+                       (CENTERLETTERW - LETTERW*2),
+                       (CENTERLETTERW - LETTERW),
+                       (CENTERLETTERW),
+                       (CENTERLETTERW + LETTERW),
+                       (CENTERLETTERW + LETTERW*2),
+                       (CENTERLETTERW + LETTERW*3)]
+
+    global Letters
+    
+    
+    
+    global StartingB
+    global StartingA
+    global StartingL
+    global StartingA2
+    global StartingT
+    global StartingR
+    global StartingO
+    StartingB = starting_letters(StartingBimg,LetterPosx[0], CENTERLETTERH)
+    StartingA = starting_letters(StartingAimg,LetterPosx[1], CENTERLETTERH)
+    StartingL = starting_letters(StartingLimg,LetterPosx[2], CENTERLETTERH)
+    StartingA2 = starting_letters(StartingA2img,LetterPosx[3], CENTERLETTERH)
+    StartingT = starting_letters(StartingTimg,LetterPosx[4], CENTERLETTERH)
+    StartingR = starting_letters(StartingRimg,LetterPosx[5], CENTERLETTERH)
+    StartingO = starting_letters(StartingOimg,LetterPosx[6], CENTERLETTERH)
+    Letters = [StartingB, StartingA, StartingL, StartingA2, StartingT, StartingR, StartingO]
+    
+    
+    global shuffled_letters
+    shuffled_letters = LetterPosx.copy()
+    random.shuffle(shuffled_letters)
+    if shuffled_letters == LetterPosx:
+        random.shuffle(shuffled_letters)
+    StartingB.target_x = shuffled_letters[0]
+    StartingA.target_x = shuffled_letters[1]
+    StartingL.target_x = shuffled_letters[2]
+    StartingA2.target_x = shuffled_letters[3]
+    StartingT.target_x = shuffled_letters[4]
+    StartingR.target_x = shuffled_letters[5]
+    StartingO.target_x = shuffled_letters[6]
+
+    
+            
+def animate_letters():
+    global letter_animation
+    screen.fill((255,255,255))
+    for i in Letters:
+        i.draw()
+    pygame.display.flip()
+    pygame.time.wait(200)
+        
+    global letter_animation
+    while letter_animation:
+        for event in pygame.event.get():
+            if event.type  == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+                
+        screen.fill((255,255,255))
+        for i in Letters:
+            i.updatex()
+            
+            i.draw()
+        pygame.display.flip()
+        clock.tick(60)
+        if abs(StartingB.xpos - StartingB.target_x) < 1:
+            letter_animation = False
+###
 deck = []
 handsize = 8
 chips = 0
@@ -148,7 +314,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
 class Joker_Animation():
     def __init__(self,sprite_name, frame_width, frame_height, fps, frames, xpos, ypos,setWidth, setHeight):
         
-        self.sprite_sheet = sprite_sheet
+        self.sprite_sheet = sprite_name
         self.frame_width = frame_width
         self.frame_height = frame_height
         self.fps = fps
@@ -178,6 +344,7 @@ class Joker_Animation():
     def reset_animation(self):
         self.current_frame = 1
 #sprite_name = Joker_Animation(sprite_sheet, 80, 110, 60, 10, 0, 0, 80, 110)
+spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 
 def detect_hand(cards):
     n = len(cards)
@@ -220,6 +387,60 @@ def detect_hand(cards):
         return "High Card"
 
 running = True
+
+### Keegan addition idk what say, i added this do not mess with or starting will not function properly
+letter_animation = True
+
+letter_classes()
+animate_letters()
+startGame = True
+sorted_letters = sorted(Letters, key=lambda letter: letter.xpos)      
+startAnimation = True
+for i, letter in enumerate(sorted_letters):
+    letter.delay = i * 10  
+    letter.animation = True
+
+startGame = False 
+
+while startGame == False:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if start_button_rect.collidepoint(event.pos):
+                    
+                    card_animating = True 
+                    
+    screen.fill((0, 0, 0))  
+    spinningBG.animate()
+    
+    if fade_alpha > 0:
+        fade_alpha -= 2 
+        fade_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        fade_surface.fill((255, 255, 255))  
+        fade_surface.set_alpha(fade_alpha) 
+        screen.blit(fade_surface, (0, 0))
+
+    pygame.draw.circle(screen, (255, 255, 255), (WIDTH//2, HEIGHT//2), WIDTH//37)
+    for letter in Letters:
+        letter.animate()
+        letter.draw()
+    screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
+    
+  
+    update_card_animation()
+    if card_x > -WIDTH:  
+        screen.blit(STARTCARD, (card_x, 0))
+    if endBG == True:
+        startGame = True 
+    pygame.display.flip()
+    clock.tick(60)
+    currentFrame += 1
+
+
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -266,6 +487,7 @@ while running:
             if event.button == 3:
                 for card in hand:
                     card.state = "hand"
+    
     screen.fill(green)
     selected_cards = [card for card in hand if card.state == "selected"]
     hand_type = detect_hand(selected_cards)
@@ -279,7 +501,12 @@ while running:
     screen.blit(text, text_rect)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
-    
+
+
+    update_card_animation()
+    if card_x > -WIDTH:
+        screen.blit(STARTCARD, (card_x, 0))
+        
     pygame.display.flip()
 
     clock.tick(60)
