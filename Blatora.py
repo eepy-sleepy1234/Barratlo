@@ -3,14 +3,11 @@ import pygame
 import random
 import math
 from collections import Counter
-import math
 import sys
-screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-WIDTH, HEIGHT = screen.get_size()
 
+WIDTH, HEIGHT = 1000, 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-
-####VARIABLES FOR STARTING SCREEN
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
 CENTERLETTERW = (WIDTH/2)-(LETTERW/2)
@@ -26,7 +23,6 @@ letters = []
 letter_animation = True
 endBG = False
 
-
 green = (0, 120, 0)
 white = (255, 255, 255)
 
@@ -38,7 +34,7 @@ ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
 SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
 JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
-LETTERS_DIR = os.path.join(GUI_DIR,'Letters')
+LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
 
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
@@ -68,7 +64,6 @@ StartingA2img = letter_images['StartAimg']
 StartingTimg = letter_images['StartTimg']
 StartingRimg = letter_images['StartRimg']
 StartingOimg = letter_images['StartOimg']
-
 
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
@@ -190,7 +185,7 @@ def animate_letters():
         clock.tick(60)
         if abs(StartingB.xpos - StartingB.target_x) < 1:
             letter_animation = False
-###
+
 deck = []
 handsize = 8
 chips = 0
@@ -348,6 +343,8 @@ spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEI
 
 def detect_hand(cards):
     n = len(cards)
+    if n == 0:
+        return "", []
     values = sorted([c.value for c in cards])
     suits = [c.suit for c in cards]
     value_counts = Counter(values)
@@ -378,18 +375,24 @@ def detect_hand(cards):
         return "Straight", contributing
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
+        contributing = [c for c in cards if c.value == three_value]
         return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
-        return "Two Pair"
+        pair_values = [val for val, count in value_counts.items() if count == 2][0]
+        contributing = [c for c in cards if c.value == pair_values]
+        return "Two Pair", contributing
     elif 2 in value_counts.values():
-        return "Pair"
+        pair_value = [val for val, count in value_counts.items() if count == 2][0]
+        contributing = [c for c in cards if c.value == pair_value]
+        return "Pair", contributing
     else:
-        return "High Card"
+        high_value = max(values)
+        contributing = [c for c in cards if c.value == high_value]
+        return "High Card", contributing
 
-running = True
 
-### Keegan addition idk what say, i added this do not mess with or starting will not function properly
 letter_animation = True
+running = True
 
 letter_classes()
 animate_letters()
@@ -439,8 +442,6 @@ while startGame == False:
     clock.tick(60)
     currentFrame += 1
 
-
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -487,10 +488,9 @@ while running:
             if event.button == 3:
                 for card in hand:
                     card.state = "hand"
-    
     screen.fill(green)
-    selected_cards = [card for card in hand if card.state == "selected"]
-    hand_type = detect_hand(selected_cards)
+    selected_cards = [card for card in hand if card.state in ("selected", "played")]
+    hand_type, contributing = detect_hand(selected_cards)
     font = pygame.font.SysFont(None, 40)
     text = font.render(hand_type, True, white)
     text_rect = text.get_rect(center=(149, 25 + HEIGHT / 3))
@@ -501,12 +501,7 @@ while running:
     screen.blit(text, text_rect)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
-
-
-    update_card_animation()
-    if card_x > -WIDTH:
-        screen.blit(STARTCARD, (card_x, 0))
-        
+    
     pygame.display.flip()
 
     clock.tick(60)
