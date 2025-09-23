@@ -501,7 +501,10 @@ while running:
     screen.blit(text, text_rect)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
-    
+    update_card_animation()
+    if card_x > -WIDTH:
+        
+        screen.blit(STARTCARD, (card_x, 0))
     pygame.display.flip()
 
     clock.tick(60)
