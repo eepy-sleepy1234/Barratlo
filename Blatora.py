@@ -41,6 +41,7 @@ Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
 Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
 Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
 HandBackground_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
+SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
 SPINNINGBGIMG = pygame.image.load(os.path.join(GUI_DIR, 'StartBackground.png')).convert_alpha()
@@ -192,6 +193,7 @@ chips = 0
 mult = 0
 hands = 4
 discards = 4
+DRAG_THRESHOLD = 10
 
 SCORED_POSITIONS = [
     (WIDTH//2 - 150, HEIGHT//2 - 50),
@@ -230,15 +232,39 @@ class Card:
         self.rect = image.get_rect()
         self.state = "hand"
         self.slot = slot
+        self.vx = 0
+        self.vy = 0
         self.x = 0
         self.target_x = 0
         self.y = 0
         self.angle = 0
         self.target_y = 0
         self.play_timer = 0
-    def update(self, lerp_factor=0.2):
-        self.x += (self.target_x - self.x) * lerp_factor
-        self.y += (self.target_y - self.y) * lerp_factor
+        self.dragging = False
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        self.was_dragged = False
+    def update(self):
+        stiffness = 0.3
+        damping = 0.7
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        if not self.dragging:
+            self.vx += dx * stiffness
+            self.vy += dy * stiffness
+            self.vx *= damping
+            self.vy *= damping
+            if abs(self.vx) > 0.1:
+                self.x += self.vx
+            if abs(self.vy) > 0.1:
+                self.y += self.vy
+        if abs(dx) > 0.5 and abs(dy) < 0:
+            angle_rad = math.atan2(dy, dx)
+            angle_deg = math.degrees(angle_rad)
+            tilt_strength = 0.75
+            self.angle = angle_deg * tilt_strength
+        else:
+            self.angle *= 0.75
 
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
@@ -442,6 +468,16 @@ while startGame == False:
     clock.tick(60)
     currentFrame += 1
 
+def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
+    if hand_len <= 1:
+        return 0
+    total_width = (hand_len - 1) * spread + 80
+    start_x = center_x - total_width / 2
+    rel = x_pos - start_x
+    idx = int(round(rel / spread))
+    idx = max(0, min(hand_len - 1, idx))
+    return idx
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -449,16 +485,16 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
+                mouse_x, mouse_y = mouse_pos
                 selected_count = sum(1 for card in hand if card.state == "selected")
                 for card in reversed(hand):
-                    if card.state in ("selected", "hand") and card.rect.collidepoint(mouse_pos):
-                        if card.state == "selected":
-                            card.state = "hand"
-                            break
-                        elif selected_count < 5:
-                            card.state = "selected"
-                            selected_count += 1
-                            break
+                    if card.rect.collidepoint(mouse_pos):
+                        card.dragging = True
+                        card.drag_offset_x = card.x - mouse_x
+                        card.drag_offset_y = card.y - mouse_y
+                        card.drag_start = (mouse_x, mouse_y)
+                        card.was_dragged = False
+                        break
                 if Playhand_rect.collidepoint(mouse_pos):
                     if hands > 0:
                         card.lerp_factor = 0.3
@@ -488,29 +524,82 @@ while running:
             if event.button == 3:
                 for card in hand:
                     card.state = "hand"
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                mouse_pos = event.pos
+                for card in hand:
+                    if getattr(card, "dragging", False):
+                        card.dragging = False
+                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                            if card.state == "hand":
+                                if sum(1 for c in hand if c.state == "selected") < 5:
+                                    card.state = "selected"
+                            else:
+                                card.state = "hand"
+                        n = len(hand)
+                        spread_local = spacing
+                        total_width = (n - 1) * spread_local + 80
+                        start_x = (WIDTH / 2) - total_width / 2
+                        i = card.slot
+                        center_y = HEIGHT - 100
+                        max_v_offset = -30
+                        t = i / (n - 1) if n > 1 else 0.5
+                        slot_target_x = start_x + i * spread_local
+                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset
+                        card.target_x = slot_target_x
+                        card.target_y = slot_target_y
+                        card.vx = 0
+                        card.vy = 0
+        if event.type == pygame.MOUSEMOTION:
+            mouse_x, mouse_y = event.pos
+            for card in hand:
+                if getattr(card, "dragging", False):
+                    dx = mouse_x - card.drag_start[0]
+                    dy = mouse_y - card.drag_start[1]
+                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                        card.was_dragged = True
+                        card.x = mouse_x + card.drag_offset_x
+                        card.y = mouse_y + card.drag_offset_y
+                        card.target_x = card.x
+                        card.target_y = card.y
+                        n = len(hand)
+                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
+                        current_index = hand.index(card)
+                        if new_index != current_index:
+                            hand.pop(current_index)
+                            hand.insert(new_index, card)
+                            for idx, c in enumerate(hand):
+                                c.slot = idx
     screen.fill(green)
+    screen.blit(SideBar_img, (0, 0))
     selected_cards = [card for card in hand if card.state in ("selected", "played")]
     hand_type, contributing = detect_hand(selected_cards)
+    screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
     font = pygame.font.SysFont(None, 40)
     text = font.render(hand_type, True, white)
     text_rect = text.get_rect(center=(149, 25 + HEIGHT / 3))
+    screen.blit(text, text_rect)
+    text = font.render(f"{hands}", True, white)
+    text_rect = text.get_rect(center=(70, HEIGHT / 1.79))
+    screen.blit(text, text_rect)
+    text = font.render(f"{discards}", True, white)
+    text_rect = text.get_rect(center=(205, HEIGHT / 1.79))
+    screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (25, HEIGHT - 130))
     screen.blit(Discardhand_img, (WIDTH - 195, HEIGHT - 130))
-    screen.blit(HandBackground_img, (25, HEIGHT / 3))
-    screen.blit(text, text_rect)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
+
     update_card_animation()
     if card_x > -WIDTH:
-        
         screen.blit(STARTCARD, (card_x, 0))
     pygame.display.flip()
 
     clock.tick(60)
     currentFrame += 1
     for card in hand:
-        card.update(lerp_factor=0.1)
+        card.update()
         if card.state == "played":
             card.play_timer += 1
             if card.play_timer > 120:
