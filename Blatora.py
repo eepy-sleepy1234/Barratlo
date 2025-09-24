@@ -196,10 +196,47 @@ deck = []
 handsize = 8
 chips = 0
 mult = 0
+current_score = 0
+round_score = 0
 hands = 4
 discards = 4
-DRAG_THRESHOLD = 20
+DRAG_THRESHOLD = 10
 sort_mode = "rank"
+Hand_levels = {
+    "High Card": 1,
+    "Pair": 1,
+    "Two Pair": 1,
+    "Three of a Kind": 1,
+    "Straight": 1,
+    "Flush": 1,
+    "Full House": 1,
+    "Four of a Kind": 1,
+    "Straight Flush": 1,
+    }
+
+Hand_Mult = {
+    "High Card": 1,
+    "Pair": 2,
+    "Two Pair": 2,
+    "Three of a Kind": 3,
+    "Straight": 4,
+    "Flush": 4,
+    "Full House": 4,
+    "Four of a Kind": 7,
+    "Straight Flush": 8,
+    }
+
+Hand_Chips = {
+    "High Card": 5,
+    "Pair": 10,
+    "Two Pair": 20,
+    "Three of a Kind": 30,
+    "Straight": 30,
+    "Flush": 35,
+    "Full House": 40,
+    "Four of a Kind": 60,
+    "Straight Flush": 100,
+    }
 
 SCORED_POSITIONS = [
     (WIDTH//2 - 150, HEIGHT//2 - 50),
@@ -386,24 +423,25 @@ def detect_hand(cards):
     if values == [2, 3, 4, 5, 14]:
         is_straight = True
         values = [1, 2, 3, 4, 5]
+    contributing = []
     if is_flush and is_straight and values[-1] == 14:
-        contributing = cards
+        contributing = cards[:]
         return "Royal Flush", contributing
     elif is_flush and is_straight:
-        contributing = cards
+        contributing = cards[:]
         return "Straight Flush", contributing
     elif 4 in value_counts.values():
         four_value = [val for val, count in value_counts.items() if count == 4][0]
         contributing = [c for c in cards if c.value == four_value]
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
-        contributing = cards
+        contributing = cards[:]
         return "Full House", contributing
     elif is_flush:
-        contributing = cards
+        contributing = cards[:]
         return "Flush", contributing
     elif is_straight:
-        contributing = cards
+        contributing = cards[:]
         return "Straight", contributing
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
@@ -421,7 +459,6 @@ def detect_hand(cards):
         high_value = max(values)
         contributing = [c for c in cards if c.value == high_value]
         return "High Card", contributing
-
 
 letter_animation = True
 running = True
@@ -575,7 +612,7 @@ while running:
         if event.type == pygame.MOUSEMOTION:
             mouse_x, mouse_y = event.pos
             for card in hand:
-                if getattr(card, "dragging", False):
+                if getattr(card, "dragging", False) and not card.state == "played":
                     dx = mouse_x - card.drag_start[0]
                     dy = mouse_y - card.drag_start[1]
                     if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
@@ -592,11 +629,20 @@ while running:
                             hand.insert(new_index, card)
                             for idx, c in enumerate(hand):
                                 c.slot = idx
-            sort_hand()
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
     selected_cards = [card for card in hand if card.state in ("selected", "played")]
     hand_type, contributing = detect_hand(selected_cards)
+    if hand_type:
+        level = Hand_levels.get(hand_type, 1)
+        base_chips = Hand_Chips.get(hand_type, 0)
+        base_mult = Hand_Mult.get(hand_type, 1)
+    else:
+        level = 0
+        base_chips = 0
+        base_mult = 0
+    chips = base_chips * level
+    mult = base_mult * level
     screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
     font = pygame.font.SysFont(None, 40)
     text = font.render(hand_type, True, white)
@@ -607,6 +653,12 @@ while running:
     screen.blit(text, text_rect)
     text = font.render(f"{discards}", True, white)
     text_rect = text.get_rect(center=(205, HEIGHT / 1.79))
+    screen.blit(text, text_rect)
+    text = font.render(f"{chips}", True, white)
+    text_rect = text.get_rect(center=(80, HEIGHT / 2.45))
+    screen.blit(text, text_rect)
+    text = font.render(f"{mult}", True, white)
+    text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
     screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (25, HEIGHT - 130))
@@ -641,5 +693,6 @@ while running:
                     new_card.slot = index
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
+                    sort_hand()
 
 pygame.quit()
