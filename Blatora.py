@@ -40,6 +40,10 @@ Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_D
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
 Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
 Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
+SortbuttonRank_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
+SortbuttonRank_rect = pygame.Rect(WIDTH / 2 - 175, HEIGHT - 60, 120, 50)
+SortbuttonSuit_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
+SortbuttonSuit_rect = pygame.Rect(WIDTH / 2 - 25, HEIGHT - 60, 120, 50)
 HandBackground_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
 SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
@@ -194,6 +198,7 @@ mult = 0
 hands = 4
 discards = 4
 DRAG_THRESHOLD = 10
+sort_mode = "rank"
 
 SCORED_POSITIONS = [
     (WIDTH//2 - 150, HEIGHT//2 - 50),
@@ -203,7 +208,7 @@ SCORED_POSITIONS = [
     (WIDTH//2 + 250, HEIGHT//2 - 50)
 ]
 
-SUITS = ["hearts", "diamonds", "clubs", "spades"]
+SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"]
 RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 RANK_VALUES = {
     "Two": 2,
@@ -468,6 +473,16 @@ while startGame == False:
     clock.tick(60)
     currentFrame += 1
 
+def sort_hand():
+    global hand, sort_mode
+    if sort_mode == "rank":
+        hand.sort(key=lambda c: c.value, reverse=True)
+    elif sort_mode == "suit":
+        suit_order = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1}
+        hand.sort(key=lambda c: (suit_order[c.suit], c.value), reverse = True)
+    for idx, c in enumerate(hand):
+        c.slot = idx
+
 def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
     if hand_len <= 1:
         return 0
@@ -521,6 +536,12 @@ while running:
                            card.state = "discarded"
                         if len(to_discard) > 0:
                             discards -= 1
+                if SortbuttonRank_rect.collidepoint(mouse_pos):
+                    sort_mode = "rank"
+                    sort_hand()
+                if SortbuttonSuit_rect.collidepoint(mouse_pos):
+                    sort_mode = "suit"
+                    sort_hand()
             if event.button == 3:
                 for card in hand:
                     card.state = "hand"
@@ -570,6 +591,7 @@ while running:
                             hand.insert(new_index, card)
                             for idx, c in enumerate(hand):
                                 c.slot = idx
+            sort_hand()
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
     selected_cards = [card for card in hand if card.state in ("selected", "played")]
@@ -588,6 +610,8 @@ while running:
 
     screen.blit(Playhand_img, (25, HEIGHT - 130))
     screen.blit(Discardhand_img, (WIDTH - 195, HEIGHT - 130))
+    screen.blit(SortbuttonRank_img, SortbuttonRank_rect)
+    screen.blit(SortbuttonSuit_img, SortbuttonSuit_rect)
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
