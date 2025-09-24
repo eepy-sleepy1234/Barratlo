@@ -35,6 +35,7 @@ SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
 JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
 LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
+SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
 
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
@@ -197,7 +198,7 @@ chips = 0
 mult = 0
 hands = 4
 discards = 4
-DRAG_THRESHOLD = 10
+DRAG_THRESHOLD = 20
 sort_mode = "rank"
 
 SCORED_POSITIONS = [
