@@ -237,6 +237,8 @@ Hand_Chips = {
     "Four of a Kind": 60,
     "Straight Flush": 100,
     }
+playing = False
+scored = False
 
 SCORED_POSITIONS = [
     (WIDTH//2 - 150, HEIGHT//2 - 50),
@@ -268,9 +270,18 @@ RANK_VALUES = {
 class Card:
     def __init__(self, rank, suit, image, slot=None):
         self.image = image
+        self.scale= 1.0
+        self.rotation_speed = 0
+        self.scaling = False
         self.rank = rank
         self.suit = suit
         self.value = RANK_VALUES[rank]
+        if self.value in ("11", "12", "13"):
+            self.chip_value = 10
+        elif self.value == "14":
+            self.chip_value = 11
+        else:
+            self.chip_value = self.value
         self.name = f"{rank} of {suit}"
         self.rect = image.get_rect()
         self.state = "hand"
@@ -308,6 +319,15 @@ class Card:
             self.angle = angle_deg * tilt_strength
         else:
             self.angle *= 0.75
+        if self.scaling:
+            if self.scale > 0.21:
+                self.scale -= 0.2
+            else:
+                self.scaling = False
+        elif self.scale < 1.0:
+            self.scale += 0.2
+            self.rotation_speed = -3
+        self.angle += self.rotation_speed
 
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
@@ -343,6 +363,8 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     for card in cards:
         i = card.slot
         t = i / (n - 1) if n > 1 else 0.5
+    for card in hand:
+        card.is_contributing = card in contributing
 
     for i, card in enumerate(cards):
         t = i / (n - 1) if n > 1 else 0.5
@@ -356,6 +378,10 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             if index < len(SCORED_POSITIONS):
                 abs_x, abs_y = SCORED_POSITIONS[scored_counter]
                 target_x, target_y = card.x + (abs_x - card.x), card.y + (abs_y - card.y)
+                if card.is_contributing:
+                    target_y -= 25
+                    card.scaling = True
+                    card.rotation_speed = 3
                 scored_counter += 1
         elif card.state == "discarded":
             target_y -= 100
@@ -370,7 +396,10 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
         angle = card.angle
-        rotated = pygame.transform.rotate(card.image, angle)
+        scaled_w = int(card.image.get_width() * card.scale)
+        scaled_h = int(card.image.get_height() * card.scale)
+        scaled_img = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
+        rotated = pygame.transform.rotate(scaled_img, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated, rect.topleft)
         card.rect = rect
@@ -452,8 +481,8 @@ def detect_hand(cards):
         contributing = [c for c in cards if c.value == pair_values]
         return "Two Pair", contributing
     elif 2 in value_counts.values():
-        pair_value = [val for val, count in value_counts.items() if count == 2][0]
-        contributing = [c for c in cards if c.value == pair_value]
+        pair_value = [val for val, count in value_counts.items() if count == 2]
+        contributing = [c for c in cards if c.value in pair_value]
         return "Pair", contributing
     else:
         high_value = max(values)
@@ -550,7 +579,7 @@ while running:
                         break
                 if Playhand_rect.collidepoint(mouse_pos):
                     if hands > 0:
-                        card.lerp_factor = 0.3
+                        playing = True
                         PCC = 0
                         selected_cards = [card for card in hand if card.state == "selected"]
                         num_selected = len(selected_cards)
@@ -643,10 +672,14 @@ while running:
         base_mult = 0
     chips = base_chips * level
     mult = base_mult * level
+    current_score = chips * mult
     screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
     font = pygame.font.SysFont(None, 40)
-    text = font.render(hand_type, True, white)
-    text_rect = text.get_rect(center=(149, 25 + HEIGHT / 3))
+    if not scored:
+        text = font.render(hand_type, True, white)
+    else:
+        text = font.render(f"{current_score}", True, white)
+    text_rect = text.get_rect(center=(140, 20 + HEIGHT / 3))
     screen.blit(text, text_rect)
     text = font.render(f"{hands}", True, white)
     text_rect = text.get_rect(center=(70, HEIGHT / 1.79))
@@ -679,8 +712,12 @@ while running:
         card.update()
         if card.state == "played":
             card.play_timer += 1
-            if card.play_timer > 120:
+            if card.play_timer > 260:
                 card.state = "scored"
+                playing = False
+                scored = False
+            elif card.play_timer > 100:
+                scored = True
         if card.state == "scored" or card.state == "discarded":
             if card.x > WIDTH + 200:
                 index = card.slot
