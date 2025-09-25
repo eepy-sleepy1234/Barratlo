@@ -198,6 +198,7 @@ chips = 0
 mult = 0
 current_score = 0
 round_score = 0
+scored_counter = 0
 hands = 4
 discards = 4
 DRAG_THRESHOLD = 10
@@ -272,7 +273,10 @@ class Card:
         self.image = image
         self.scale= 1.0
         self.rotation_speed = 0
+        self.scaling_delay = 0
         self.scaling = False
+        self.growing = False
+        self.shrinking = False
         self.rank = rank
         self.suit = suit
         self.value = RANK_VALUES[rank]
@@ -299,6 +303,7 @@ class Card:
         self.drag_offset_y = 0
         self.was_dragged = False
     def update(self):
+        scored_counter = 0
         stiffness = 0.3
         damping = 0.7
         dx = self.target_x - self.x
@@ -320,13 +325,27 @@ class Card:
         else:
             self.angle *= 0.75
         if self.scaling:
-            if self.scale > 0.21:
-                self.scale -= 0.2
+            if self.scaling_delay > 0:
+                self.scaling_delay -= 1
             else:
-                self.scaling = False
-        elif self.scale < 1.0:
-            self.scale += 0.2
-            self.rotation_speed = -3
+                if not self.growing:
+                    if self.scale > 0.51:
+                        self.scale -= 0.1
+                        self.rotation_speed = 3
+                    else:
+                        self.scale = 0.5
+                        self.rotation_speed = -3
+                        self.growing = True
+                else:
+                    if self.scale < 1.0:
+                        self.scale += 0.1
+                    else:
+                        self.scale = 1.0
+                        self.rotation_speed = 0
+                        self.scaling = False
+                        self.growing = False
+                        self.scaling_delay = 10
+                        scored_counter += 1
         self.angle += self.rotation_speed
 
 for root, dirs, files in os.walk(SUITS_DIR):
@@ -378,11 +397,13 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             if index < len(SCORED_POSITIONS):
                 abs_x, abs_y = SCORED_POSITIONS[scored_counter]
                 target_x, target_y = card.x + (abs_x - card.x), card.y + (abs_y - card.y)
-                if card.is_contributing:
-                    target_y -= 25
-                    card.scaling = True
-                    card.rotation_speed = 3
-                scored_counter += 1
+                for idx, c in enumerate(contributing):
+                    contrib_pos = contributing.index(card)
+                    if scored_counter == contrib_pos:
+                        c.scaling_delay = idx * 10
+                        c.scaling = True
+                        target_y -= 25
+                        c.rotation_speed = 0
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
@@ -712,7 +733,7 @@ while running:
         card.update()
         if card.state == "played":
             card.play_timer += 1
-            if card.play_timer > 260:
+            if card.play_timer > 120:
                 card.state = "scored"
                 playing = False
                 scored = False
