@@ -276,7 +276,7 @@ class Card:
         self.scaling_delay = 0
         self.scaling = False
         self.growing = False
-        self.shrinking = False
+        self.scaling_done = False
         self.rank = rank
         self.suit = suit
         self.value = RANK_VALUES[rank]
@@ -344,6 +344,7 @@ class Card:
                         self.rotation_speed = 0
                         self.scaling = False
                         self.growing = False
+                        self.scaling_done = True
                         self.scaling_delay = 10
                         scored_counter += 1
         self.angle += self.rotation_speed
@@ -395,15 +396,22 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             scored_cards = [c for c in hand if c.state == "scored"]
             index = len(scored_cards)
             if index < len(SCORED_POSITIONS):
-                abs_x, abs_y = SCORED_POSITIONS[scored_counter]
-                target_x, target_y = card.x + (abs_x - card.x), card.y + (abs_y - card.y)
-                for idx, c in enumerate(contributing):
-                    contrib_pos = contributing.index(card)
-                    if scored_counter == contrib_pos:
-                        c.scaling_delay = idx * 10
-                        c.scaling = True
-                        target_y -= 25
-                        c.rotation_speed = 0
+                for c in scored_cards:
+                    abs_x, abs_y = SCORED_POSITIONS[scored_counter]
+                    target_x, target_y = card.x + (abs_x - card.x), card.y + (abs_y - card.y)
+                    if c in contributing:
+                        for contrib_pos, c in enumerate(contributing):
+                            if contrib_pos == scored_counter and not card.scaling and not card.scaling_done:
+                                c.scaling_delay = 0
+                                c.scaling = True
+                                target_y -= 25
+                                c.rotation_speed = 0
+                            elif contrib_pos == scored_counter and card.scaling_done:
+                                scored_counter += 1
+                                card.state = "scored"
+                                card.scaling_done = False
+                    else:
+                        scored_counter += 1
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
