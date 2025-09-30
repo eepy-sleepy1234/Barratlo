@@ -22,6 +22,7 @@ fade_alpha = 255
 letters = []
 letter_animation = True
 endBG = False
+settings = False 
 
 green = (0, 120, 0)
 white = (255, 255, 255)
@@ -36,6 +37,8 @@ JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
 GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
 LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
 SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
+FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
+
 
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
@@ -49,13 +52,23 @@ HandBackground_img = pygame.transform.smoothscale(pygame.image.load(os.path.join
 SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
-SPINNINGBGIMG = pygame.image.load(os.path.join(GUI_DIR, 'StartBackground.png')).convert_alpha()
+SPINNINGBGIMG = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png')).convert_alpha()
 STARTBUTTON = pygame.image.load(os.path.join(GUI_DIR, 'StartButton.png')).convert_alpha()
 STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON,(int(WIDTH/4.4),int(HEIGHT/10)))
 STARTBUTTON_X = int((WIDTH/2)- ((WIDTH/4.4)/2))
 STARTBUTTON_Y = (HEIGHT/2)+CENTERLETTERH/2
 start_button_rect = STARTBUTTON.get_rect()
 start_button_rect.topleft = (STARTBUTTON_X, STARTBUTTON_Y)
+SETTINGSIMG = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png')).convert_alpha()
+SETTINGONIMG = pygame.image.load(os.path.join(GUI_DIR, 'Setting_on.png')).convert_alpha()
+SETTINGOFFIMG = pygame.image.load(os.path.join(GUI_DIR, 'Setting_off.png')).convert_alpha()
+SETTINGONIMG = pygame.transform.scale(SETTINGONIMG,(int(HEIGHT/5),int(HEIGHT/10)))
+SETTINGOFFIMG = pygame.transform.scale(SETTINGOFFIMG, (int(HEIGHT/5),int(HEIGHT/10)))
+SETTINGSRECT = SETTINGONIMG.get_rect()
+xbutton = pygame.image.load(os.path.join(GUI_DIR, 'XButton.png')).convert_alpha()
+xbutton = pygame.transform.scale(xbutton,(int(HEIGHT/10), int(HEIGHT/10)))
+xbutton_rect = xbutton.get_rect()
+xbutton_rect.topleft = ((WIDTH - xbutton_rect.width), 0)
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -71,6 +84,265 @@ StartingTimg = letter_images['StartTimg']
 StartingRimg = letter_images['StartRimg']
 StartingOimg = letter_images['StartOimg']
 
+
+developer = False
+setting_width = WIDTH/6
+setting_height = HEIGHT/5
+settingsList = []
+PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
+devtoggle = ""
+
+
+class User_settings():
+    def __init__(self,name):
+        
+        self.toggle = False
+        font_size = int(HEIGHT / 40)
+        self.name = PixelFont.render(name, True, (0, 0, 0))
+
+        self.img = SETTINGOFFIMG
+        settingsList.append(self)
+     
+        self.rect = SETTINGSRECT.copy()
+        
+    def update_img(self):
+        if self.toggle:
+            self.img = SETTINGONIMG
+        elif not self.toggle:
+            self.img = SETTINGOFFIMG
+    def check_dev(self):
+        global developer
+        global devtoggle
+        
+        if developer == False:
+            
+            if self == DEV_MODE:
+                answer = input("Insert Dev Key")
+                if answer == devkey:
+                    self.toggle = True
+                    developer = True
+                    global answer2
+                    devtoggle = input("Insert Toggle Key")
+             
+                elif answer != devkey:
+                    self.toggle = False
+                    print('incorect')
+            self.update_img()
+        
+            
+            
+    
+        
+    
+DEV_MODE = User_settings('Developer')
+dev_toggle = False
+def dev_commands():
+    global dev_toggle
+    global dev_command
+    if DEV_MODE.toggle:
+        if dev_toggle:
+            dev_command = input('Insert Developer Command')
+
+            
+
+
+
+           
+def draw_settings():
+    index = 0
+    for setting in settingsList:
+        x_pos = int(WIDTH/20)
+        y_pos = int((HEIGHT/10 + 20) * index) + 20
+        text_x = x_pos + setting.img.get_width() + 10 
+        screen.blit(setting.name, (text_x, y_pos))
+    
+        screen.blit(setting.img, (x_pos, y_pos))
+        setting.rect.x = x_pos
+        setting.rect.y = y_pos
+        index += 1
+        setting.update_img()
+
+        
+        
+    
+blitting = False    
+def blit_img():
+    global blitting
+    global blitpositionx
+    global blitpositiony
+    global blitting_img
+    global blitting_img_original
+    global dev_toggle
+    global scaling
+    global dimensionsx
+    global dimensionsy
+    if blitting and blitting_img_original:
+        if scaling == 'wh':
+            blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(HEIGHT/dimensionsy)))
+        elif scaling == 'ww':
+            blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(WIDTH/dimensionsy)))
+        elif scaling == 'hh':
+            blitting_img = pygame.transform.scale(blitting_img_original, (int(HEIGHT/dimensionsx), int(HEIGHT/dimensionsy)))
+        elif scaling == 'hw':
+            blitting_img = pygame.transform.scale(blitting_img_original, (int(HEIGHT/dimensionsx), int(WIDTH/dimensionsy)))
+        elif scaling == 'pixel':
+            blitting_img = pygame.transform.scale(blitting_img_original, (int(dimensionsx), int(dimensionsy)))
+        
+        screen.blit(blitting_img, (blitpositionx, blitpositiony))
+
+    if DEV_MODE.toggle:
+        while dev_toggle:
+            
+            if dev_command.lower() == 'setblit':
+                asset = input('Input asset name, including .png if a png: ')
+                directory = input('Choose a directory(assets, joker, gui, Suits): ').lower()
+
+                if directory == 'assets':
+                    directory = ASSETS_DIR
+                elif directory == 'joker':
+                    directory = JOKERS_DIR
+                elif directory == 'gui':
+                    directory = GUI_DIR
+                elif directory == 'suits':
+                    directory = SUITS_DIR
+                else:
+                    print("Invalid Directory")
+                    dev_toggle = False
+                    return
+
+                scaling = input('WH, WW, HH, HW, pixel: ').lower()
+
+                blitpositionx = input('Xposition (Width/chosenxpos): ')
+                blitpositiony = input('Yposition (Height/Chosenypos): ')
+                try:
+                    if blitpositionx == '0':
+                        blitpositionx = 0
+                    if blitpositiony == '0':
+                        blitpositiony = 0
+
+                    if blitpositionx != 0:
+                        blitpositionx = int(WIDTH/(float(blitpositionx)))
+                    if blitpositiony != 0:
+                        blitpositiony = int(HEIGHT/(float(blitpositiony)))
+                except:
+                    print("Invalid position")
+                    dev_toggle = False
+                    return
+                
+                dimensionsx = input('Choose a width: ')
+                dimensionsy = input('Choose a height: ')
+                try:
+                    dimensionsx = float(dimensionsx)
+                    dimensionsy = float(dimensionsy)
+                except:
+                    print("Invalid dimensions")
+                    dev_toggle = False
+                    return
+                
+                try:
+                    blitting_img_original = pygame.image.load(os.path.join(directory, str(asset))).convert_alpha()
+                except:
+                    print("Something went wrong loading image")
+                    dev_toggle = False
+                    return
+                
+                try:
+                    if scaling == 'wh':
+                        blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(HEIGHT/dimensionsy)))
+                    elif scaling == 'ww':
+                        blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(WIDTH/dimensionsy)))
+                    elif scaling == 'hh':
+                        blitting_img = pygame.transform.scale(blitting_img_original, (int(HEIGHT/dimensionsx), int(HEIGHT/dimensionsy)))
+                    elif scaling == 'hw':
+                        blitting_img = pygame.transform.scale(blitting_img_original, (int(HEIGHT/dimensionsx), int(WIDTH/dimensionsy)))
+                    elif scaling == 'pixel':
+                        blitting_img = pygame.transform.scale(blitting_img_original, (int(dimensionsx), int(dimensionsy)))
+                    
+                    blitting = True
+                    dev_toggle = False
+                    return
+
+                except:
+                    print("Something went wrong scaling")
+                    dev_toggle = False
+                    return
+
+            elif dev_command.lower() == 'cancel':
+                dev_toggle = False
+                return
+            
+            elif dev_command.lower() == 'unblit':
+                blitting = False
+                dev_toggle = False
+                return
+            
+            elif dev_command.lower() == 'reblit':
+                blitting = True
+                dev_toggle = False
+                return
+            
+            elif dev_command.lower() == 'help':
+                print("Commands: \n Help\n reblit\n unblit\n cancel\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling")
+                dev_toggle = False
+                return
+
+            elif dev_command.lower() == 'blitx':
+                new_x = input("Insert New X position (Width/x): ")
+                try:
+                    if new_x == '0':
+                        blitpositionx = 0
+                    else:
+                        blitpositionx = int(WIDTH/float(new_x))
+                    print(f"X position updated to: {blitpositionx}")
+                except:
+                    print("Invalid position")
+                dev_toggle = False
+                return
+            
+            elif dev_command.lower() == 'blity':
+                new_y = input("Insert New Y position (Height/y): ")
+                try:
+                    if new_y == '0':
+                        blitpositiony = 0
+                    else:
+                        blitpositiony = int(HEIGHT/float(new_y))
+                    print(f"Y position updated to: {blitpositiony}")
+                except:
+                    print("Invalid position")
+                dev_toggle = False
+                return
+            
+            elif dev_command.lower() == 'changescaling':
+                new_scale = input("Insert New Scale Config (wh, ww, hh, hw, pixel): ").lower()
+                scaling = new_scale
+                print(f"Scaling mode changed to: {scaling}")
+                dev_toggle = False
+                return
+
+            elif dev_command.lower() == 'blitw':
+                new_W = input("Insert New Width: ")
+                try:
+                    dimensionsx = float(new_W)
+                    print(f"Width updated to: {dimensionsx}")
+                except:
+                    print("Invalid number")
+                dev_toggle = False
+                return
+            
+            elif dev_command.lower() == 'blith':
+                new_H = input("Insert New Height: ")
+                try:
+                    dimensionsy = float(new_H)
+                    print(f"Height updated to: {dimensionsy}")
+                except:
+                    print("Invalid number")
+                dev_toggle = False
+                return
+            
+            else:
+                print("Unknown command. Type 'help' for list of commands.")
+                dev_toggle = False
+                return
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
         self.xpos = xpos
@@ -85,6 +357,13 @@ class starting_letters():
         self.main_ypos = CENTERLETTERH
         self.delay  = 0
         self.delay_timer = 0
+        if sprite_name == StartingBimg: self.letter = 'B'
+        elif sprite_name == StartingAimg: self.letter = 'A' 
+        elif sprite_name == StartingLimg: self.letter = 'L'
+        elif sprite_name == StartingA2img: self.letter = 'A'
+        elif sprite_name == StartingTimg: self.letter = 'T'
+        elif sprite_name == StartingRimg: self.letter = 'R'
+        elif sprite_name == StartingOimg: self.letter = 'O'
 
     def draw(self):
         screen.blit(self.sprite_name,(int(self.xpos),int(self.ypos)))
@@ -467,6 +746,9 @@ class Joker_Animation():
         self.current_frame = 1
 #sprite_name = Joker_Animation(sprite_sheet, 80, 110, 60, 10, 0, 0, 80, 110)
 spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
+settingsButton = Joker_Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
+setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
+
 
 def detect_hand(cards):
     n = len(cards)
@@ -523,28 +805,47 @@ running = True
 
 letter_classes()
 animate_letters()
-startGame = True
-sorted_letters = sorted(Letters, key=lambda letter: letter.xpos)      
+
+
+sorted_letters = sorted(Letters, key=lambda letter: letter.xpos)
+    
 startAnimation = True
+
 for i, letter in enumerate(sorted_letters):
     letter.delay = i * 10  
     letter.animation = True
+current_order = sorted(Letters, key=lambda letter: letter.xpos)
+letter_string = ''.join([letter.letter for letter in current_order])
 
+devkey = 'holyguac' + letter_string
 startGame = False 
-
+print (sorted_letters)
 while startGame == False:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
+                dev_toggle = True
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if start_button_rect.collidepoint(event.pos):
                     
-                    card_animating = True 
-                    
+                    card_animating = True
+                elif settings:  
+                    for setting in settingsList:
+                        if setting.rect.collidepoint(event.pos):
+                            setting.toggle = not setting.toggle
+                            setting.check_dev()
+                            setting.update_img()
+                elif setting_rect.collidepoint(event.pos):  # Check settings button LAST
+                    settings = True
+                if xbutton_rect.collidepoint(event.pos):
+                    settings = False
     screen.fill((0, 0, 0))  
     spinningBG.animate()
+    settingsButton.animate()
     
     if fade_alpha > 0:
         fade_alpha -= 2 
@@ -559,16 +860,32 @@ while startGame == False:
         letter.draw()
     screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
     
-  
+    if settings:
+        screen.fill((255,255,255))
+        draw_settings()
+        screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
+        
+
+        
     update_card_animation()
     if card_x > -WIDTH:  
         screen.blit(STARTCARD, (card_x, 0))
+        
     if endBG == True:
-        startGame = True 
+        startGame = True
+
+    dev_commands()
+    blit_img()
+
+    
+        
+        
     pygame.display.flip()
     clock.tick(60)
     currentFrame += 1
 
+
+    
 def sort_hand():
     global hand, sort_mode
     if sort_mode == "rank":
@@ -734,6 +1051,8 @@ while running:
     if card_x > -WIDTH:
         screen.blit(STARTCARD, (card_x, 0))
     pygame.display.flip()
+    dev_commands()
+    blit_img()
 
     clock.tick(60)
     currentFrame += 1
