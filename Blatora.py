@@ -29,6 +29,7 @@ white = (255, 255, 255)
 
 clock = pygame.time.Clock()
 pygame.init()
+pygame.mixer.init()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
@@ -38,8 +39,9 @@ GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
 LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
 SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
+SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 
-
+soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
 Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
@@ -53,7 +55,7 @@ SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DI
 STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
 SPINNINGBGIMG = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png')).convert_alpha()
-
+SOSERIOUS = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png')).convert_alpha()
 STARTBUTTON = pygame.image.load(os.path.join(GUI_DIR, 'StartButton.png')).convert_alpha()
 STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON,(int(WIDTH/4.4),int(HEIGHT/10)))
 STARTBUTTON_X = int((WIDTH/2)- ((WIDTH/4.4)/2))
@@ -137,6 +139,7 @@ class User_settings():
     
 DEV_MODE = User_settings('Developer')
 dev_toggle = False
+SO_SERIOUS = User_settings('SO SERIOUS')
 def dev_commands():
     global dev_toggle
     global dev_command
@@ -283,7 +286,7 @@ def blit_img():
                 return
             
             elif dev_command.lower() == 'help':
-                print("Commands: \n Help\n reblit\n unblit\n cancel\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling")
+                print("Commands: \n Help\n reblit\n unblit\n cancel\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n")
                 dev_toggle = False
                 return
 
@@ -337,6 +340,102 @@ def blit_img():
                     print(f"Height updated to: {dimensionsy}")
                 except:
                     print("Invalid number")
+                dev_toggle = False
+                return
+
+            elif dev_command.lower() == 'sethand':
+                print("Available ranks: Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace")
+                print("Available suits: Hearts, Diamonds, Clubs, Spades")
+                print("Enter cards one at a time. Type 'done' when finished.")
+                
+
+                hand.clear()
+                
+
+                temp_deck = []
+                for root, dirs, files in os.walk(SUITS_DIR):
+                    for filename in files:
+                        if filename.endswith(".png"):
+                            filepath = os.path.join(root, filename)
+                            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (80, 110))
+                            name, _ = os.path.splitext(filename)
+                            rank, suit = name.split("Of")
+                            card = Card(rank, suit, image)
+                            temp_deck.append(card)
+                
+                card_count = 0
+                while card_count < 8:
+                    rank_input = input(f"Card {card_count + 1} - Rank (or 'done'): ").strip()
+                    
+                    if rank_input.lower() == 'done':
+                        break
+                        
+                    suit_input = input(f"Card {card_count + 1} - Suit: ").strip()
+                    
+                    # Find matching card
+                    found = False
+                    for card in temp_deck:
+                        if card.rank == rank_input and card.suit == suit_input:
+                            card.slot = card_count
+                            card.x, card.y = WIDTH + 100, HEIGHT - 170
+                            card.state = "hand"
+                            hand.append(card)
+                            card_count += 1
+                            found = True
+                            print(f"Added {card.rank} of {card.suit}")
+                            break
+                    
+                    if not found:
+                        print(f"Card '{rank_input}' of '{suit_input}' not found. Check spelling.")
+                        print(f"Example: 'Three' and 'Diamonds' (capital first letter)")
+                
+                sort_hand()
+                print(f"Hand set with {len(hand)} cards")
+                dev_toggle = False
+                return
+
+            elif dev_command.lower() == 'resetdeck':
+            
+                hand.clear()
+                
+
+                deck.clear()
+                for root, dirs, files in os.walk(SUITS_DIR):
+                    for filename in files:
+                        if filename.endswith(".png"):
+                            filepath = os.path.join(root, filename)
+                            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (80, 110))
+                            name, _ = os.path.splitext(filename)
+                            rank, suit = name.split("Of")
+                            card = Card(rank, suit, image)
+                            deck.append(card)
+                
+   
+                random.shuffle(deck)
+                
+
+                for i in range(handsize):
+                    if deck:
+                        card = deck.pop()
+                        card.slot = i
+                        card.x, card.y = WIDTH + 100, HEIGHT - 170
+                        card.state = "hand"
+                        hand.append(card)
+                
+                sort_hand()
+                print(f"Deck reset! New hand dealt with {len(hand)} cards. {len(deck)} cards remaining in deck.")
+                dev_toggle = False
+                return
+
+
+            elif dev_command.lower() == 'setresources':
+                global hands, discards, chips, mult
+                try:
+                    hands = int(input("Set hands remaining: "))
+                    discards = int(input("Set discards remaining: "))
+                    print(f"Resources updated: {hands} hands, {discards} discards")
+                except:
+                    print("Invalid input")
                 dev_toggle = False
                 return
             
@@ -727,14 +826,14 @@ class Joker_Animation():
         self.setWidth = setWidth
         self.setHeight = setHeight
         
-        # PRE-CACHE all frames
+   
         self.cached_frames = []
         for i in range(frames):
             frame_x = i * frame_width
             frame_surface = sprite_name.subsurface((frame_x, 0, frame_width, frame_height))
             scaled = pygame.transform.smoothscale(frame_surface, (setWidth, setHeight))
             self.cached_frames.append(scaled)
-    
+        
     def animate(self):
         if currentFrame % self.frame_interval == 0:
             self.current_frame = (self.current_frame + 1) % self.frames
@@ -746,6 +845,7 @@ class Joker_Animation():
 #sprite_name = Joker_Animation(sprite_sheet, 80, 110, 60, 10, 0, 0, 80, 110)
 spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 settingsButton = Joker_Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
+soserious = Joker_Animation(SOSERIOUS, 250, 250, 24, 39,0,0, WIDTH/5, WIDTH/5)
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 
 
@@ -824,6 +924,8 @@ while startGame == False:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+
+        
         if event.type == pygame.KEYDOWN:
             if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
                 dev_toggle = True
@@ -838,14 +940,19 @@ while startGame == False:
                             setting.toggle = not setting.toggle
                             setting.check_dev()
                             setting.update_img()
-                elif setting_rect.collidepoint(event.pos):  # Check settings button LAST
+                elif setting_rect.collidepoint(event.pos): 
                     settings = True
                 if xbutton_rect.collidepoint(event.pos):
                     settings = False
     screen.fill((0, 0, 0))  
     spinningBG.animate()
     settingsButton.animate()
-    
+    if SO_SERIOUS.toggle:
+        soserious.animate()
+        if not soseriousmusic.get_num_channels(): 
+            soseriousmusic.play(-1) 
+    else:
+        soseriousmusic.stop()
     if fade_alpha > 0:
         fade_alpha -= 2 
         fade_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -909,6 +1016,11 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
+                dev_toggle = True
+       
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
@@ -1049,9 +1161,17 @@ while running:
     update_card_animation()
     if card_x > -WIDTH:
         screen.blit(STARTCARD, (card_x, 0))
+    if SO_SERIOUS.toggle:
+        soserious.animate()
+        if not soseriousmusic.get_num_channels(): 
+            soseriousmusic.play(-1) 
+    else:
+        soseriousmusic.stop()
+        
     pygame.display.flip()
     dev_commands()
     blit_img()
+    
 
     clock.tick(60)
     currentFrame += 1
