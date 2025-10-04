@@ -53,6 +53,7 @@ SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DI
 STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
 SPINNINGBGIMG = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png')).convert_alpha()
+
 STARTBUTTON = pygame.image.load(os.path.join(GUI_DIR, 'StartButton.png')).convert_alpha()
 STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON,(int(WIDTH/4.4),int(HEIGHT/10)))
 STARTBUTTON_X = int((WIDTH/2)- ((WIDTH/4.4)/2))
@@ -713,8 +714,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         card.rect = rect
 
 class Joker_Animation():
-    def __init__(self,sprite_name, frame_width, frame_height, fps, frames, xpos, ypos,setWidth, setHeight):
-        
+    def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
         self.sprite_sheet = sprite_name
         self.frame_width = frame_width
         self.frame_height = frame_height
@@ -723,25 +723,24 @@ class Joker_Animation():
         self.xpos = xpos
         self.ypos = ypos
         self.frames = frames
-        self.xpos = xpos
-        self.ypos = ypos
         self.frame_interval = int(60//fps)
         self.setWidth = setWidth
         self.setHeight = setHeight
         
-        
+        # PRE-CACHE all frames
+        self.cached_frames = []
+        for i in range(frames):
+            frame_x = i * frame_width
+            frame_surface = sprite_name.subsurface((frame_x, 0, frame_width, frame_height))
+            scaled = pygame.transform.smoothscale(frame_surface, (setWidth, setHeight))
+            self.cached_frames.append(scaled)
     
     def animate(self):
-        
-        
         if currentFrame % self.frame_interval == 0:
             self.current_frame = (self.current_frame + 1) % self.frames
-            
-        frame_x = self.current_frame * self.frame_width
-
         
-        scaled_surface = pygame.transform.smoothscale(self.sprite_sheet.subsurface((frame_x, 0, self.frame_width, self.frame_height)), (self.setWidth, self.setHeight))
-        screen.blit(scaled_surface, (self.xpos, self.ypos))
+        screen.blit(self.cached_frames[self.current_frame], (self.xpos, self.ypos))
+    
     def reset_animation(self):
         self.current_frame = 1
 #sprite_name = Joker_Animation(sprite_sheet, 80, 110, 60, 10, 0, 0, 80, 110)
