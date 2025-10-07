@@ -41,6 +41,8 @@ SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
 SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 
+Question_mark = pygame.image.load(os.path.join(GUI_DIR, 'QuestionMark.png')).convert_alpha()
+Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
@@ -150,8 +152,50 @@ def dev_commands():
             
 
 
+guiToggleList = []
+class GUITOGGLES():
+    def __init__(self, x, y, sprite, scale_factor=1.1):
+        self.x = x
+        self.y = y
+        self.toggle = False
+        self.hover = False
+        self.should_draw = False
+        self.rect = sprite.get_rect(center=(x, y))
+        self.original_image = sprite
+        self.sprite = sprite
+        self.scale_factor = scale_factor
+        guiToggleList.append(self)
+    
+    def draw(self):
+        if self.should_draw:
+            # Center the sprite at x, y
+            blit_rect = self.sprite.get_rect(center=(self.x, self.y))
+            screen.blit(self.sprite, blit_rect)
+            self.rect = blit_rect
+    
+    def update_img(self, mouse_pos):
+        if self.should_draw:
+            if self.rect.collidepoint(mouse_pos):
+                self.hover = True
+            else:
+                self.hover = False
+        
+            if self.hover:
+                w, h = self.original_image.get_size()
+                new_w = int(w * self.scale_factor)
+                new_h = int(h * self.scale_factor)
+                self.sprite = pygame.transform.scale(self.original_image, (new_w, new_h))
+            else:
+                self.sprite = self.original_image                  
+                                                    
+                    
+question = GUITOGGLES( WIDTH - (WIDTH/20),0 + WIDTH/20, Question_mark, scale_factor = 1.15)
+ 
+        
 
-           
+        
+
+        
 def draw_settings():
     index = 0
     for setting in settingsList:
@@ -168,7 +212,7 @@ def draw_settings():
 
         
         
-    
+  
 blitting = False    
 def blit_img():
     global blitting
@@ -1013,6 +1057,8 @@ def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
     return idx
 
 while running:
+    question.should_draw = True 
+    mouse_pos = pygame.mouse.get_pos()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -1023,7 +1069,7 @@ while running:
        
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                mouse_pos = pygame.mouse.get_pos()
+                
                 mouse_x, mouse_y = mouse_pos
                 selected_count = sum(1 for card in hand if card.state == "selected")
                 for card in reversed(hand):
@@ -1159,8 +1205,7 @@ while running:
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
     update_card_animation()
-    if card_x > -WIDTH:
-        screen.blit(STARTCARD, (card_x, 0))
+
     if SO_SERIOUS.toggle:
         soserious.animate()
         if not soseriousmusic.get_num_channels(): 
@@ -1168,11 +1213,19 @@ while running:
     else:
         soseriousmusic.stop()
         
-    pygame.display.flip()
+    for toggle in guiToggleList:
+        toggle.update_img(mouse_pos)
+
+    for toggle in guiToggleList:
+        toggle.draw()
+    
     dev_commands()
     blit_img()
+    if card_x > -WIDTH:
+        screen.blit(STARTCARD, (card_x, 0))
+    pygame.display.flip()
     
-
+    
     clock.tick(60)
     currentFrame += 1
     for card in hand:
