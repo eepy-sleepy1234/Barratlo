@@ -4,6 +4,17 @@ import random
 import math
 from collections import Counter
 import sys
+import subprocess
+
+try:
+    import cv2
+except ImportError:
+    import subprocess
+    import sys
+    print("opencv-python not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python"])
+    import cv2
+    
 
 WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -40,6 +51,58 @@ LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
 SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
 SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
+
+\
+VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
+video_cap = None
+video_surface = None
+VIDEO_WIDTH = 200
+VIDEO_HEIGHT = 150
+VIDEO_X = 10
+VIDEO_Y = 10
+
+def init_video():
+    global video_cap
+    if os.path.exists(VIDEO_PATH):
+        video_cap = cv2.VideoCapture(VIDEO_PATH)
+        if not video_cap.isOpened():
+            print(f"Error: Could not open video at {VIDEO_PATH}")
+            video_cap = None
+    else:
+        print(f"Video not found at {VIDEO_PATH}")
+        video_cap = None
+
+def get_video_frame():
+    global video_cap, video_surface
+    if video_cap is None or not video_cap.isOpened():
+        return None
+    
+    ret, frame = video_cap.read()
+    
+    # Loop video if it ends
+    if not ret:
+        video_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        ret, frame = video_cap.read()
+    
+    if ret:
+        # Convert BGR to RGB
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Resize frame
+        frame = cv2.resize(frame, (VIDEO_WIDTH, VIDEO_HEIGHT))
+        
+        # Convert to pygame surface
+        frame = frame.swapaxes(0, 1)
+        video_surface = pygame.surfarray.make_surface(frame)
+        return video_surface
+    
+    return None
+
+def close_video():
+    global video_cap
+    if video_cap is not None:
+        video_cap.release()
+        video_cap = None
 
 Question_mark = pygame.image.load(os.path.join(GUI_DIR, 'QuestionMark.png')).convert_alpha()
 Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
@@ -133,8 +196,8 @@ class User_settings():
                     self.toggle = False
                     print('incorect')
             self.update_img()
-        
-            
+
+prev_attention_state = False
             
     
         
@@ -142,6 +205,8 @@ class User_settings():
 DEV_MODE = User_settings('Developer')
 dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
+Atttention_helper = User_settings('Attention Span Helper')
+
 def dev_commands():
     global dev_toggle
     global dev_command
@@ -870,7 +935,6 @@ class Joker_Animation():
         self.setWidth = setWidth
         self.setHeight = setHeight
         
-   
         self.cached_frames = []
         for i in range(frames):
             frame_x = i * frame_width
@@ -886,7 +950,7 @@ class Joker_Animation():
     
     def reset_animation(self):
         self.current_frame = 1
-#sprite_name = Joker_Animation(sprite_sheet, 80, 110, 60, 10, 0, 0, 80, 110)
+
 spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 settingsButton = Joker_Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 soserious = Joker_Animation(SOSERIOUS, 250, 250, 24, 39,0,0, WIDTH/5, WIDTH/5)
@@ -963,6 +1027,10 @@ letter_string = ''.join([letter.letter for letter in current_order])
 devkey = 'holyguac' + letter_string
 startGame = False 
 print (sorted_letters)
+
+# Initialize video
+init_video()
+
 while startGame == False:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -991,6 +1059,20 @@ while startGame == False:
     screen.fill((0, 0, 0))  
     spinningBG.animate()
     settingsButton.animate()
+
+    # Handle attention helper video
+    if Atttention_helper.toggle and not prev_attention_state:
+        init_video()
+    elif not Atttention_helper.toggle and prev_attention_state:
+        close_video()
+    prev_attention_state = Atttention_helper.toggle
+    
+    # Draw video if attention helper is on
+    if Atttention_helper.toggle:
+        frame = get_video_frame()
+        if frame:
+            screen.blit(frame, (VIDEO_X, VIDEO_Y))
+    
     if SO_SERIOUS.toggle:
         soserious.animate()
         if not soseriousmusic.get_num_channels(): 
@@ -1059,6 +1141,14 @@ def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
 while running:
     question.should_draw = True 
     mouse_pos = pygame.mouse.get_pos()
+    
+    # Handle attention helper video
+    if Atttention_helper.toggle and not prev_attention_state:
+        init_video()
+    elif not Atttention_helper.toggle and prev_attention_state:
+        close_video()
+    prev_attention_state = Atttention_helper.toggle
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -1163,6 +1253,13 @@ while running:
                                 c.slot = idx
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
+    
+    # Draw video if attention helper is on
+    if Atttention_helper.toggle:
+        frame = get_video_frame()
+        if frame:
+            screen.blit(frame, (VIDEO_X, VIDEO_Y))
+    
     selected_cards = [card for card in hand if card.state in ("selected", "played")]
     hand_type, contributing = detect_hand(selected_cards)
     if hand_type:
@@ -1252,4 +1349,5 @@ while running:
                     hand.append(new_card)
                     sort_hand()
 
+close_video()
 pygame.quit()
