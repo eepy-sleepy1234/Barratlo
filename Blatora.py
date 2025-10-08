@@ -52,7 +52,7 @@ SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
 SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 
-\
+
 VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
 video_cap = None
 video_surface = None
@@ -106,6 +106,8 @@ def close_video():
 
 Question_mark = pygame.image.load(os.path.join(GUI_DIR, 'QuestionMark.png')).convert_alpha()
 Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
+Settings_2 =  pygame.image.load(os.path.join(GUI_DIR, 'Settings2.png')).convert_alpha()
+Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))  
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
 Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
@@ -197,6 +199,9 @@ class User_settings():
                     print('incorect')
             self.update_img()
 
+
+
+            
 prev_attention_state = False
             
     
@@ -216,10 +221,10 @@ def dev_commands():
 
             
 
-
+guibutton = []
 guiToggleList = []
 class GUITOGGLES():
-    def __init__(self, x, y, sprite, scale_factor=1.1):
+    def __init__(self, x, y, sprite, scale_factor=1.1, isbutton = False):
         self.x = x
         self.y = y
         self.toggle = False
@@ -230,10 +235,14 @@ class GUITOGGLES():
         self.sprite = sprite
         self.scale_factor = scale_factor
         guiToggleList.append(self)
+        self.isbutton = isbutton
+        if self.isbutton == True:
+            guibutton.append(self)
+            
     
     def draw(self):
         if self.should_draw:
-            # Center the sprite at x, y
+ 
             blit_rect = self.sprite.get_rect(center=(self.x, self.y))
             screen.blit(self.sprite, blit_rect)
             self.rect = blit_rect
@@ -254,7 +263,25 @@ class GUITOGGLES():
                 self.sprite = self.original_image                  
                                                     
                     
-question = GUITOGGLES( WIDTH - (WIDTH/20),0 + WIDTH/20, Question_mark, scale_factor = 1.15)
+question = GUITOGGLES(WIDTH - (WIDTH/20), 0 + WIDTH/20, Question_mark, scale_factor=1.15, isbutton=False)
+settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
+settings3 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)    
+
+def update_gui_buttons():
+
+    if question.toggle:
+
+        button_spacing = int(HEIGHT / 10)
+        start_y = int(HEIGHT / 10)
+        
+        for index, button in enumerate(guibutton):
+            button.should_draw = True
+            button.x = int(WIDTH / 10)
+            button.y = start_y + (index * button_spacing)
+    else:
+
+        for button in guibutton:
+            button.should_draw = False        
  
         
 
@@ -950,10 +977,27 @@ class Joker_Animation():
     
     def reset_animation(self):
         self.current_frame = 1
+class Draggable_Animation(Joker_Animation):
+    def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
+        super().__init__(sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight)
+        self.dragging = False
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        self.was_dragged = False
+        self.rect = pygame.Rect(xpos, ypos, setWidth, setHeight)
+    
+    def animate(self):
+        if currentFrame % self.frame_interval == 0:
+            self.current_frame = (self.current_frame + 1) % self.frames
+        
+        screen.blit(self.cached_frames[self.current_frame], (int(self.xpos), int(self.ypos)))
+        self.rect.x = int(self.xpos)
+        self.rect.y = int(self.ypos)
+
 
 spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 settingsButton = Joker_Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
-soserious = Joker_Animation(SOSERIOUS, 250, 250, 24, 39,0,0, WIDTH/5, WIDTH/5)
+soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 
 
@@ -1028,7 +1072,7 @@ devkey = 'holyguac' + letter_string
 startGame = False 
 print (sorted_letters)
 
-# Initialize video
+
 init_video()
 
 while startGame == False:
@@ -1042,6 +1086,7 @@ while startGame == False:
             if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
                 dev_toggle = True
         if event.type == pygame.MOUSEBUTTONDOWN:
+            
             if event.button == 1:
                 if start_button_rect.collidepoint(event.pos):
                     
@@ -1060,14 +1105,13 @@ while startGame == False:
     spinningBG.animate()
     settingsButton.animate()
 
-    # Handle attention helper video
     if Atttention_helper.toggle and not prev_attention_state:
         init_video()
     elif not Atttention_helper.toggle and prev_attention_state:
         close_video()
     prev_attention_state = Atttention_helper.toggle
     
-    # Draw video if attention helper is on
+
     if Atttention_helper.toggle:
         frame = get_video_frame()
         if frame:
@@ -1138,11 +1182,19 @@ def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
     idx = max(0, min(hand_len - 1, idx))
     return idx
 
+
+overlay = pygame.Surface((WIDTH, HEIGHT))
+overlay.fill((0, 0, 0))  
+overlay.set_alpha(128)
+
+
 while running:
     question.should_draw = True 
     mouse_pos = pygame.mouse.get_pos()
+
+    update_gui_buttons()
     
-    # Handle attention helper video
+
     if Atttention_helper.toggle and not prev_attention_state:
         init_video()
     elif not Atttention_helper.toggle and prev_attention_state:
@@ -1161,7 +1213,36 @@ while running:
             if event.button == 1:
                 
                 mouse_x, mouse_y = mouse_pos
-                selected_count = sum(1 for card in hand if card.state == "selected")
+
+                if settings:  
+                    for setting in settingsList:
+                        if setting.rect.collidepoint(event.pos):
+                            setting.toggle = not setting.toggle
+                            setting.check_dev()
+                            setting.update_img()
+                    
+                
+                if xbutton_rect.collidepoint(event.pos):
+                    settings = False
+                    settings2.toggle = False
+                    
+                if question.should_draw and question.rect.collidepoint(mouse_pos):
+                    question.toggle = not question.toggle
+                if settings2.should_draw and settings2.rect.collidepoint(mouse_pos):
+                    settings = True
+                    settings2.toggle = True
+                    
+                    
+                    
+
+                if SO_SERIOUS.toggle and soserious.rect.collidepoint(mouse_pos):
+                    soserious.dragging = True
+                    soserious.drag_offset_x = soserious.xpos - mouse_x
+                    soserious.drag_offset_y = soserious.ypos - mouse_y
+                    soserious.drag_start = (mouse_x, mouse_y)
+                    soserious.was_dragged = False
+                else:
+                    selected_count = sum(1 for card in hand if card.state == "selected")
                 for card in reversed(hand):
                     if card.rect.collidepoint(mouse_pos):
                         card.dragging = True
@@ -1206,6 +1287,8 @@ while running:
                 for card in hand:
                     card.state = "hand"
         if event.type == pygame.MOUSEBUTTONUP:
+            if soserious.dragging:
+                soserious.dragging = False
             if event.button == 1:
                 mouse_pos = event.pos
                 for card in hand:
@@ -1233,6 +1316,9 @@ while running:
                         card.vy = 0
         if event.type == pygame.MOUSEMOTION:
             mouse_x, mouse_y = event.pos
+            if SO_SERIOUS.toggle and soserious.dragging:
+                soserious.xpos = mouse_x + soserious.drag_offset_x
+                soserious.ypos = mouse_y + soserious.drag_offset_y
             for card in hand:
                 if getattr(card, "dragging", False) and not card.state == "played":
                     dx = mouse_x - card.drag_start[0]
@@ -1254,7 +1340,7 @@ while running:
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
     
-    # Draw video if attention helper is on
+
     if Atttention_helper.toggle:
         frame = get_video_frame()
         if frame:
@@ -1320,9 +1406,21 @@ while running:
     blit_img()
     if card_x > -WIDTH:
         screen.blit(STARTCARD, (card_x, 0))
-    pygame.display.flip()
+
     
-    
+    if question.toggle:
+            screen.blit(overlay, (0, 0))
+            update_gui_buttons()
+            for button in guibutton:
+                button.draw()
+    if settings2.toggle:
+        settings = True
+
+    if settings:
+        screen.fill((255,255,255))
+        draw_settings()
+        screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
+    pygame.display.flip()    
     clock.tick(60)
     currentFrame += 1
     for card in hand:
