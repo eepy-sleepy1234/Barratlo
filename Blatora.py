@@ -5,6 +5,7 @@ import math
 from collections import Counter
 import sys
 import subprocess
+import numpy
 
 try:
     import cv2
@@ -60,6 +61,8 @@ VIDEO_WIDTH = 200
 VIDEO_HEIGHT = 150
 VIDEO_X = 10
 VIDEO_Y = 10
+VideoVelocityX = 0
+VideoVelocityY = 0
 
 def init_video():
     global video_cap
@@ -1343,6 +1346,16 @@ while running:
 
     if Atttention_helper.toggle:
         frame = get_video_frame()
+        if VideoVelocityX == 0:
+            VideoVelocityX = random.randint(0, 10)
+        if VideoVelocityY == 0:
+            VideoVelocityY = random.randint(0, 10)
+        if VIDEO_X >= WIDTH - VIDEO_WIDTH or VIDEO_X <= 0:
+            VideoVelocityX *= -1
+        if VIDEO_Y >= HEIGHT - VIDEO_HEIGHT or VIDEO_Y <= 0:
+            VideoVelocityY *= -1
+        VIDEO_X += VideoVelocityX
+        VIDEO_Y += VideoVelocityY
         if frame:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
     
