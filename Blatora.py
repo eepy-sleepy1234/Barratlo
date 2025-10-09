@@ -756,7 +756,6 @@ Hand_Chips = {
     "Four of a Kind": 60,
     "Straight Flush": 100,
     }
-playing = False
 scored = False
 
 SCORED_POSITIONS = [
@@ -820,13 +819,18 @@ class Card:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
         self.was_dragged = False
+        self.is_contributing = False
+        self.scoring_index = None
+        self.scoring_animating = False
+        self.scoring_target_x = None
+        self.scoring_target_y = None
+        self.scoring_done = False
     def update(self):
-        scored_counter = 0
         stiffness = 0.3
         damping = 0.7
         dx = self.target_x - self.x
         dy = self.target_y - self.y
-        if not self.dragging:
+        if not self.dragging and not self.scoring_animating:
             self.vx += dx * stiffness
             self.vy += dy * stiffness
             self.vx *= damping
@@ -835,6 +839,18 @@ class Card:
                 self.x += self.vx
             if abs(self.vy) > 0.1:
                 self.y += self.vy
+        elif self.scoring_animating:
+            tx = self.scoring_target_x if self.scoring_target_x is not None else self.target_x
+            ty = self.scoring_target_y if self.scoring_target_y is not None else self.target_y
+            lerp_t = 0.18
+            self.x += (tx - self.x) * lerp_t
+            self.y += (ty - self.y) * lerp_t
+            self.angle += (0 - self.angle) * 0.15
+            if abs(self.x - tx) < 2 and abs(self.y - ty) < 2:
+                self.x = tx
+                self.y = ty
+                self.scoring_animation = False
+                self.scoring_done = True
         if abs(dx) > 0.5 and abs(dy) < 0:
             angle_rad = math.atan2(dy, dx)
             angle_deg = math.degrees(angle_rad)
@@ -854,6 +870,7 @@ class Card:
                         self.scale = 0.5
                         self.rotation_speed = -3
                         self.growing = True
+                        print("hi")
                 else:
                     if self.scale < 1.0:
                         self.scale += 0.1
@@ -864,7 +881,6 @@ class Card:
                         self.growing = False
                         self.scaling_done = True
                         self.scaling_delay = 10
-                        scored_counter += 1
         self.angle += self.rotation_speed
 
 for root, dirs, files in os.walk(SUITS_DIR):
@@ -890,19 +906,27 @@ currentFrame = 0
 spacing = 600 / handsize
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
+    global scoring_in_progress, scoring_sequence_index
+    if "scoring_in_progress" not in globals():
+        scoring_in_progress = False
+    if "scoring_sequence_index" not in globals():
+        scoring_sequence_index = 0
     n = len(cards)
-    scored_counter = 0
-    if not cards:
+    if n == 0:
         return
+    contributing = globals().get("contributing", []) or []
+    contributing = [c for c in contributing if c in cards]
+    for c in cards:
+        c.is_contributing = (c in contributing)
     start_angle = -angle_range / 2
     angle_step = angle_range / (n - 1) if n > 1 else 0
     total_width = (n - 1) * spread + 80
     start_x = center_x - total_width / 2
-    for card in cards:
-        i = card.slot
-        t = i / (n - 1) if n > 1 else 0.5
-    for card in hand:
-        card.is_contributing = card in contributing
+    if not scoring_in_progress:
+        waiting = [c for c in cards if c.state == "played" and c.is_contributing and not c.scoring_done]
+        if waiting:
+            scoring_in_progress = True
+            scoring_sequence_index = 0
 
     for i, card in enumerate(cards):
         t = i / (n - 1) if n > 1 else 0.5
@@ -911,25 +935,30 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         if card.state == "selected":
             target_y -= 40
         elif card.state == "played":
-            scored_cards = [c for c in hand if c.state == "scored"]
-            index = len(scored_cards)
-            if index < len(SCORED_POSITIONS):
-                for c in scored_cards:
-                    abs_x, abs_y = SCORED_POSITIONS[scored_counter]
-                    target_x, target_y = card.x + (abs_x - card.x), card.y + (abs_y - card.y)
-                    if c in contributing:
-                        for contrib_pos, c in enumerate(contributing):
-                            if contrib_pos == scored_counter and not card.scaling and not card.scaling_done:
-                                c.scaling_delay = 0
-                                c.scaling = True
-                                target_y -= 25
-                                c.rotation_speed = 0
-                            elif contrib_pos == scored_counter and card.scaling_done:
-                                scored_counter += 1
-                                card.state = "scored"
-                                card.scaling_done = False
-                    else:
-                        scored_counter += 1
+            if card.is_contributing:
+                card.state = "scoring"
+                target_y -= 25
+        if scoring_in_progress and card.is_contributing and not card.scoring_done:
+            idx = scoring_sequence_index
+            if idx < len(SCORED_POSITIONS):
+                abs_x, abs_y = SCORED_POSITIONS[idx]
+                card.scoring_target_x = abs_x
+                card.scoring_target_y = abs_y
+                card.scoring_index = idx
+            else:
+                card.scoring_target_x = card.x + WIDTH + 200
+                card.scoring_target_y = card.y - 40
+                card.scoring_index = idx
+            first_unscored = None
+            for c in cards:
+                if c.state == "scoring" and not c.scoring_done:
+                    first_unscored = c
+                    break
+            if first_unscored is card and not card.scoring_animating:
+                card.scaling = True
+                card.scoring_animating = True
+                card.target_x = card.x
+                card.target_y = card.y
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
@@ -938,10 +967,14 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= 500
             target_x += WIDTH + 200
             card.angle -= 5
-        card.target_x = target_x
-        card.target_y = target_y
+        if not card.scoring_animating:
+            card.target_x = target_x
+            card.target_y = target_y
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
+        if card.scaling_done:
+            card.state = "scored"
+    for card in cards:
         angle = card.angle
         scaled_w = int(card.image.get_width() * card.scale)
         scaled_h = int(card.image.get_height() * card.scale)
@@ -950,6 +983,26 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated, rect.topleft)
         card.rect = rect
+    if scoring_in_progress:
+        finished_this_index = False
+        for c in cards:
+            if c.scoring_index == scoring_sequence_index and c.scoring_done:
+                c.state = "scored"
+                finished_this_index = True
+                break
+            if finished_this_index:
+                scoring_sequence_index += 1
+                remaining = [c for c in cards if c.is_contributing and not c.scoring_done and c.state == "played"]
+                if not remaining:
+                    scoring_in_progress = False
+                    scoring_sequence_index = 0
+            else:
+                active_anim = any((c.scoring_animating for c in cards))
+                if not active_anim:
+                    for c in cards:
+                        if c.state == "played" and c.is_contributing and not c.scoring_done:
+                            c.scoring_animating = True
+                            break
 
 class Joker_Animation():
     def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
@@ -1073,7 +1126,7 @@ letter_string = ''.join([letter.letter for letter in current_order])
 
 devkey = 'holyguac' + letter_string
 startGame = False 
-print (sorted_letters)
+print(sorted_letters)
 
 
 init_video()
@@ -1214,7 +1267,6 @@ while running:
        
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                
                 mouse_x, mouse_y = mouse_pos
 
                 if settings:  
@@ -1256,19 +1308,10 @@ while running:
                         break
                 if Playhand_rect.collidepoint(mouse_pos):
                     if hands > 0:
-                        playing = True
-                        PCC = 0
                         selected_cards = [card for card in hand if card.state == "selected"]
                         num_selected = len(selected_cards)
-                        start_x = (WIDTH / 8) - (num_selected - 1) * 60 / 2
-                        start_y = HEIGHT / 2
-                        for card in hand:
-                            if card.state == "selected":
-                                card.state = "played"
-                                card.target_x = 0
-                                card.target_y = 0
-                                card.angle = 0
-                                PCC += 1
+                        for card in selected_cards:
+                            card.state = "played"
                         if len(selected_cards) > 0:
                             hands -= 1
                             
@@ -1442,7 +1485,6 @@ while running:
             card.play_timer += 1
             if card.play_timer > 120:
                 card.state = "scored"
-                playing = False
                 scored = False
             elif card.play_timer > 100:
                 scored = True
