@@ -949,11 +949,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 card.scaling = True
                 card.scoring_animating = True
                 target_y -= 25
-            elif not card.is_contributing:
-                idx = scoring_sequence_index
-                if idx < len(SCORED_POSITIONS):
-                    card.scoring_target_x, card.scoring_target_y = SCORED_POSITIONS[idx]
-        if card.state == "scoring" and card.is_contributing:
             idx = scoring_sequence_index
             if idx < len(SCORED_POSITIONS):
                 card.scoring_target_x, card.scoring_target_y = SCORED_POSITIONS[idx]
@@ -961,6 +956,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             else:
                 card.scoring_target_x = card.x + WIDTH + 200
                 card.scoring_target_y = card.y - 40
+                card.state = "scored"
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
@@ -1505,12 +1501,11 @@ while running:
     for card in hand:
         card.update()
         if card.state == "scoring" and card.scaling_done:
-            card.state = "scored"
-            card.play_timer = 0
-            all_done = all(c.state == "scored" for c in contributing if c in hand)
-            if all_done:
-                scoring_in_progress = False
-                scored = False
+            all_contributing_done = all(c.scaling_done for c in hand if c.state == "scored")
+            if all_contributing_done:
+                for c in hand:
+                    scoring_in_progress = False
+                    scored = False
         if card.state == "played" and not card.is_contributing:
             card.play_timer += 1
             if card.play_timer > 60:
