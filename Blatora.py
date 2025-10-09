@@ -118,14 +118,12 @@ Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
 Settings_2 =  pygame.image.load(os.path.join(GUI_DIR, 'Settings2.png')).convert_alpha()
 Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))  
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
-Playhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
-Playhand_rect = pygame.Rect(25, HEIGHT - 130, 120, 50)
-Discardhand_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
-Discardhand_rect = pygame.Rect(WIDTH - 170, HEIGHT - 130, 120, 50)
-SortbuttonRank_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
-SortbuttonRank_rect = pygame.Rect(WIDTH / 2 - 175, HEIGHT - 60, 120, 50)
-SortbuttonSuit_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
-SortbuttonSuit_rect = pygame.Rect(WIDTH / 2 - 25, HEIGHT - 60, 120, 50)
+Playhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
+
+Discardhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
+SortbuttonRank_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
+SortbuttonSuit_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
+
 HandBackground_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
 SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
@@ -148,6 +146,23 @@ xbutton = pygame.image.load(os.path.join(GUI_DIR, 'XButton.png')).convert_alpha(
 xbutton = pygame.transform.scale(xbutton,(int(HEIGHT/10), int(HEIGHT/10)))
 xbutton_rect = xbutton.get_rect()
 xbutton_rect.topleft = ((WIDTH - xbutton_rect.width), 0)
+
+
+playhandw = Playhand_img.get_width()
+playhandh = Playhand_img.get_height()
+sortrankw = SortbuttonSuit_img.get_width()
+sortrankh = SortbuttonSuit_img.get_height()
+
+Sortbuttonsuit_rect = SortbuttonSuit_img.get_rect()
+Sortbuttonsuit_rect.topleft = (int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+Sortbuttonrank_rect = SortbuttonRank_img.get_rect()
+Sortbuttonrank_rect.topleft = (int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+Playhand_rect = Playhand_img.get_rect()
+Playhand_rect.topleft = (int(0 + playhandw/4), HEIGHT - int(playhandh *2 ))
+Discardhand_rect = Playhand_img.get_rect()
+Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 ))
+
+
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -1463,10 +1478,15 @@ while running:
     text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
     screen.blit(text, text_rect)
 
-    screen.blit(Playhand_img, (25, HEIGHT - 130))
-    screen.blit(Discardhand_img, (WIDTH - 195, HEIGHT - 130))
-    screen.blit(SortbuttonRank_img, SortbuttonRank_rect)
-    screen.blit(SortbuttonSuit_img, SortbuttonSuit_rect)
+
+    
+    screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
+    screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
+
+
+    ##screen.blit(SortbuttonRank_img, SortbuttonRank_rect)
+    screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
+    screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
