@@ -53,6 +53,7 @@ SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
 SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 
+pygame.mouse.set_visible(False)
 
 VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
 video_cap = None
@@ -107,6 +108,11 @@ def close_video():
         video_cap.release()
         video_cap = None
 
+
+cursor_normal = pygame.image.load(os.path.join(GUI_DIR, 'CursorNormal.png')).convert_alpha()
+cursor_hover = pygame.image.load(os.path.join(GUI_DIR, 'CursorHover.png')).convert_alpha()
+cursor_normal = pygame.transform.scale(cursor_normal, (32, 32))
+cursor_hover = pygame.transform.scale(cursor_hover, (32, 32))
 Question_mark = pygame.image.load(os.path.join(GUI_DIR, 'QuestionMark.png')).convert_alpha()
 Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
 Settings_2 =  pygame.image.load(os.path.join(GUI_DIR, 'Settings2.png')).convert_alpha()
@@ -1132,6 +1138,12 @@ print(sorted_letters)
 init_video()
 
 while startGame == False:
+    cursor_pos = pygame.mouse.get_pos()
+    hovering = False
+    for toggle in guiToggleList:
+        if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
+            hovering = True
+            break
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -1211,11 +1223,14 @@ while startGame == False:
 
     
         
-        
+    if hovering:
+        screen.blit(cursor_hover, cursor_pos)
+    else:
+        screen.blit(cursor_normal, cursor_pos)   
     pygame.display.flip()
     clock.tick(60)
     currentFrame += 1
-
+    
 
     
 def sort_hand():
@@ -1247,7 +1262,19 @@ overlay.set_alpha(128)
 while running:
     question.should_draw = True 
     mouse_pos = pygame.mouse.get_pos()
-
+    
+    cursor_pos = pygame.mouse.get_pos()
+    
+    hovering = False
+    for toggle in guiToggleList:
+        if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
+            hovering = True
+            break
+    for card in hand:
+        if card.rect.collidepoint(cursor_pos):
+            hovering = True
+            break
+        
     update_gui_buttons()
     
 
@@ -1476,9 +1503,19 @@ while running:
         screen.fill((255,255,255))
         draw_settings()
         screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
-    pygame.display.flip()    
+
+    if hovering:
+        screen.blit(cursor_hover, cursor_pos)
+    else:
+        screen.blit(cursor_normal, cursor_pos)
+        
+    pygame.display.flip()###########################################################
     clock.tick(60)
     currentFrame += 1
+
+
+
+    
     for card in hand:
         card.update()
         if card.state == "played":
