@@ -153,10 +153,10 @@ playhandh = Playhand_img.get_height()
 sortrankw = SortbuttonSuit_img.get_width()
 sortrankh = SortbuttonSuit_img.get_height()
 
-Sortbuttonsuit_rect = SortbuttonSuit_img.get_rect()
-Sortbuttonsuit_rect.topleft = (int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
-Sortbuttonrank_rect = SortbuttonRank_img.get_rect()
-Sortbuttonrank_rect.topleft = (int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+SortbuttonSuit_rect = SortbuttonSuit_img.get_rect()
+SortbuttonSuit_rect.topleft = (int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+SortbuttonRank_rect = SortbuttonRank_img.get_rect()
+SortbuttonRank_rect.topleft = (int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
 Playhand_rect = Playhand_img.get_rect()
 Playhand_rect.topleft = (int(0 + playhandw/4), HEIGHT - int(playhandh *2 ))
 Discardhand_rect = Playhand_img.get_rect()
@@ -1561,3 +1561,4 @@ while running:
 
 close_video()
 pygame.quit()
+
