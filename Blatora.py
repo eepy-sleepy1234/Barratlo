@@ -5,8 +5,14 @@ import math
 from collections import Counter
 import sys
 import subprocess
-import numpy
-
+try:
+    import numpy
+except ImportError:
+    print("numpy not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
+    import numpy
+    print("Installed numpy")
+    
 try:
     import cv2
 except ImportError:
@@ -15,6 +21,8 @@ except ImportError:
     print("opencv-python not found. Installing...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python"])
     import cv2
+    print("Installed opencv-python")
+
     
 
 WIDTH, HEIGHT = 1000, 800
