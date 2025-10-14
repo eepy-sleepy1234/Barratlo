@@ -5,6 +5,7 @@ import math
 from collections import Counter
 import sys
 import subprocess
+import webbrowser
 try:
     import numpy
 except ImportError:
@@ -124,7 +125,10 @@ cursor_hover = pygame.transform.scale(cursor_hover, (32, 32))
 Question_mark = pygame.image.load(os.path.join(GUI_DIR, 'QuestionMark.png')).convert_alpha()
 Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
 Settings_2 =  pygame.image.load(os.path.join(GUI_DIR, 'Settings2.png')).convert_alpha()
-Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))  
+Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))
+github_link =  pygame.image.load(os.path.join(GUI_DIR, 'GithubButton.png')).convert_alpha()
+github_link = pygame.transform.scale(github_link,(int(HEIGHT/5), int(HEIGHT/10.5)))  
+
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
 Playhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Discardhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
@@ -290,7 +294,7 @@ class GUITOGGLES():
                     
 question = GUITOGGLES(WIDTH - (WIDTH/20), 0 + WIDTH/20, Question_mark, scale_factor=1.15, isbutton=False)
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
-settings3 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)    
+githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
 
 def update_gui_buttons():
 
@@ -1287,12 +1291,20 @@ while running:
                 if xbutton_rect.collidepoint(event.pos):
                     settings = False
                     settings2.toggle = False
-                    
-                if question.should_draw and question.rect.collidepoint(mouse_pos):
-                    question.toggle = not question.toggle
-                if settings2.should_draw and settings2.rect.collidepoint(mouse_pos):
-                    settings = True
-                    settings2.toggle = True
+
+                    ###Gui toggles###
+                for toggle in guiToggleList:
+                    if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
+                        toggle.toggle = not question.toggle
+                        if toggle == settings2:
+                            settings = True
+                        if toggle == githubButton:
+                                webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
+                                toggle.toggle = False
+
+                            
+                        
+
                     
                     
                     
@@ -1488,6 +1500,8 @@ while running:
                 button.draw()
     if settings2.toggle:
         settings = True
+
+
 
     if settings:
         screen.fill((255,255,255))
