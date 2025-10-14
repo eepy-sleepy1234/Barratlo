@@ -969,21 +969,12 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 card.scoring_target_x = card.x + WIDTH + 200
                 card.scoring_target_y = card.y - 40
                 card.state = "scored"
-        elif card.state == "discarded":
-            target_y -= 100
-            target_x += WIDTH + 200
-            card.angle -= 15
-        elif card.state == "scored":
-            target_y -= 500
-            target_x += WIDTH + 200
-            card.angle -= 5
-        if not card.scoring_animating:
-            card.target_x = target_x
-            card.target_y = target_y
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
         if card.scaling_done:
             card.state = "scored"
+        card.target_x = target_x
+        card.target_y = target_y
     for card in cards:
         angle = card.angle
         scaled_w = int(card.image.get_width() * card.scale)
@@ -1522,16 +1513,6 @@ while running:
     
     for card in hand:
         card.update()
-        if card.state == "scoring" and card.scaling_done:
-            all_contributing_done = all(c.scaling_done for c in hand if c.state == "scored")
-            if all_contributing_done:
-                for c in hand:
-                    scoring_in_progress = False
-                    scored = False
-        if card.state == "played" and not card.is_contributing:
-            card.play_timer += 1
-            if card.play_timer > 60:
-                card.state = "scored"
         if card.state == "scored" or card.state == "discarded":
             if card.x > WIDTH + 200:
                 index = card.slot
@@ -1548,3 +1529,4 @@ while running:
 
 close_video()
 pygame.quit()
+
