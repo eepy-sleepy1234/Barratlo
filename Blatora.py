@@ -6,6 +6,7 @@ from collections import Counter
 import sys
 import subprocess
 import webbrowser
+pygame.font.init()
 try:
     import numpy
 except ImportError:
@@ -29,6 +30,21 @@ except ImportError:
 WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
+SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
+JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
+GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
+LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
+SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
+FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
+SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
+VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
+TEXT_PATH = os.path.join(ASSETS_DIR, "Text")
+
+PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
+toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
 CENTERLETTERW = (WIDTH/2)-(LETTERW/2)
@@ -44,27 +60,32 @@ letters = []
 letter_animation = True
 endBG = False
 settings = False 
-
+help_menu = False
 green = (0, 120, 0)
 white = (255, 255, 255)
+with open((os.path.join(TEXT_PATH,"HelpMenu.txt")), "r", encoding="utf-8") as file:
+    helptext = file.read()
 
+help_lines = helptext.split('\n')
+helpMenu_surfaces = []
+line_height = PixelFont.get_height()
+
+for line in help_lines:
+    if line.strip():  
+        surface = PixelFont.render(line, True, (0, 0, 0))
+        helpMenu_surfaces.append(surface)
+    else:
+        helpMenu_surfaces.append(None)
+
+helpMenu  = PixelFont.render(helptext, True, (0, 0, 0))
 clock = pygame.time.Clock()
 pygame.init()
 pygame.mixer.init()
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
-SUITS_DIR = os.path.join(ASSETS_DIR, "Suits")
-JOKERS_DIR = os.path.join(ASSETS_DIR, "Jokers")
-GUI_DIR = os.path.join(ASSETS_DIR, "GUI")
-LETTERS_DIR = os.path.join(GUI_DIR, "Letters")
-SPRITESHEETS_DIR = os.path.join(ASSETS_DIR, "SpriteSheets")
-FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
-SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 
 pygame.mouse.set_visible(False)
 
-VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
+
 video_cap = None
 video_surface = None
 VIDEO_WIDTH = 200
@@ -127,7 +148,9 @@ Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
 Settings_2 =  pygame.image.load(os.path.join(GUI_DIR, 'Settings2.png')).convert_alpha()
 Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))
 github_link =  pygame.image.load(os.path.join(GUI_DIR, 'GithubButton.png')).convert_alpha()
-github_link = pygame.transform.scale(github_link,(int(HEIGHT/5), int(HEIGHT/10.5)))  
+github_link = pygame.transform.scale(github_link,(int(HEIGHT/5), int(HEIGHT/10.5)))
+helpButtonimg =  pygame.image.load(os.path.join(GUI_DIR, 'HelpButton.png')).convert_alpha()
+helpButtonimg = pygame.transform.scale(helpButtonimg,(int(HEIGHT/5), int(HEIGHT/10.5)))  
 
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
 Playhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
@@ -188,7 +211,6 @@ developer = False
 setting_width = WIDTH/6
 setting_height = HEIGHT/5
 settingsList = []
-PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 devtoggle = ""
 
 
@@ -294,6 +316,7 @@ class GUITOGGLES():
                     
 question = GUITOGGLES(WIDTH - (WIDTH/20), 0 + WIDTH/20, Question_mark, scale_factor=1.15, isbutton=False)
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
+helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
 
 def update_gui_buttons():
@@ -331,7 +354,7 @@ def draw_settings():
         index += 1
         setting.update_img()
 
-        
+
         
   
 blitting = False    
@@ -947,7 +970,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     start_angle = -angle_range / 2
     angle_step = angle_range / (n - 1) if n > 1 else 0
     total_width = (n - 1) * spread + 80
-    start_x = center_x - total_width / 2
+    start_x = center_x - total_width / 2.25
 
     for i, card in enumerate(cards):
         t = i / (n - 1) if n > 1 else 0.5
@@ -973,12 +996,17 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= 100
             target_x += WIDTH + 200
             card.angle -= 15
+        elif card.state == "scored":
+            target_y -= 500
+            target_x += WIDTH + 200
+            card.angle -= 5
+        if not card.scoring_animating:
+            card.target_x = target_x
+            card.target_y = target_y
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
         if card.scaling_done:
             card.state = "scored"
-        card.target_x = target_x
-        card.target_y = target_y
     for card in cards:
         angle = card.angle
         scaled_w = int(card.image.get_width() * card.scale)
@@ -1275,6 +1303,10 @@ while running:
             if event.button == 1:
                 mouse_x, mouse_y = mouse_pos
 
+                if help_menu and xbutton_rect.collidepoint(event.pos):
+                    help_menu = False
+                    helpButton.toggle = False
+
                 if settings:  
                     for setting in settingsList:
                         if setting.rect.collidepoint(event.pos):
@@ -1288,14 +1320,18 @@ while running:
                     settings2.toggle = False
 
                     ###Gui toggles###
-                for toggle in guiToggleList:
-                    if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
-                        toggle.toggle = not question.toggle
-                        if toggle == settings2:
-                            settings = True
-                        if toggle == githubButton:
+                if settings == False:
+                    for toggle in guiToggleList:
+                        if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
+                            toggle.toggle = not question.toggle
+                            if toggle == settings2:
+                                settings = True
+                            if toggle == githubButton:
                                 webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
                                 toggle.toggle = False
+                            if toggle == helpButton:
+                                help_menu = True
+                            
 
                             
                         
@@ -1475,7 +1511,7 @@ while running:
             soseriousmusic.play(-1) 
     else:
         soseriousmusic.stop()
-        
+
     for toggle in guiToggleList:
         toggle.update_img(mouse_pos)
 
@@ -1502,13 +1538,26 @@ while running:
         screen.fill((255,255,255))
         draw_settings()
         screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
-
+    
     if hovering:
         screen.blit(cursor_hover, cursor_pos)
     else:
         screen.blit(cursor_normal, cursor_pos)
+    if help_menu:
+        screen.fill((255, 255, 255))
+    
+        y_offset = 20
         
-    pygame.display.flip()###########################################################
+        for surface in helpMenu_surfaces:
+            if surface:
+                screen.blit(surface, (20, y_offset))
+            y_offset += line_height + 5
+
+        screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
+    
+
+        
+    pygame.display.flip()   ###########################################################
     clock.tick(60)
     currentFrame += 1
 
@@ -1517,6 +1566,16 @@ while running:
     
     for card in hand:
         card.update()
+        if card.state == "scoring" and card.scaling_done:
+            all_contributing_done = all(c.scaling_done for c in hand if c.state == "scored")
+            if all_contributing_done:
+                for c in hand:
+                    scoring_in_progress = False
+                    scored = False
+        if card.state == "played" and not card.is_contributing:
+            card.play_timer += 1
+            if card.play_timer > 60:
+                card.state = "scored"
         if card.state == "scored" or card.state == "discarded":
             if card.x > WIDTH + 200:
                 index = card.slot
@@ -1533,5 +1592,3 @@ while running:
 
 close_video()
 pygame.quit()
-
-
