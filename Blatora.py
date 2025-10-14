@@ -969,6 +969,10 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 card.scoring_target_x = card.x + WIDTH + 200
                 card.scoring_target_y = card.y - 40
                 card.state = "scored"
+        elif card.state == "discarded":
+            target_y -= 100
+            target_x += WIDTH + 200
+            card.angle -= 15
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
         if card.scaling_done:
@@ -1529,4 +1533,5 @@ while running:
 
 close_video()
 pygame.quit()
+
 
