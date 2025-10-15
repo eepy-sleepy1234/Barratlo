@@ -880,7 +880,6 @@ class Card:
         self.scaling_delay = 0
         self.scaling = False
         self.growing = False
-        self.waiting = False
         self.scaling_done = False
         self.rank = rank
         self.suit = suit
@@ -911,8 +910,6 @@ class Card:
         self.was_dragged = False
         self.is_contributing = False
         self.scoring_animating = False
-        self.scoring_target_x = None
-        self.scoring_target_y = None
         self.idx = 0
     def update(self):
         scoring_count = 1
@@ -920,7 +917,7 @@ class Card:
         damping = 0.7
         dx = self.target_x - self.x
         dy = self.target_y - self.y
-        if not self.dragging and not self.scoring_animating:
+        if not self.dragging:
             self.vx += dx * stiffness
             self.vy += dy * stiffness
             self.vx *= damping
@@ -930,8 +927,8 @@ class Card:
             if abs(self.vy) > 0.1:
                 self.y += self.vy
         elif self.scoring_animating:
-            tx = self.scoring_target_x if self.scoring_target_x is not None else self.target_x
-            ty = self.scoring_target_y if self.scoring_target_y is not None else self.target_y
+            tx = self.target_x
+            ty = self.target_y
             lerp_t = 0.18
             self.x += (tx - self.x) * lerp_t
             self.y += (ty - self.y) * lerp_t
@@ -939,13 +936,6 @@ class Card:
             if abs(self.x - tx) < 2 and abs(self.y - ty) < 2:
                 self.x = tx
                 self.y = ty
-        if abs(dx) > 0.5 and abs(dy) < 0:
-            angle_rad = math.atan2(dy, dx)
-            angle_deg = math.degrees(angle_rad)
-            tilt_strength = 0.75
-            self.angle = angle_deg * tilt_strength
-        else:
-            self.angle *= 0.75
         if self.scaling:
             if self.scaling_delay < 180:
                 self.scaling_delay += 1
@@ -971,16 +961,6 @@ class Card:
                         self.angle = 0
                         self.state = "scored"
                         scoring_count += 1
-        elif self.waiting:
-            self.scale = 1.0
-            self.rotation_speed = 0
-            self.scaling = False
-            self.growing = False
-            self.scaling_done = True
-            self.scaling_delay = 10
-            self.angle = 0
-            self.state = "scored"
-            scoring_count += 1
         self.angle += self.rotation_speed
 
 for root, dirs, files in os.walk(SUITS_DIR):
@@ -1030,21 +1010,20 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         if card.state == "selected":
             target_y -= 40
         elif card.state == "played":
+            if scoring_sequence_index < len(SCORED_POSITIONS):
+                card.target_x, card.target_y = SCORED_POSITIONS[scoring_sequence_index]
+                scoring_sequence_index += 1
+            else:
+                card.target_x = card.x + WIDTH + 200
+                card.target_y = card.y - 40
+                card.state = "scored"
             if card.is_contributing:
-                card.state = "scoring"
                 card.scaling = True
                 card.scoring_animating = True
                 target_y -= 25
             else:
                 card.waiting = True
             card.idx = scoring_sequence_index
-            if scoring_sequence_index < len(SCORED_POSITIONS):
-                card.scoring_target_x, card.scoring_target_y = SCORED_POSITIONS[scoring_sequence_index]
-                scoring_sequence_index += 1
-            else:
-                card.scoring_target_x = card.x + WIDTH + 200
-                card.scoring_target_y = card.y - 40
-                card.state = "scored"
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
@@ -1054,13 +1033,12 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 card.state = "scored"
             else:
                 card.state = "discarded"
-        if not card.scoring_animating:
-            card.target_x = target_x
-            card.target_y = target_y
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
         if card.scaling_done:
             card.state = "scored"
+        card.target_x = target_x
+        card.target_y = target_y
     for card in cards:
         angle = card.angle
         scaled_w = int(card.image.get_width() * card.scale)
@@ -1201,8 +1179,7 @@ current_order = sorted(Letters, key=lambda letter: letter.xpos)
 letter_string = ''.join([letter.letter for letter in current_order])
 
 devkey = 'holyguac' + letter_string
-startGame = False 
-print(sorted_letters)
+startGame = False
 
 
 init_video()
@@ -1421,7 +1398,7 @@ while running:
                             card.was_dragged = False
                             break
                 if Playhand_rect.collidepoint(mouse_pos):
-                    if hands > 0:
+                    if hands > 0 and not scoring_in_progress:
                         selected_cards = [card for card in hand if card.state == "selected"]
                         if len(selected_cards) > 0:
                             hand_type, contributing = detect_hand(selected_cards)
@@ -1440,7 +1417,7 @@ while running:
                             scoring_sequence_index = 0
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
-                    if discards > 0:
+                    if discards > 0 and not scoring_in_progress:
                         lerp_factor = 0.3
                         to_discard = [card for card in hand if card.state == "selected"]
                         for card in to_discard:
@@ -1629,18 +1606,13 @@ while running:
 
 
 
-    
     for card in hand:
         card.update()
-        if card.state == "scoring" and card.scaling_done:
+        if card.state == "played" and card.scaling_done:
             all_contributing_done = all(c.scaling_done for c in hand if c.state == "scored")
             if all_contributing_done:
                 scoring_in_progress = False
-                scored = False
-        if card.state == "played" and not card.is_contributing:
-            card.play_timer += 1
-            if card.play_timer > 60:
-                card.state = "scored"
+                scored = True
         if card.state == "discarded":
             if card.x > WIDTH + 200:
                 index = card.slot
