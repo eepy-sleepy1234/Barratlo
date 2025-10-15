@@ -226,7 +226,6 @@ StartingRimg = letter_images['StartRimg']
 StartingOimg = letter_images['StartOimg']
 
 
-
 developer = False
 setting_width = WIDTH/6
 setting_height = HEIGHT/5
@@ -559,7 +558,7 @@ def blit_img():
 
                 hand.clear()
                 
-
+                card_templates = {}
                 temp_deck = []
                 for root, dirs, files in os.walk(SUITS_DIR):
                     for filename in files:
@@ -568,32 +567,34 @@ def blit_img():
                             image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (80, 110))
                             name, _ = os.path.splitext(filename)
                             rank, suit = name.split("Of")
+                            card_key = f"{rank}Of{suit}"
+                            if card_key not in card_templates:
+                                card_templates[card_key] = (rank, suit, image)
                             card = Card(rank, suit, image)
                             temp_deck.append(card)
                 
                 card_count = 0
+                hand.clear()
                 while card_count < 8:
                     rank_input = input(f"Card {card_count + 1} - Rank (or 'done'): ").strip()
+                    rank_input.lower()
                     
                     if rank_input.lower() == 'done':
                         break
                         
                     suit_input = input(f"Card {card_count + 1} - Suit: ").strip()
-                    
-                    # Find matching card
-                    found = False
-                    for card in temp_deck:
-                        if card.rank == rank_input and card.suit == suit_input:
-                            card.slot = card_count
-                            card.x, card.y = WIDTH + 100, HEIGHT - 170
-                            card.state = "hand"
-                            hand.append(card)
-                            card_count += 1
-                            found = True
-                            print(f"Added {card.rank} of {card.suit} (ID: {new_card.card_id})")
-                            break
-                    
-                    if not found:
+
+                    card_key = f"{rank_input}Of{suit_input}"
+                    if card_key in card_templates:
+                        rank, suit, image = card_templates[card_key]
+                        new_card = Card(rank, suit, image)
+                        new_card.slot = card_count
+                        new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+                        new_card.state = "hand"
+                        hand.append(new_card)
+                        card_count += 1
+                        print(f"Added {card.rank} of {card.suit}")
+                    else:
                         print(f"Card '{rank_input}' of '{suit_input}' not found. Check spelling.")
                         print(f"Example: 'Three' and 'Diamonds' (capital first letter)")
                 
@@ -805,6 +806,9 @@ Hand_levels = {
     "Full House": 1,
     "Four of a Kind": 1,
     "Straight Flush": 1,
+    "Five of a Kind": 1,
+    "Flush House": 1,
+    "Flush Five": 1,
     }
 
 Hand_Mult = {
@@ -817,6 +821,9 @@ Hand_Mult = {
     "Full House": 4,
     "Four of a Kind": 7,
     "Straight Flush": 8,
+    "Five of a Kind": 12,
+    "Flush House": 14,
+    "Flush Five": 16,
     }
 
 Hand_Chips = {
@@ -829,6 +836,9 @@ Hand_Chips = {
     "Full House": 40,
     "Four of a Kind": 60,
     "Straight Flush": 100,
+    "Five of a Kind": 120,
+    "Flush House": 140,
+    "Flush Five": 160,
     }
 scored = False
 scoring_in_progress = False
@@ -1128,7 +1138,16 @@ def detect_hand(cards):
         is_straight = True
         values = [1, 2, 3, 4, 5]
     contributing = []
-    if is_flush and is_straight and values[-1] == 14:
+    if is_flush and 5 in value_counts.values():
+        contributing = cards[:]
+        return "Flush Five", contributing
+    elif is_flush and sorted(value_counts.values()) == [2, 3]:
+        contributing = cards[:]
+        return "Flush House", contributing
+    elif 5 in value_counts.values():
+        contributing = cards[:]
+        return "Five of a Kind", contributing
+    elif is_flush and is_straight and values[-1] == 14:
         contributing = cards[:]
         return "Royal Flush", contributing
     elif is_flush and is_straight:
@@ -1638,4 +1657,3 @@ while running:
 
 close_video()
 pygame.quit()
-
