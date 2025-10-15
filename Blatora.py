@@ -570,7 +570,7 @@ def blit_img():
                             hand.append(card)
                             card_count += 1
                             found = True
-                            print(f"Added {card.rank} of {card.suit}")
+                            print(f"Added {card.rank} of {card.suit} (ID: {new_card.card_id})")
                             break
                     
                     if not found:
@@ -586,7 +586,7 @@ def blit_img():
             
                 hand.clear()
                 
-
+                card_count = {}
                 deck.clear()
                 for root, dirs, files in os.walk(SUITS_DIR):
                     for filename in files:
@@ -595,6 +595,11 @@ def blit_img():
                             image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (80, 110))
                             name, _ = os.path.splitext(filename)
                             rank, suit = name.split("Of")
+                            card_key = f"{rank}Of{suit}"
+                            if card_key in card_count:
+                                card_count[card_key] += 1
+                            else:
+                                card_count[card_key] = 1
                             card = Card(rank, suit, image)
                             deck.append(card)
                 
@@ -837,6 +842,7 @@ RANK_VALUES = {
 
 
 class Card:
+    card_id_counter = 0
     def __init__(self, rank, suit, image, slot=None):
         self.image = image
         self.scale= 1.0
@@ -849,6 +855,8 @@ class Card:
         self.rank = rank
         self.suit = suit
         self.value = RANK_VALUES[rank]
+        self.card_id = Card.card_id_counter
+        Card.card_id_counter += 1
         if self.value in (11, 12, 13):
             self.chip_value = 10
         elif self.value == 14:
@@ -1514,7 +1522,6 @@ while running:
     text = font.render(f"{mult}", True, white)
     text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
     screen.blit(text, text_rect)
-    print(scored)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
     screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
