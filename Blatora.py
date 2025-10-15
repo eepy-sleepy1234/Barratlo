@@ -43,6 +43,25 @@ SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
 TEXT_PATH = os.path.join(ASSETS_DIR, "Text")
 
+
+PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
+
+def load_image_safe(filepath, fallback_path=PLACEHOLDER):
+    """Load image with fallback to placeholder if file not found"""
+    try:
+        return pygame.image.load(filepath).convert_alpha()
+    except (FileNotFoundError, pygame.error):
+        print(f"Warning: Could not load {filepath}")
+        if fallback_path and os.path.exists(fallback_path):
+            print(f"Using fallback image: {fallback_path}")
+            return pygame.image.load(fallback_path).convert_alpha()
+        else:
+
+            print("Creating placeholder surface")
+            surf = pygame.Surface((80, 110))
+            surf.fill((200, 200, 200))  
+            return surf
+        
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 toggleable = True 
 LETTERW = WIDTH/12
@@ -139,43 +158,43 @@ def close_video():
         video_cap = None
 
 
-cursor_normal = pygame.image.load(os.path.join(GUI_DIR, 'CursorNormal.png')).convert_alpha()
-cursor_hover = pygame.image.load(os.path.join(GUI_DIR, 'CursorHover.png')).convert_alpha()
+cursor_normal = load_image_safe(os.path.join(GUI_DIR, 'CursorNormal.png'))
+cursor_hover = load_image_safe(os.path.join(GUI_DIR, 'CursorHover.png'))
 cursor_normal = pygame.transform.scale(cursor_normal, (32, 32))
 cursor_hover = pygame.transform.scale(cursor_hover, (32, 32))
-Question_mark = pygame.image.load(os.path.join(GUI_DIR, 'QuestionMark.png')).convert_alpha()
+Question_mark = load_image_safe(os.path.join(GUI_DIR, 'QuestionMark.png'))
 Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
-Settings_2 =  pygame.image.load(os.path.join(GUI_DIR, 'Settings2.png')).convert_alpha()
+Settings_2 = load_image_safe(os.path.join(GUI_DIR, 'Settings2.png'))
 Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))
-github_link =  pygame.image.load(os.path.join(GUI_DIR, 'GithubButton.png')).convert_alpha()
+github_link = load_image_safe(os.path.join(GUI_DIR, 'GithubButton.png'))
 github_link = pygame.transform.scale(github_link,(int(HEIGHT/5), int(HEIGHT/10.5)))
-helpButtonimg =  pygame.image.load(os.path.join(GUI_DIR, 'HelpButton.png')).convert_alpha()
+helpButtonimg = load_image_safe(os.path.join(GUI_DIR, 'HelpButton.png'))
 helpButtonimg = pygame.transform.scale(helpButtonimg,(int(HEIGHT/5), int(HEIGHT/10.5)))  
 
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
-Playhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
-Discardhand_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
-SortbuttonRank_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
-SortbuttonSuit_img = pygame.transform.scale(pygame.image.load(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
-HandBackground_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
-SideBar_img = pygame.transform.smoothscale(pygame.image.load(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
-STARTCARD = pygame.image.load(os.path.join(GUI_DIR, 'StartCard.png')).convert_alpha()
+Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
+Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
+SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
+SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
+HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
+SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
+STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
-SPINNINGBGIMG = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png')).convert_alpha()
-SOSERIOUS = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png')).convert_alpha()
-STARTBUTTON = pygame.image.load(os.path.join(GUI_DIR, 'StartButton.png')).convert_alpha()
+SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
+SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
+STARTBUTTON = load_image_safe(os.path.join(GUI_DIR, 'StartButton.png'))
 STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON,(int(WIDTH/4.4),int(HEIGHT/10)))
 STARTBUTTON_X = int((WIDTH/2)- ((WIDTH/4.4)/2))
 STARTBUTTON_Y = (HEIGHT/2)+CENTERLETTERH/2
 start_button_rect = STARTBUTTON.get_rect()
 start_button_rect.topleft = (STARTBUTTON_X, STARTBUTTON_Y)
-SETTINGSIMG = pygame.image.load(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png')).convert_alpha()
-SETTINGONIMG = pygame.image.load(os.path.join(GUI_DIR, 'Setting_on.png')).convert_alpha()
-SETTINGOFFIMG = pygame.image.load(os.path.join(GUI_DIR, 'Setting_off.png')).convert_alpha()
+SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
+SETTINGONIMG = load_image_safe(os.path.join(GUI_DIR, 'Setting_on.png'))
+SETTINGOFFIMG = load_image_safe(os.path.join(GUI_DIR, 'Setting_off.png'))
 SETTINGONIMG = pygame.transform.scale(SETTINGONIMG,(int(HEIGHT/5),int(HEIGHT/10)))
 SETTINGOFFIMG = pygame.transform.scale(SETTINGOFFIMG, (int(HEIGHT/5),int(HEIGHT/10)))
 SETTINGSRECT = SETTINGONIMG.get_rect()
-xbutton = pygame.image.load(os.path.join(GUI_DIR, 'XButton.png')).convert_alpha()
+xbutton = load_image_safe(os.path.join(GUI_DIR, 'XButton.png'))
 xbutton = pygame.transform.scale(xbutton,(int(HEIGHT/10), int(HEIGHT/10)))
 xbutton_rect = xbutton.get_rect()
 xbutton_rect.topleft = ((WIDTH - xbutton_rect.width), 0)
@@ -196,7 +215,7 @@ for root, dirs, files in os.walk(LETTERS_DIR):
         if filename.endswith(".png"):
             filepath = os.path.join(root, filename)
             letter_name = os.path.splitext(filename)[0]
-            image = pygame.transform.scale(pygame.image.load(filepath).convert_alpha(), (int(LETTERW), int(LETTERH)))
+            image = pygame.transform.scale(load_image_safe(filepath), (int(LETTERW), int(LETTERH)))
             letter_images[letter_name] = image
 StartingBimg = letter_images['StartBimg']
 StartingAimg = letter_images['StartAimg']
@@ -205,6 +224,7 @@ StartingA2img = letter_images['StartAimg']
 StartingTimg = letter_images['StartTimg']
 StartingRimg = letter_images['StartRimg']
 StartingOimg = letter_images['StartOimg']
+
 
 
 developer = False
@@ -1618,3 +1638,4 @@ while running:
 
 close_video()
 pygame.quit()
+
