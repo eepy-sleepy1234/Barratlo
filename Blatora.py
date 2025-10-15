@@ -844,6 +844,7 @@ class Card:
         self.scaling_delay = 0
         self.scaling = False
         self.growing = False
+        self.waiting = False
         self.scaling_done = False
         self.rank = rank
         self.suit = suit
@@ -874,7 +875,9 @@ class Card:
         self.scoring_animating = False
         self.scoring_target_x = None
         self.scoring_target_y = None
+        self.idx = 0
     def update(self):
+        scoring_count = 1
         stiffness = 0.3
         damping = 0.7
         dx = self.target_x - self.x
@@ -898,8 +901,6 @@ class Card:
             if abs(self.x - tx) < 2 and abs(self.y - ty) < 2:
                 self.x = tx
                 self.y = ty
-                self.scoring_animation = False
-                self.scoring_done = True
         if abs(dx) > 0.5 and abs(dy) < 0:
             angle_rad = math.atan2(dy, dx)
             angle_deg = math.degrees(angle_rad)
@@ -931,6 +932,17 @@ class Card:
                         self.scaling_delay = 10
                         self.angle = 0
                         self.state = "scored"
+                        scoring_count += 1
+        elif self.waiting:
+            self.scale = 1.0
+            self.rotation_speed = 0
+            self.scaling = False
+            self.growing = False
+            self.scaling_done = True
+            self.scaling_delay = 10
+            self.angle = 0
+            self.state = "scored"
+            scoring_count += 1
         self.angle += self.rotation_speed
 
 for root, dirs, files in os.walk(SUITS_DIR):
@@ -985,9 +997,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 card.scaling = True
                 card.scoring_animating = True
                 target_y -= 25
-            idx = scoring_sequence_index
-            if idx < len(SCORED_POSITIONS):
-                card.scoring_target_x, card.scoring_target_y = SCORED_POSITIONS[idx]
+            else:
+                card.waiting = True
+            card.idx = scoring_sequence_index
+            if scoring_sequence_index < len(SCORED_POSITIONS):
+                card.scoring_target_x, card.scoring_target_y = SCORED_POSITIONS[scoring_sequence_index]
                 scoring_sequence_index += 1
             else:
                 card.scoring_target_x = card.x + WIDTH + 200
@@ -998,9 +1012,10 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_x += WIDTH + 200
             card.angle -= 15
         elif card.state == "scored":
-            target_y -= 500
-            target_x += WIDTH + 200
-            card.angle -= 5
+            if scoring_in_progress:
+                card.state = "scored"
+            else:
+                card.state = "discarded"
         if not card.scoring_animating:
             card.target_x = target_x
             card.target_y = target_y
@@ -1109,12 +1124,12 @@ def detect_hand(cards):
         contributing = [c for c in cards if c.value == three_value]
         return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
-        pair_values = [val for val, count in value_counts.items() if count == 2][0]
-        contributing = [c for c in cards if c.value == pair_values]
+        pair_values = [val for val, count in value_counts.items() if count == 2]
+        contributing = [c for c in cards if c.value in pair_values]
         return "Two Pair", contributing
     elif 2 in value_counts.values():
         pair_value = [val for val, count in value_counts.items() if count == 2]
-        contributing = [c for c in cards if c.value in pair_value]
+        contributing = [c for c in cards if c.value == pair_value]
         return "Pair", contributing
     else:
         high_value = max(values)
@@ -1248,8 +1263,8 @@ def sort_hand():
     elif sort_mode == "suit":
         suit_order = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1}
         hand.sort(key=lambda c: (suit_order[c.suit], c.value), reverse = True)
-    for idx, c in enumerate(hand):
-        c.slot = idx
+    for scoring_sequence_index, c in enumerate(hand):
+        c.slot = scoring_sequence_index
 
 def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
     if hand_len <= 1:
@@ -1392,8 +1407,9 @@ while running:
                     sort_mode = "suit"
                     sort_hand()
             if event.button == 3:
-                for card in hand:
-                    card.state = "hand"
+                if not scoring_in_progress:
+                    for card in hand:
+                        card.state = "hand"
         if event.type == pygame.MOUSEBUTTONUP:
             if soserious.dragging:
                 soserious.dragging = False
@@ -1465,7 +1481,7 @@ while running:
         if frame:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
     
-    selected_cards = [card for card in hand if card.state in ("selected", "played")]
+    selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
     hand_type, contributing = detect_hand(selected_cards)
     if hand_type:
         level = Hand_levels.get(hand_type, 1)
@@ -1498,6 +1514,7 @@ while running:
     text = font.render(f"{mult}", True, white)
     text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
     screen.blit(text, text_rect)
+    print(scored)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
     screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
@@ -1572,14 +1589,13 @@ while running:
         if card.state == "scoring" and card.scaling_done:
             all_contributing_done = all(c.scaling_done for c in hand if c.state == "scored")
             if all_contributing_done:
-                for c in hand:
-                    scoring_in_progress = False
-                    scored = False
+                scoring_in_progress = False
+                scored = False
         if card.state == "played" and not card.is_contributing:
             card.play_timer += 1
             if card.play_timer > 60:
                 card.state = "scored"
-        if card.state == "scored" or card.state == "discarded":
+        if card.state == "discarded":
             if card.x > WIDTH + 200:
                 index = card.slot
                 hand.remove(card)
