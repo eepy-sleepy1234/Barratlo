@@ -806,6 +806,7 @@ Hand_Chips = {
     "Straight Flush": 100,
     }
 scored = False
+scoring_in_progress = False
 contributing = []
 
 SCORED_POSITIONS = [
@@ -1348,14 +1349,15 @@ while running:
                     soserious.was_dragged = False
                 else:
                     selected_count = sum(1 for card in hand if card.state == "selected")
-                for card in reversed(hand):
-                    if card.rect.collidepoint(mouse_pos):
-                        card.dragging = True
-                        card.drag_offset_x = card.x - mouse_x
-                        card.drag_offset_y = card.y - mouse_y
-                        card.drag_start = (mouse_x, mouse_y)
-                        card.was_dragged = False
-                        break
+                if not scoring_in_progress:
+                    for card in reversed(hand):
+                        if card.rect.collidepoint(mouse_pos):
+                            card.dragging = True
+                            card.drag_offset_x = card.x - mouse_x
+                            card.drag_offset_y = card.y - mouse_y
+                            card.drag_start = (mouse_x, mouse_y)
+                            card.was_dragged = False
+                            break
                 if Playhand_rect.collidepoint(mouse_pos):
                     if hands > 0:
                         selected_cards = [card for card in hand if card.state == "selected"]
@@ -1425,24 +1427,25 @@ while running:
             if SO_SERIOUS.toggle and soserious.dragging:
                 soserious.xpos = mouse_x + soserious.drag_offset_x
                 soserious.ypos = mouse_y + soserious.drag_offset_y
-            for card in hand:
-                if getattr(card, "dragging", False) and not card.state == "played":
-                    dx = mouse_x - card.drag_start[0]
-                    dy = mouse_y - card.drag_start[1]
-                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                        card.was_dragged = True
-                        card.x = mouse_x + card.drag_offset_x
-                        card.y = mouse_y + card.drag_offset_y
-                        card.target_x = card.x
-                        card.target_y = card.y
-                        n = len(hand)
-                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
-                        current_index = hand.index(card)
-                        if new_index != current_index:
-                            hand.pop(current_index)
-                            hand.insert(new_index, card)
-                            for idx, c in enumerate(hand):
-                                c.slot = idx
+            if not scoring_in_progress:
+                for card in hand:
+                    if getattr(card, "dragging", False) and not card.state == "played":
+                        dx = mouse_x - card.drag_start[0]
+                        dy = mouse_y - card.drag_start[1]
+                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                            card.was_dragged = True
+                            card.x = mouse_x + card.drag_offset_x
+                            card.y = mouse_y + card.drag_offset_y
+                            card.target_x = card.x
+                            card.target_y = card.y
+                            n = len(hand)
+                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
+                            current_index = hand.index(card)
+                            if new_index != current_index:
+                                hand.pop(current_index)
+                                hand.insert(new_index, card)
+                                for idx, c in enumerate(hand):
+                                    c.slot = idx
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
     
