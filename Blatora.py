@@ -785,6 +785,7 @@ def animate_letters():
         if abs(StartingB.xpos - StartingB.target_x) < 1:
             letter_animation = False
 
+perm_deck = []
 deck = []
 handsize = 8
 chips = 0
@@ -927,15 +928,13 @@ class Card:
             if abs(self.vy) > 0.1:
                 self.y += self.vy
         elif self.scoring_animating:
-            tx = self.target_x
-            ty = self.target_y
             lerp_t = 0.18
-            self.x += (tx - self.x) * lerp_t
-            self.y += (ty - self.y) * lerp_t
+            self.x += (self.target_x - self.x) * lerp_t
+            self.y += (self.target_y - self.y) * lerp_t
             self.angle += (0 - self.angle) * 0.15
-            if abs(self.x - tx) < 2 and abs(self.y - ty) < 2:
-                self.x = tx
-                self.y = ty
+            if abs(self.x - self.target_x) < 2 and abs(self.y - self.target_y) < 2:
+                self.x = self.target_x
+                self.y = self.target_y
         if self.scaling:
             if self.scaling_delay < 180:
                 self.scaling_delay += 1
@@ -971,7 +970,9 @@ for root, dirs, files in os.walk(SUITS_DIR):
             name, _ = os.path.splitext(filename)
             rank, suit = name.split("Of")
             card = Card(rank, suit, image)
-            deck.append(card)
+            perm_deck.append(card)
+
+deck = perm_deck
 
 random.shuffle(deck)
 
@@ -994,10 +995,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     n = len(cards)
     if n == 0:
         return
-    contributing = globals().get("contributing", []) or []
-    contributing = [c for c in contributing if c in cards]
-    for c in cards:
-        c.is_contributing = (c in contributing)
     start_angle = -angle_range / 2
     angle_step = angle_range / (n - 1) if n > 1 else 0
     total_width = (n - 1) * spread + 80
@@ -1011,11 +1008,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= 40
         elif card.state == "played":
             if scoring_sequence_index < len(SCORED_POSITIONS):
-                card.target_x, card.target_y = SCORED_POSITIONS[scoring_sequence_index]
+                target_x, target_y = SCORED_POSITIONS[scoring_sequence_index]
                 scoring_sequence_index += 1
             else:
-                card.target_x = card.x + WIDTH + 200
-                card.target_y = card.y - 40
+                target_x = card.x + WIDTH + 200
+                target_y = card.y - 40
                 card.state = "scored"
             if card.is_contributing:
                 card.scaling = True
@@ -1039,7 +1036,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             card.state = "scored"
         card.target_x = target_x
         card.target_y = target_y
-    for card in cards:
         angle = card.angle
         scaled_w = int(card.image.get_width() * card.scale)
         scaled_h = int(card.image.get_height() * card.scale)
@@ -1440,7 +1436,7 @@ while running:
             if event.button == 1:
                 mouse_pos = event.pos
                 for card in hand:
-                    if getattr(card, "dragging", False):
+                    if getattr(card, "dragging", False) and not scoring_in_progress:
                         card.dragging = False
                         if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                             if card.state == "hand":
