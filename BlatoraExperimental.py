@@ -900,6 +900,8 @@ class Card:
         self.vx = 0
         self.vy = 0
         self.x = 0
+        self.scored_x = 0
+        self.scored_y = 0
         self.target_x = 0
         self.y = 0
         self.angle = 0
@@ -911,37 +913,30 @@ class Card:
         self.was_dragged = False
         self.is_contributing = False
         self.scoring_animating = False
+        self.scored_position_assigned = False
+        self.reached_scored_position = False
         self.idx = 0
-        
     def update(self):
         scoring_count = 1
         stiffness = 0.3
         damping = 0.7
         dx = self.target_x - self.x
         dy = self.target_y - self.y
-        
-        # Handle scoring animation with higher priority
         if self.state == "played" and self.scoring_animating:
-            lerp_t = 0.08  # Slower movement to scored position
+            lerp_t = 0.08
             self.x += (self.target_x - self.x) * lerp_t
             self.y += (self.target_y - self.y) * lerp_t
-            
-            # Smoothly rotate to 0
             if abs(self.angle) > 0.5:
-                self.angle += (0 - self.angle) * 0.10  # Slower rotation
+                self.angle += (0 - self.angle) * 0.10
             else:
                 self.angle = 0
-            
-            # Check if card has reached position
             if abs(self.x - self.target_x) < 2 and abs(self.y - self.target_y) < 2 and abs(self.angle) < 0.5:
                 self.x = self.target_x
                 self.y = self.target_y
                 self.angle = 0
-                # Mark that this card has reached its position
-                if not hasattr(self, 'reached_scored_position'):
+                if not self.reached_scored_position:
                     self.reached_scored_position = True
         elif not self.dragging:
-            # Normal spring physics for non-played cards
             self.vx += dx * stiffness
             self.vy += dy * stiffness
             self.vx *= damping
@@ -950,25 +945,21 @@ class Card:
                 self.x += self.vx
             if abs(self.vy) > 0.1:
                 self.y += self.vy
-                
-        # Handle scaling animation
         if self.scaling:
-            if self.scaling_delay < 60:  # Wait 1 second at scored position before scaling
+            if self.scaling_delay < 60:
                 self.scaling_delay += 1
             else:
                 if not self.growing:
-                    # Shrinking phase - slower
                     if self.scale > 0.51:
-                        self.scale -= 0.05  # Slower shrink
+                        self.scale -= 0.05
                         self.rotation_speed = 3
                     else:
                         self.scale = 0.5
                         self.rotation_speed = -3
                         self.growing = True
                 else:
-                    # Growing phase - slower
                     if self.scale < 1.0:
-                        self.scale += 0.05  # Slower grow
+                        self.scale += 0.05
                     else:
                         self.scale = 1.0
                         self.rotation_speed = 0
@@ -978,8 +969,6 @@ class Card:
                         self.angle = 0
                         self.state = "scored"
                         scoring_count += 1
-                        
-        # Apply rotation from scaling animation
         if self.rotation_speed != 0:
             self.angle += self.rotation_speed
 
@@ -1008,13 +997,11 @@ currentFrame = 0
 spacing = 600 / handsize
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
-    global scoring_in_progress, scoring_sequence_index, current_scoring_card_index
+    global scoring_in_progress, scoring_sequence_index
     if "scoring_in_progress" not in globals():
         scoring_in_progress = False
     if "scoring_sequence_index" not in globals():
         scoring_sequence_index = 0
-    if "current_scoring_card_index" not in globals():
-        current_scoring_card_index = 0
     n = len(cards)
     if n == 0:
         return
@@ -1027,47 +1014,37 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         t = i / (n - 1) if n > 1 else 0.5
         target_x = start_x + i * spread
         target_y = center_y - max_vertical_offset * 2 * (t - 0.5)**2 + max_vertical_offset
-        
-        # Set angle for cards in hand state
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
-            
         if card.state == "selected":
             target_y -= 40
         elif card.state == "played":
-            # Only assign position once when first entering "played" state
-            if not hasattr(card, 'scored_position_assigned') or not card.scored_position_assigned:
+            if not card.scored_position_assigned:
                 if scoring_sequence_index < len(SCORED_POSITIONS):
-                    card.scored_x, card.scored_y = SCORED_POSITIONS[scoring_sequence_index]
                     card.scored_position_assigned = True
-                    card.scoring_index = scoring_sequence_index
+                    card.scored_x, card.scored_y = SCORED_POSITIONS[scoring_sequence_index]
                     scoring_sequence_index += 1
                 else:
-                    card.scored_x = card.x + WIDTH + 200
-                    card.scored_y = card.y - 40
+                    target_x, target_y = card.x + WIDTH + 200, card.y - 40
+                    card.state = "scored"
                     card.scored_position_assigned = True
-                    card.scoring_index = 999
-            
-            target_x = card.scored_x
-            target_y = card.scored_y
-            
-            if card.is_contributing:
-                target_y -= 25
+                if card.is_contributing:
+                    target_y -= 25
+                card.idx = scoring_sequence_index
+                target_x, target_y = card.scored_x, card.scored_y
         elif card.state == "discarded":
             target_y -= 100
             target_x += WIDTH + 200
             card.angle -= 15
         elif card.state == "scored":
-            # Keep scored cards at their scored positions
-            if hasattr(card, 'scored_x'):
+            if scoring_in_progress:
+                card.state = "scored"
                 target_x = card.scored_x
                 target_y = card.scored_y - 25 if card.is_contributing else card.scored_y
-            if not scoring_in_progress:
+            else:
                 card.state = "discarded"
-                
         if card.scaling_done and card.state == "played":
             card.state = "scored"
-            
         card.target_x = target_x
         card.target_y = target_y
         angle = card.angle
@@ -1183,7 +1160,7 @@ def detect_hand(cards):
         contributing = [c for c in cards if c.value in pair_values]
         return "Two Pair", contributing
     elif 2 in value_counts.values():
-        pair_value = [val for val, count in value_counts.items() if count == 2][0]
+        pair_value = [val for val, count in value_counts.items() if count == 2]
         contributing = [c for c in cards if c.value == pair_value]
         return "Pair", contributing
     else:
@@ -1432,34 +1409,25 @@ while running:
                         selected_cards = [card for card in hand if card.state == "selected"]
                         if len(selected_cards) > 0:
                             hand_type, contributing = detect_hand(selected_cards)
-                            scoring_sequence_index = 0  # Reset before playing
-                            
-                            # Sort contributing cards by their eventual scoring_index
-                            selected_cards_sorted = sorted(selected_cards, key=lambda c: hand.index(c))
-                            
-                            for card in selected_cards_sorted:
-                                card.state = "played"
-                                card.play_timer = 0
-                                card.scaling_delay = 0
-                                card.is_contributing = False
-                                card.scaling_done = False
-                                card.scoring_animating = True  # Enable scoring animation
-                                card.scored_position_assigned = False  # Reset flag
-                                card.scale = 1.0
-                                card.rotation_speed = 0
-                                card.growing = False
-                                card.scaling = False
-                                card.reached_scored_position = False
-                            for card in contributing:
-                                card.is_contributing = True
-                            
-                            # Reset the current scoring card index
-                            global current_scoring_card_index
-                            current_scoring_card_index = 0
-                            
-                            hands -= 1
-                            if contributing:
-                                scoring_in_progress = True
+                        for card in selected_cards:
+                            card.state = "played"
+                            card.play_timer = 0
+                            card.scaling_delay = 0
+                            card.is_contributing = False
+                            card.scaling_done = False
+                            card.scoring_animating = True
+                            card.scored_position_assigned = False
+                            card.scale = 1.0
+                            card.rotation_speed = 0
+                            card.growing = False
+                            card.scaling = False
+                            card.reached_scored_position = False
+                        for card in contributing:
+                            card.is_contributing = True
+                        hands -= 1
+                        if contributing:
+                            scoring_in_progress = True
+                            scoring_sequence_index = 0
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
                     if discards > 0 and not scoring_in_progress:
@@ -1645,7 +1613,7 @@ while running:
     
 
         
-    pygame.display.flip()
+    pygame.display.flip()   ###########################################################
     clock.tick(60)
     currentFrame += 1
 
@@ -1653,21 +1621,15 @@ while running:
 
     for card in hand:
         card.update()
-        
-        # Sequential scoring logic - only allow one card to score at a time
         if card.state == "played" and card.is_contributing:
-            # Check if this card should start scoring
-            if hasattr(card, 'scoring_index') and hasattr(card, 'reached_scored_position'):
+            if card.reached_scored_position:
                 if card.reached_scored_position and not card.scaling and not card.scaling_done:
-                    # Check if this is the current card that should be scoring
-                    contributing_cards = sorted([c for c in hand if c.is_contributing and c.state == "played"], 
-                                               key=lambda c: c.scoring_index if hasattr(c, 'scoring_index') else 999)
+                    contributing_cards = [c for c in hand if c.is_contributing and c.state == "played"], 
+                    key=lambda c: c.scoring_index
                     
                     if len(contributing_cards) > 0:
-                        # Find the first card that hasn't started scaling yet
                         for contrib_card in contributing_cards:
                             if not contrib_card.scaling and not contrib_card.scaling_done and contrib_card.reached_scored_position:
-                                # This is the next card to score
                                 if contrib_card == card:
                                     card.scaling = True
                                     card.scaling_delay = 0
