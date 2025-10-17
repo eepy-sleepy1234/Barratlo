@@ -793,6 +793,7 @@ mult = 0
 current_score = 0
 round_score = 0
 scored_counter = 0
+total_scoring_count = 0
 hands = 4
 discards = 4
 DRAG_THRESHOLD = 10
@@ -843,6 +844,7 @@ Hand_Chips = {
     }
 scored = False
 scoring_in_progress = False
+calculating = False
 contributing = []
 
 SCORED_POSITIONS = [
@@ -901,6 +903,8 @@ class Card:
         self.vy = 0
         self.x = 0
         self.target_x = 0
+        self.scoring_x = 0
+        self.scoring_y = 0
         self.y = 0
         self.angle = 0
         self.target_y = 0
@@ -913,7 +917,7 @@ class Card:
         self.scoring_animating = False
         self.idx = 0
     def update(self):
-        scoring_count = 1
+        scoring_count = 0
         stiffness = 0.3
         damping = 0.7
         dx = self.target_x - self.x
@@ -956,11 +960,14 @@ class Card:
                         self.scaling = False
                         self.growing = False
                         self.scaling_done = True
+                        self.scoring_animating = False
                         self.scaling_delay = 10
                         self.angle = 0
-                        self.state = "scored"
                         scoring_count += 1
+                        self.state = "scored"
+                        print("scored")
         self.angle += self.rotation_speed
+        return scoring_count
 
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
@@ -1008,16 +1015,12 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= 40
         elif card.state == "played":
             if scoring_sequence_index < len(SCORED_POSITIONS):
-                target_x, target_y = SCORED_POSITIONS[scoring_sequence_index]
+                card.scoring_x, card.scoring_y = SCORED_POSITIONS[scoring_sequence_index]
                 scoring_sequence_index += 1
-            else:
-                target_x = card.x + WIDTH + 200
-                target_y = card.y - 40
-                card.state = "scored"
+                card.angle = 0
             if card.is_contributing:
                 card.scaling = True
                 card.scoring_animating = True
-                target_y -= 25
             else:
                 card.waiting = True
             card.idx = scoring_sequence_index
@@ -1032,8 +1035,13 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 card.state = "discarded"
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
-        if card.scaling_done:
-            card.state = "scored"
+        if card.scoring_x != 0:
+            if card.is_contributing:
+                if card.scoring_y == HEIGHT//2 - 50:
+                    card.scoring_y -= 25
+            target_x, target_y = card.scoring_x, card.scoring_y
+            if not card.scaling:
+                card.angle = 0
         card.target_x = target_x
         card.target_y = target_y
         angle = card.angle
@@ -1410,7 +1418,7 @@ while running:
                         hands -= 1
                         if contributing:
                             scoring_in_progress = True
-                            scoring_sequence_index = 0
+                        scoring_sequence_index = 0
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
                     if discards > 0 and not scoring_in_progress:
@@ -1454,8 +1462,9 @@ while running:
                         t = i / (n - 1) if n > 1 else 0.5
                         slot_target_x = start_x + i * spread_local
                         slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset
-                        card.target_x = slot_target_x
-                        card.target_y = slot_target_y
+                        if not card.state == "played":
+                            card.target_x = slot_target_x
+                            card.target_y = slot_target_y
                         card.vx = 0
                         card.vy = 0
         if event.type == pygame.MOUSEMOTION:
@@ -1513,10 +1522,10 @@ while running:
         base_mult = 0
     chips = base_chips * level
     mult = base_mult * level
-    current_score = chips * mult
+    final_score = chips * mult
     screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
     font = pygame.font.SysFont(None, 40)
-    if not scored:
+    if not calculating:
         text = font.render(hand_type, True, white)
     else:
         text = font.render(f"{current_score}", True, white)
@@ -1600,15 +1609,16 @@ while running:
     clock.tick(60)
     currentFrame += 1
 
-
-
     for card in hand:
-        card.update()
-        if card.state == "played" and card.scaling_done:
-            all_contributing_done = all(c.scaling_done for c in hand if c.state == "scored")
-            if all_contributing_done:
+        scoring_count = card.update()
+        if scoring_count == 1:
+            total_scoring_count += 1
+        if card.state in ("played", "scored"):
+            if total_scoring_count == len(contributing):
+                card.scoring_x, card.scoring_y = 0, 0
                 scoring_in_progress = False
                 scored = True
+                card.state = "discarded"
         if card.state == "discarded":
             if card.x > WIDTH + 200:
                 index = card.slot
@@ -1622,6 +1632,17 @@ while running:
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
                     sort_hand()
+
+    if scored:
+        calculating = True
+        while current_score != final_score:
+            current_score += final_score / 10
+            chips -= chips / 10
+            mult -= mult / 10
+        scored = False
+        if current_score == final_score:
+            calculating = False
+            
 
 close_video()
 pygame.quit()
