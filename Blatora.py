@@ -965,7 +965,6 @@ class Card:
                         self.angle = 0
                         scoring_count += 1
                         self.state = "scored"
-                        print("scored")
         self.angle += self.rotation_speed
         return scoring_count
 
@@ -1416,6 +1415,7 @@ while running:
                         for card in contributing:
                             card.is_contributing = True
                         hands -= 1
+                        total_scoring_count = 0
                         if contributing:
                             scoring_in_progress = True
                         scoring_sequence_index = 0
