@@ -797,7 +797,13 @@ total_scoring_count = 0
 hands = 4
 discards = 4
 DRAG_THRESHOLD = 10
+calc_progress = 0.0
+saved_base_chips  = 0
+saved_base_mult = 0
+saved_level = 0
 sort_mode = "rank"
+scoring_queue = []
+current_scoring_card = None
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -884,6 +890,7 @@ class Card:
         self.scaling = False
         self.growing = False
         self.scaling_done = False
+        self.scoring_complete = False
         self.rank = rank
         self.suit = suit
         self.value = RANK_VALUES[rank]
@@ -964,7 +971,13 @@ class Card:
                         self.scaling_delay = 10
                         self.angle = 0
                         scoring_count += 1
-                        self.state = "scored"
+                        if self.is_contributing:
+                            global saved_base_chips
+                            saved_base_chips += self.chip_value
+                            self.state = "scored"
+                            self.scoring_complete = True
+                        else:
+                            self.state = "discarded"
         self.angle += self.rotation_speed
         return scoring_count
 
@@ -1156,7 +1169,7 @@ def detect_hand(cards):
         contributing = [c for c in cards if c.value in pair_values]
         return "Two Pair", contributing
     elif 2 in value_counts.values():
-        pair_value = [val for val, count in value_counts.items() if count == 2]
+        pair_value = [val for val, count in value_counts.items() if count == 2][0]
         contributing = [c for c in cards if c.value == pair_value]
         return "Pair", contributing
     else:
@@ -1405,6 +1418,10 @@ while running:
                         selected_cards = [card for card in hand if card.state == "selected"]
                         if len(selected_cards) > 0:
                             hand_type, contributing = detect_hand(selected_cards)
+                            saved_base_chips = Hand_Chips.get(hand_type, 0)
+                            saved_base_mult = Hand_Mult.get(hand_type, 1)
+                            saved_level = Hand_levels.get(hand_type, 1)
+                        scoring_queue = contributing.copy()
                         for card in selected_cards:
                             card.state = "played"
                             card.play_timer = 0
@@ -1412,6 +1429,7 @@ while running:
                             card.is_contributing = False
                             card.scaling_done = False
                             card.scoring_animating = False
+                            card.scoring_complete = False
                         for card in contributing:
                             card.is_contributing = True
                         hands -= 1
@@ -1509,20 +1527,23 @@ while running:
         VIDEO_Y += VideoVelocityY
         if frame:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
-    
-    selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
-    hand_type, contributing = detect_hand(selected_cards)
-    if hand_type:
-        level = Hand_levels.get(hand_type, 1)
-        base_chips = Hand_Chips.get(hand_type, 0)
-        base_mult = Hand_Mult.get(hand_type, 1)
-    else:
-        level = 0
-        base_chips = 0
-        base_mult = 0
-    chips = base_chips * level
-    mult = base_mult * level
-    final_score = chips * mult
+    if not calculating:
+        selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
+        if len(selected_cards) > 0:
+            hand_type, contributing = detect_hand(selected_cards)
+        else:
+            hand_type, contributing = None, None
+        if hand_type:
+            level = Hand_levels.get(hand_type, 1)
+            base_chips = Hand_Chips.get(hand_type, 0)
+            base_mult = Hand_Mult.get(hand_type, 1)
+        else:
+            level = 0
+            base_chips = 0
+            base_mult = 0
+        chips = base_chips * level
+        mult = base_mult * level
+        final_score = chips * mult
     screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
@@ -1610,17 +1631,9 @@ while running:
     currentFrame += 1
 
     for card in hand:
-        scoring_count = card.update()
-        if scoring_count == 1:
-            total_scoring_count += 1
-        if card.state in ("played", "scored"):
-            if total_scoring_count == len(contributing):
-                card.scoring_x, card.scoring_y = 0, 0
-                scoring_in_progress = False
-                scored = True
-                card.state = "discarded"
+        card.update()
         if card.state == "discarded":
-            if card.x > WIDTH + 200:
+            if not calculating and card.x > WIDTH + 200:
                 index = card.slot
                 hand.remove(card)
                 for c in hand:
@@ -1632,15 +1645,43 @@ while running:
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
                     sort_hand()
+    if scoring_in_progress:
+        completed_count = sum(1 for c in hand if c.scoring_complete and c.is_contributing)
+        if completed_count == len(contributing):
+            for c in hand:
+                if c.state in ("played", "scored"):
+                    c.scoring_x, card.scoring_y = 0, 0
+                    c.state = "scored"
+                    c.target_x = c.x
+                    c.target_y = c.y
+                    c.vx = 0
+                    c.vy = 0
+            scoring_in_progress = False
+            scored = True
 
     if scored:
         calculating = True
-        while current_score != final_score:
-            current_score += final_score / 10
-            chips -= chips / 10
-            mult -= mult / 10
         scored = False
-        if current_score == final_score:
+        calc_progress = 0.0
+    if calculating:
+        if calc_progress < 1.0:
+            calc_progress += 1.0 / 300
+            ease_progress = 1.0 - (1.0 - calc_progress) ** 2
+            current_score = round(final_score * ease_progress)
+            chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
+            mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
+            if calc_progress >= 1.0:
+                calc_progress = 1.0
+                current_score = final_score
+                chips = 0
+                mult = 0
+                calculating = False
+                for c in hand:
+                    if c.state == "scored":
+                        c.state = "discarded"
+                        c.scoring_complete = False
+                        c.is_contributing = False
+        else:
             calculating = False
             
 
