@@ -1,5 +1,11 @@
 import os
-import pygame
+try:
+    import pygame
+except ImportError:
+    print("pygame not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pygame"])
+    import pygame
+    print("Installed pygame")
 import random
 import math
 from collections import Counter
@@ -801,8 +807,8 @@ calc_progress = 0.0
 saved_base_chips  = 0
 saved_base_mult = 0
 saved_level = 0
+saved_hand = None
 sort_mode = "rank"
-scoring_queue = []
 current_scoring_card = None
 Hand_levels = {
     "High Card": 1,
@@ -947,7 +953,7 @@ class Card:
                 self.x = self.target_x
                 self.y = self.target_y
         if self.scaling:
-            if self.scaling_delay < 180:
+            if self.scaling_delay < 60:
                 self.scaling_delay += 1
             else:
                 if not self.growing:
@@ -974,12 +980,56 @@ class Card:
                         if self.is_contributing:
                             global saved_base_chips
                             saved_base_chips += self.chip_value
+                            indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
+                            chip_indicators.append(indicator)
                             self.state = "scored"
                             self.scoring_complete = True
                         else:
                             self.state = "discarded"
         self.angle += self.rotation_speed
         return scoring_count
+
+chip_indicators = []
+class ChipIndicator:
+    def __init__(self, x, y, chip_value):
+        self.x = x
+        self.y = y
+        self.start_y = y
+        self.chip_value = chip_value
+        self.alpha = 255
+        self.lifetime = 60
+        self.age = 0
+    def update(self):
+        self.age += 1
+        self.y = self.start_y - (self.age * 0.1)
+        if self.age > 40:
+            self.alpha = int(255 * (1 - (self.age - 40) / 20))
+        return self.age < self.lifetime
+    def draw(self, surface):
+        diamond_size = 60
+        half = diamond_size//2
+        diamond_points = [
+            (self.x, self.y - half),
+            (self.x + half, self.y),
+            (self.x, self.y + half),
+            (self.x - half, self.y)
+            ]
+        angle = math.radians(45)
+        rotated_points = []
+        for px, py in diamond_points:
+            new_x = px * math.cos(angle) - py * math.sin(angle)
+            new_y = px * math.sin(angle) + py * math.sin(angle)
+            rotated_points.append((new_x + self.x, new_y + self.y))
+        diamond_surface = pygame.Surface((diamond_size * 2, diamond_size * 2), pygame.SRCALPHA)
+        adjusted_points = [(p[0] - self.x + diamond_size, p[1] - self.y + diamond_size) for p in rotated_points]
+        pygame.draw.polygon(diamond_surface, (0, 100, 255, self.alpha), adjusted_points)
+        diamond_surface.set_alpha(self.alpha)
+        surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
+        font = pygame.font.SysFont(None, 24)
+        text = font.render(f"+{self.chip_value}", True, (255, 255, 255))
+        text.set_alpha(self.alpha)
+        text_rect = text.get_rect(center=(self.x, self.y))
+        surface.blit(text, text_rect)
 
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
@@ -1026,12 +1076,12 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         if card.state == "selected":
             target_y -= 40
         elif card.state == "played":
-            if scoring_sequence_index < len(SCORED_POSITIONS):
-                card.scoring_x, card.scoring_y = SCORED_POSITIONS[scoring_sequence_index]
-                scoring_sequence_index += 1
-                card.angle = 0
+            if card.scoring_x == 0:
+                if scoring_sequence_index < len(SCORED_POSITIONS):
+                    card.scoring_x, card.scoring_y = SCORED_POSITIONS[scoring_sequence_index]
+                    scoring_sequence_index += 1
+                    card.angle = 0
             if card.is_contributing:
-                card.scaling = True
                 card.scoring_animating = True
             else:
                 card.waiting = True
@@ -1323,6 +1373,7 @@ overlay.set_alpha(128)
 
 
 while running:
+    global scoring_queue
     question.should_draw = True 
     mouse_pos = pygame.mouse.get_pos()
     
@@ -1418,24 +1469,28 @@ while running:
                         selected_cards = [card for card in hand if card.state == "selected"]
                         if len(selected_cards) > 0:
                             hand_type, contributing = detect_hand(selected_cards)
-                            saved_base_chips = Hand_Chips.get(hand_type, 0)
+                            saved_base_chips = (Hand_Chips.get(hand_type, 0) * Hand_levels.get(hand_type, 1))
                             saved_base_mult = Hand_Mult.get(hand_type, 1)
                             saved_level = Hand_levels.get(hand_type, 1)
+                            saved_hand = hand_type
                         scoring_queue = contributing.copy()
                         for card in selected_cards:
                             card.state = "played"
                             card.play_timer = 0
                             card.scaling_delay = 0
-                            card.is_contributing = False
+                            card.is_contributing = card in contributing
                             card.scaling_done = False
                             card.scoring_animating = False
                             card.scoring_complete = False
+                            card.scaling = False
                         for card in contributing:
                             card.is_contributing = True
                         hands -= 1
                         total_scoring_count = 0
                         if contributing:
                             scoring_in_progress = True
+                            if scoring_queue:
+                                scoring_queue[0].scaling = True
                         scoring_sequence_index = 0
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
@@ -1543,11 +1598,14 @@ while running:
             base_mult = 0
         chips = base_chips * level
         mult = base_mult * level
-        final_score = chips * mult
+        final_score = saved_base_chips * saved_base_mult
     screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
-        text = font.render(hand_type, True, white)
+        if scoring_in_progress:
+            text = font.render(saved_hand, True, white)
+        else:
+            text = font.render(hand_type, True, white)
     else:
         text = font.render(f"{current_score}", True, white)
     text_rect = text.get_rect(center=(140, 20 + HEIGHT / 3))
@@ -1558,10 +1616,16 @@ while running:
     text = font.render(f"{discards}", True, white)
     text_rect = text.get_rect(center=(205, HEIGHT / 1.79))
     screen.blit(text, text_rect)
-    text = font.render(f"{chips}", True, white)
+    if scoring_in_progress or calculating:
+        text = font.render(f"{saved_base_chips}", True, white)
+    else:
+        text = font.render(f"{chips}", True, white)
     text_rect = text.get_rect(center=(80, HEIGHT / 2.45))
     screen.blit(text, text_rect)
-    text = font.render(f"{mult}", True, white)
+    if scoring_in_progress or calculating:
+        text = font.render(f"{saved_base_mult}", True, white)
+    else:
+        text = font.render(f"{mult}", True, white)
     text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
     screen.blit(text, text_rect)
 
@@ -1625,7 +1689,10 @@ while running:
         screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
     
 
-        
+    chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
+    for indicator in chip_indicators:
+        indicator.draw(screen)
+    
     pygame.display.flip()   ###########################################################
     clock.tick(60)
     currentFrame += 1
@@ -1633,7 +1700,7 @@ while running:
     for card in hand:
         card.update()
         if card.state == "discarded":
-            if not calculating and card.x > WIDTH + 200:
+            if not calculating and not scoring_in_progress and card.x > WIDTH + 200:
                 index = card.slot
                 hand.remove(card)
                 for c in hand:
@@ -1646,18 +1713,25 @@ while running:
                     hand.append(new_card)
                     sort_hand()
     if scoring_in_progress:
-        completed_count = sum(1 for c in hand if c.scoring_complete and c.is_contributing)
-        if completed_count == len(contributing):
-            for c in hand:
-                if c.state in ("played", "scored"):
-                    c.scoring_x, card.scoring_y = 0, 0
-                    c.state = "scored"
-                    c.target_x = c.x
-                    c.target_y = c.y
-                    c.vx = 0
-                    c.vy = 0
-            scoring_in_progress = False
-            scored = True
+        if scoring_in_progress:
+            if len(scoring_queue) == 0:
+                for c in hand:
+                    if c.state in ("played", "scored"):
+                        c.scoring_x, card.scoring_y = 0, 0
+                        c.state = "scored"
+                        c.target_x = c.x
+                        c.target_y = c.y
+                        c.vx = 0
+                        c.vy = 0
+                scoring_in_progress = False
+                scored = True
+
+    if scoring_in_progress and scoring_queue:
+        current_card = scoring_queue[0]
+        if current_card.scoring_complete:
+            scoring_queue.pop(0)
+            if len(scoring_queue) > 0:
+                scoring_queue[0].scaling = True
 
     if scored:
         calculating = True
@@ -1668,8 +1742,8 @@ while running:
             calc_progress += 1.0 / 300
             ease_progress = 1.0 - (1.0 - calc_progress) ** 2
             current_score = round(final_score * ease_progress)
-            chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
-            mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
+            saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
+            saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
             if calc_progress >= 1.0:
                 calc_progress = 1.0
                 current_score = final_score
