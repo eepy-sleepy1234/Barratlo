@@ -857,6 +857,8 @@ Hand_Chips = {
 scored = False
 scoring_in_progress = False
 calculating = False
+discarding = False
+drawing = False
 contributing = []
 
 SCORED_POSITIONS = [
@@ -1014,18 +1016,19 @@ class ChipIndicator:
             (self.x, self.y + half),
             (self.x - half, self.y)
             ]
-        angle = math.radians(45)
+        angle = math.radians(3)
         rotated_points = []
         for px, py in diamond_points:
-            new_x = px * math.cos(angle) - py * math.sin(angle)
-            new_y = px * math.sin(angle) + py * math.sin(angle)
+            dx, dy = px - self.x, py - self.y
+            new_x = dx * math.cos(angle) - dy * math.sin(angle)
+            new_y = dx * math.sin(angle) + dy * math.cos(angle)
             rotated_points.append((new_x + self.x, new_y + self.y))
         diamond_surface = pygame.Surface((diamond_size * 2, diamond_size * 2), pygame.SRCALPHA)
         adjusted_points = [(p[0] - self.x + diamond_size, p[1] - self.y + diamond_size) for p in rotated_points]
         pygame.draw.polygon(diamond_surface, (0, 100, 255, self.alpha), adjusted_points)
         diamond_surface.set_alpha(self.alpha)
         surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
-        font = pygame.font.SysFont(None, 24)
+        font = pygame.font.SysFont(None, 48)
         text = font.render(f"+{self.chip_value}", True, (255, 255, 255))
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
@@ -1090,11 +1093,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= 100
             target_x += WIDTH + 200
             card.angle -= 15
-        elif card.state == "scored":
-            if scoring_in_progress:
-                card.state = "scored"
-            else:
-                card.state = "discarded"
+                
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
         if card.scoring_x != 0:
@@ -1373,6 +1372,7 @@ overlay.set_alpha(128)
 
 
 while running:
+    global discard_queue
     global scoring_queue
     question.should_draw = True 
     mouse_pos = pygame.mouse.get_pos()
@@ -1496,11 +1496,11 @@ while running:
                 if Discardhand_rect.collidepoint(mouse_pos):
                     if discards > 0 and not scoring_in_progress:
                         lerp_factor = 0.3
+                        discard_timer = 0
                         to_discard = [card for card in hand if card.state == "selected"]
-                        for card in to_discard:
-                           card.state = "discarded"
-                        if len(to_discard) > 0:
-                            discards -= 1
+                        discard_queue = to_discard
+                        discarding = True
+                        discards -= 1
                 if SortbuttonRank_rect.collidepoint(mouse_pos):
                     sort_mode = "rank"
                     sort_hand()
@@ -1717,7 +1717,6 @@ while running:
             if len(scoring_queue) == 0:
                 for c in hand:
                     if c.state in ("played", "scored"):
-                        c.scoring_x, card.scoring_y = 0, 0
                         c.state = "scored"
                         c.target_x = c.x
                         c.target_y = c.y
@@ -1750,13 +1749,26 @@ while running:
                 chips = 0
                 mult = 0
                 calculating = False
+                discard_queue = []
+                discard_timer = 0
                 for c in hand:
                     if c.state == "scored":
-                        c.state = "discarded"
+                        c.scoring_x, c.scoring_y = 0, 0
                         c.scoring_complete = False
                         c.is_contributing = False
+                        discard_queue.append(c)
+                discarding = True
+
+    if discarding:
+        if discard_queue:
+            if discard_timer >= 2:
+                discard_queue[0].state = "discarded"
+                discard_queue.pop(0)
+                discard_timer = 0
+            else:
+                discard_timer += 1
         else:
-            calculating = False
+            discarding = False
             
 
 close_video()
