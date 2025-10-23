@@ -69,6 +69,7 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
             return surf
         
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
+PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
 toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
@@ -1029,7 +1030,7 @@ class ChipIndicator:
         diamond_surface.set_alpha(self.alpha)
         surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
         font = pygame.font.SysFont(None, 48)
-        text = font.render(f"+{self.chip_value}", True, (255, 255, 255))
+        text = PixelFont.render(f"+{self.chip_value}", True, (255, 255, 255))
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
         surface.blit(text, text_rect)
@@ -1603,29 +1604,29 @@ while running:
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
-            text = font.render(saved_hand, True, white)
+            text = PixelFontS.render(saved_hand, True, white)
         else:
-            text = font.render(hand_type, True, white)
+            text = PixelFontS.render(hand_type, True, white)
     else:
-        text = font.render(f"{current_score}", True, white)
+        text = PixelFontS.render(f"{current_score}", True, white)
     text_rect = text.get_rect(center=(140, 20 + HEIGHT / 3))
     screen.blit(text, text_rect)
-    text = font.render(f"{hands}", True, white)
+    text = PixelFontS.render(f"{hands}", True, white)
     text_rect = text.get_rect(center=(70, HEIGHT / 1.79))
     screen.blit(text, text_rect)
-    text = font.render(f"{discards}", True, white)
+    text = PixelFontS.render(f"{discards}", True, white)
     text_rect = text.get_rect(center=(205, HEIGHT / 1.79))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
-        text = font.render(f"{saved_base_chips}", True, white)
+        text = PixelFontS.render(f"{saved_base_chips}", True, white)
     else:
-        text = font.render(f"{chips}", True, white)
+        text = PixelFontS.render(f"{chips}", True, white)
     text_rect = text.get_rect(center=(80, HEIGHT / 2.45))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
-        text = font.render(f"{saved_base_mult}", True, white)
+        text = PixelFontS.render(f"{saved_base_mult}", True, white)
     else:
-        text = font.render(f"{mult}", True, white)
+        text = PixelFontS.render(f"{mult}", True, white)
     text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
     screen.blit(text, text_rect)
 
