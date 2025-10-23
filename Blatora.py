@@ -48,6 +48,7 @@ FONTS_DIR = os.path.join(ASSETS_DIR, "Fonts")
 SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
 TEXT_PATH = os.path.join(ASSETS_DIR, "Text")
+BLINDS_DIR = os.path.join(GUI_DIR, "Blinds")
 
 
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
@@ -859,7 +860,10 @@ scored = False
 scoring_in_progress = False
 calculating = False
 discarding = False
-drawing = False
+Round = 1
+Ante = 0
+blind_defeated = False
+target_score = 300
 contributing = []
 
 SCORED_POSITIONS = [
@@ -1167,6 +1171,104 @@ settingsButton = Joker_Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,
 soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 
+class Blind:
+    def __init__(self, name, image, x, y):
+        self.name = name
+        self.image = image
+        self.x = x
+        self.y = y
+        self.target_x = x
+        self.target_y = y
+        self.vx = 0
+        self.vy = 0
+        self.dragging = False
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        self.was_dragged = False
+        self.rect = image.get_rect()
+        self.rect.topleft = (x, y)
+        self.drag_start = (0, 0)
+    def update(self):
+        stiffness = 0.3
+        damping = 0.7
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        if not self.dragging:
+            self.vx += dx * stiffness
+            self.vy += dy * stiffness
+            self.vx *= damping
+            self.vy *= damping
+            if abs(self.vx) > 0.1:
+                self.x += self.vx
+            if abs(self.y) > 0.1:
+                self.y += self.vy
+        self.rect.topleft = (int(self.x), int(self.y))
+    def draw(self, surface):
+        surface.blit(self.image, (int(self.x), int(self.y)))
+
+small_blind = None
+big_blind = None
+boss_blinds = []
+for root, dirs, files in os.walk(BLINDS_DIR):
+    for filename in files:
+        if filename.endswith(".png"):
+            filepath = os.path.join(root, filename)
+            blind_name = os.path.splitext(filename)[0]
+            image = pygame.transform.scale(load_image_safe(filepath), (100, 100))
+            if "Small" in blind_name:
+                small_blind = Blind(blind_name, image, 100, 100, "small")
+            elif "Big" in blind_name:
+                big_blind = Blind(blind_name, image, 100, 100, "big")
+            else:
+                blind_obj = Blind(blind_name, image, 100, 100, "boss")
+            blind_obj = Blind(blind_name, image, 100, 100)
+            blind_objects.append(blind_obj)
+current_blind = None
+def calculate_target_score(ante, round_num):
+    base_score = 300
+    multipliers = {1: 0.5, 2: 1.0, 3: 1.5, 4: 2.0}
+    ante_scaling = 1.5
+    return int(base_score * multipliers[round_num] * (ante_scaling) ** (ante - 1))
+def get_current_blind():
+    global round_num, ante, current_blind, target_score
+    if round_num == 1:
+        if small_blind:
+            current_blind = small_blind
+        current_blind.blind_type = "small"
+    elif round_num == 2:
+        if big_blind:
+            current_blind = big_blind
+        current_blind.blind_type = "big"
+    elif round_num == 3:
+        if boss_blinds:
+            current_blind = random.choice(boss_blinds)
+        current_blind_type = "boss"
+    if current_blind:
+        current_blind.x = BLIND_X
+        current_blind.y = BLIND_Y
+        current_blind.target_x = BLIND_X
+        current_blind.target_y = BLIND_Y
+        current_blind.vx = 0
+        current_blind.vy = 0
+        current_blind.score_required = calculate_target_score(ante, round_num)
+        target_score = current_blind.score_required
+def advance_to_next_blind():
+    global round_num, ante, hands, discards, current_score
+    round_num += 1
+    if round_num > 3:
+        round_num = 1
+        ante += 1
+    current_score = 0
+    hands = 4
+    discards = 4
+    get_next_blind()
+def check_blind_defeated():
+    global blind_defeated, current_score
+    if current_blind and current_score >= current_blind.score_required:
+        blind_defeated = True
+        return True
+    return False
+get_current_blind()
 
 def detect_hand(cards):
     n = len(cards)
@@ -1257,6 +1359,9 @@ while startGame == False:
         if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
             hovering = True
             break
+    current_blind = get_current_blind()
+    if current_blind and current_blind.collidepoint(cursor_pos):
+        hovering = True
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -1410,6 +1515,13 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_x, mouse_y = mouse_pos
+                current_blind = get_current_blind()
+                if current_blind and current_blind.rect.collidepoint(mouse_pos):
+                    current_blind.dragging = True
+                    current_blind.drag_offset_x = current_blind.x - mouse_x
+                    current_blind.drag_offset_y = current_blind.y - mouse_y
+                    current_blind.drag_start = (mouse_x, mouse_y)
+                    current_blind.was_dragged = False
 
                 if help_menu and xbutton_rect.collidepoint(event.pos):
                     help_menu = False
@@ -1439,15 +1551,7 @@ while running:
                                 toggle.toggle = False
                             if toggle == helpButton:
                                 help_menu = True
-                            
-
-                            
-                        
-
                     
-                    
-                    
-
                 if SO_SERIOUS.toggle and soserious.rect.collidepoint(mouse_pos):
                     soserious.dragging = True
                     soserious.drag_offset_x = soserious.xpos - mouse_x
@@ -1516,6 +1620,13 @@ while running:
             if soserious.dragging:
                 soserious.dragging = False
             if event.button == 1:
+                current_blind = get_current_blind()
+                if current_blind and current_blind.dragging:
+                    current_blind.dragging = False
+                    current_blind.target_x = 100
+                    current_blind.target_y = 100
+                    current_blind.vx = 0
+                    current_blind.vy = 0
                 mouse_pos = event.pos
                 for card in hand:
                     if getattr(card, "dragging", False) and not scoring_in_progress:
@@ -1543,6 +1654,16 @@ while running:
                         card.vy = 0
         if event.type == pygame.MOUSEMOTION:
             mouse_x, mouse_y = event.pos
+            current_blind = get_current_blind()
+            if current_blind and current_blind.dragging:
+                dx = mouse_x - current_blind.drag_start[0]
+                dy = mouse_y - current_blind.drag_start[1]
+                if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                    current_blind.was_dragged = True
+                    current_blind.x = mouse_x + current_blind.drag_offset_x
+                    current_blind.y = mouse_y + current_blind.drag_offset_y
+                    current_blind.target_x = current_blind.x
+                    current_blind.target_y = current_blind.y
             if SO_SERIOUS.toggle and soserious.dragging:
                 soserious.xpos = mouse_x + soserious.drag_offset_x
                 soserious.ypos = mouse_y + soserious.drag_offset_y
@@ -1693,6 +1814,11 @@ while running:
     chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
     for indicator in chip_indicators:
         indicator.draw(screen)
+
+    current_blind = get_current_blind()
+    if current_blind:
+        current_blind.update()
+        current_blind.draw(screen)
     
     pygame.display.flip()   ###########################################################
     clock.tick(60)
