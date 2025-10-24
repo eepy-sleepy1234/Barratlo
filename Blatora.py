@@ -184,7 +184,8 @@ Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Pla
 Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
 SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
-HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 150))
+HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 105))
+ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (240, 75))
 SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
@@ -383,7 +384,7 @@ def draw_settings():
 
 
         
-  
+dev_selection = True
 blitting = False    
 def blit_img():
     global blitting
@@ -562,7 +563,7 @@ def blit_img():
                 print("Available ranks: Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace")
                 print("Available suits: Hearts, Diamonds, Clubs, Spades")
                 print("Enter cards one at a time. Type 'done' when finished.")
-                
+                dev_selection = True
 
                 hand.clear()
                 
@@ -860,11 +861,15 @@ scored = False
 scoring_in_progress = False
 calculating = False
 discarding = False
-Round = 1
-Ante = 0
+round_num = 1
+ante = 0
 blind_defeated = False
 target_score = 300
 contributing = []
+BLIND_X = 25
+BLIND_Y = 25
+total_score = 0
+saved_total_score = 0
 
 SCORED_POSITIONS = [
     (WIDTH//2 - 150, HEIGHT//2 - 50),
@@ -895,7 +900,7 @@ RANK_VALUES = {
 
 class Card:
     card_id_counter = 0
-    def __init__(self, rank, suit, image, slot=None):
+    def __init__(self, rank, suit, image, slot=None, state="hand"):
         self.image = image
         self.scale= 1.0
         self.rotation_speed = 0
@@ -917,7 +922,7 @@ class Card:
             self.chip_value = self.value
         self.name = f"{rank} of {suit}"
         self.rect = image.get_rect()
-        self.state = "hand"
+        self.state = state
         self.slot = slot
         self.vx = 0
         self.vy = 0
@@ -1172,7 +1177,7 @@ soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5),
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 
 class Blind:
-    def __init__(self, name, image, x, y):
+    def __init__(self, name, image, x, y, state):
         self.name = name
         self.image = image
         self.x = x
@@ -1189,8 +1194,8 @@ class Blind:
         self.rect.topleft = (x, y)
         self.drag_start = (0, 0)
     def update(self):
-        stiffness = 0.3
-        damping = 0.7
+        stiffness = 0.5
+        damping = 0.4
         dx = self.target_x - self.x
         dy = self.target_y - self.y
         if not self.dragging:
@@ -1200,7 +1205,7 @@ class Blind:
             self.vy *= damping
             if abs(self.vx) > 0.1:
                 self.x += self.vx
-            if abs(self.y) > 0.1:
+            if abs(self.vy) > 0.1:
                 self.y += self.vy
         self.rect.topleft = (int(self.x), int(self.y))
     def draw(self, surface):
@@ -1216,13 +1221,12 @@ for root, dirs, files in os.walk(BLINDS_DIR):
             blind_name = os.path.splitext(filename)[0]
             image = pygame.transform.scale(load_image_safe(filepath), (100, 100))
             if "Small" in blind_name:
-                small_blind = Blind(blind_name, image, 100, 100, "small")
+                small_blind = Blind(blind_name, image, -150, -150, "small")
             elif "Big" in blind_name:
-                big_blind = Blind(blind_name, image, 100, 100, "big")
+                big_blind = Blind(blind_name, image, -150, -150, "big")
             else:
-                blind_obj = Blind(blind_name, image, 100, 100, "boss")
-            blind_obj = Blind(blind_name, image, 100, 100)
-            blind_objects.append(blind_obj)
+                blind_obj = Blind(blind_name, image, -150, -150, "boss")
+                boss_blinds.append(blind_obj)
 current_blind = None
 def calculate_target_score(ante, round_num):
     base_score = 300
@@ -1244,14 +1248,13 @@ def get_current_blind():
             current_blind = random.choice(boss_blinds)
         current_blind_type = "boss"
     if current_blind:
-        current_blind.x = BLIND_X
-        current_blind.y = BLIND_Y
         current_blind.target_x = BLIND_X
         current_blind.target_y = BLIND_Y
         current_blind.vx = 0
         current_blind.vy = 0
         current_blind.score_required = calculate_target_score(ante, round_num)
         target_score = current_blind.score_required
+    return current_blind
 def advance_to_next_blind():
     global round_num, ante, hands, discards, current_score
     round_num += 1
@@ -1261,7 +1264,7 @@ def advance_to_next_blind():
     current_score = 0
     hands = 4
     discards = 4
-    get_next_blind()
+    get_current_blind()
 def check_blind_defeated():
     global blind_defeated, current_score
     if current_blind and current_score >= current_blind.score_required:
@@ -1360,7 +1363,7 @@ while startGame == False:
             hovering = True
             break
     current_blind = get_current_blind()
-    if current_blind and current_blind.collidepoint(cursor_pos):
+    if current_blind and current_blind.rect.collidepoint(cursor_pos):
         hovering = True
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -1515,7 +1518,6 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_x, mouse_y = mouse_pos
-                current_blind = get_current_blind()
                 if current_blind and current_blind.rect.collidepoint(mouse_pos):
                     current_blind.dragging = True
                     current_blind.drag_offset_x = current_blind.x - mouse_x
@@ -1578,6 +1580,7 @@ while running:
                             saved_base_mult = Hand_Mult.get(hand_type, 1)
                             saved_level = Hand_levels.get(hand_type, 1)
                             saved_hand = hand_type
+                            dev_selection = False
                         scoring_queue = contributing.copy()
                         for card in selected_cards:
                             card.state = "played"
@@ -1600,6 +1603,7 @@ while running:
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
                     if discards > 0 and not scoring_in_progress:
+                        dev_selection = False
                         lerp_factor = 0.3
                         discard_timer = 0
                         to_discard = [card for card in hand if card.state == "selected"]
@@ -1623,8 +1627,8 @@ while running:
                 current_blind = get_current_blind()
                 if current_blind and current_blind.dragging:
                     current_blind.dragging = False
-                    current_blind.target_x = 100
-                    current_blind.target_y = 100
+                    current_blind.target_x = BLIND_X
+                    current_blind.target_y = BLIND_Y
                     current_blind.vx = 0
                     current_blind.vy = 0
                 mouse_pos = event.pos
@@ -1721,7 +1725,8 @@ while running:
         chips = base_chips * level
         mult = base_mult * level
         final_score = saved_base_chips * saved_base_mult
-    screen.blit(HandBackground_img, (20, HEIGHT / 3.5))
+    screen.blit(HandBackground_img, (20, HEIGHT / 2.75))
+    screen.blit(ScoreBackground_img, (20, HEIGHT / 3.75))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -1730,7 +1735,7 @@ while running:
             text = PixelFontS.render(hand_type, True, white)
     else:
         text = PixelFontS.render(f"{current_score}", True, white)
-    text_rect = text.get_rect(center=(140, 20 + HEIGHT / 3))
+    text_rect = text.get_rect(center=(140, 20 + HEIGHT / 2.67))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{hands}", True, white)
     text_rect = text.get_rect(center=(70, HEIGHT / 1.79))
@@ -1742,13 +1747,19 @@ while running:
         text = PixelFontS.render(f"{saved_base_chips}", True, white)
     else:
         text = PixelFontS.render(f"{chips}", True, white)
-    text_rect = text.get_rect(center=(80, HEIGHT / 2.45))
+    text_rect = text.get_rect(center=(80, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
         text = PixelFontS.render(f"{saved_base_mult}", True, white)
     else:
         text = PixelFontS.render(f"{mult}", True, white)
-    text_rect = text.get_rect(center=(200, HEIGHT / 2.45))
+    text_rect = text.get_rect(center=(200, HEIGHT / 2.2))
+    screen.blit(text, text_rect)
+    text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
+    text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
+    screen.blit(text, text_rect)
+    text = PixelFontS.render(f"{total_score}", True, white)
+    text_rect = text.get_rect(center=(180, HEIGHT / 3.17))
     screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
@@ -1787,13 +1798,21 @@ while running:
     if settings2.toggle:
         settings = True
 
-
+    if current_blind:
+        current_blind.update()
+        current_blind.draw(screen)
 
     if settings:
         screen.fill((255,255,255))
         draw_settings()
         screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
-    
+
+    chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
+    for indicator in chip_indicators:
+        indicator.draw(screen)
+
+
+
     if hovering:
         screen.blit(cursor_hover, cursor_pos)
     else:
@@ -1811,14 +1830,7 @@ while running:
         screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
     
 
-    chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
-    for indicator in chip_indicators:
-        indicator.draw(screen)
 
-    current_blind = get_current_blind()
-    if current_blind:
-        current_blind.update()
-        current_blind.draw(screen)
     
     pygame.display.flip()   ###########################################################
     clock.tick(60)
@@ -1839,6 +1851,13 @@ while running:
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
                     sort_hand()
+    if deck and len(hand) < handsize and not dev_selection:
+        index = card.slot
+        new_card = deck.pop()
+        new_card.slot = index
+        new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+        hand.append(new_card)
+        sort_hand()
     if scoring_in_progress:
         if scoring_in_progress:
             if len(scoring_queue) == 0:
@@ -1863,9 +1882,11 @@ while running:
         calculating = True
         scored = False
         calc_progress = 0.0
+        add_progress = 0.0
+        saved_total_score = total_score
     if calculating:
         if calc_progress < 1.0:
-            calc_progress += 1.0 / 300
+            calc_progress += 1.0 / 100
             ease_progress = 1.0 - (1.0 - calc_progress) ** 2
             current_score = round(final_score * ease_progress)
             saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
@@ -1875,6 +1896,14 @@ while running:
                 current_score = final_score
                 chips = 0
                 mult = 0
+        if add_progress < 1.0 and calc_progress >= 1.0:
+            add_progress += 1.0 / 100
+            ease_progress = 1.0 - (1.0 - add_progress) ** 2
+            current_score = round(final_score * (1.0 - ease_progress))
+            total_score = saved_total_score + round(final_score * (ease_progress))
+            if add_progress >= 1.0:
+                add_progress = 1.0
+                total_score = saved_total_score + final_score
                 calculating = False
                 discard_queue = []
                 discard_timer = 0
