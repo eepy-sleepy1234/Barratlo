@@ -90,6 +90,7 @@ settings = False
 help_menu = False
 green = (0, 120, 0)
 white = (255, 255, 255)
+red = (230, 50, 50)
 with open((os.path.join(TEXT_PATH,"HelpMenu.txt")), "r", encoding="utf-8") as file:
     helptext = file.read()
 
@@ -186,6 +187,7 @@ SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
 HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 105))
 ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (240, 75))
+GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (150, 100))
 SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
@@ -861,12 +863,12 @@ scored = False
 scoring_in_progress = False
 calculating = False
 discarding = False
-round_num = 1
-ante = 0
+round_num = 3
+ante = 15
 blind_defeated = False
 target_score = 300
 contributing = []
-BLIND_X = 25
+BLIND_X = 10
 BLIND_Y = 25
 total_score = 0
 saved_total_score = 0
@@ -896,7 +898,24 @@ RANK_VALUES = {
     "King": 13,
     "Ace": 14
 }
-
+ANTE_SCALING = {
+    1: 300,
+    2: 800,
+    3: 2000,
+    4: 5000,
+    5: 11000,
+    6: 20000,
+    7: 35000,
+    8: 50000,
+    9: 110000,
+    10: 560000,
+    11: 7200000,
+    12: 300000000,
+    13: 47000000000,
+    14: 290000000000000,
+    15: 77000000000000000000,
+    16: 860000000000000000000000,
+    }
 
 class Card:
     card_id_counter = 0
@@ -1229,21 +1248,20 @@ for root, dirs, files in os.walk(BLINDS_DIR):
                 boss_blinds.append(blind_obj)
 current_blind = None
 def calculate_target_score(ante, round_num):
-    base_score = 300
-    multipliers = {1: 0.5, 2: 1.0, 3: 1.5, 4: 2.0}
-    ante_scaling = 1.5
-    return int(base_score * multipliers[round_num] * (ante_scaling) ** (ante - 1))
+    base_score = ANTE_SCALING[ante]
+    multipliers = {1: 1.0, 2: 1.5, 3: 2.0, 4: 4.0}
+    return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
     global round_num, ante, current_blind, target_score
-    if round_num == 1:
+    if round_num % 3 == 1:
         if small_blind:
             current_blind = small_blind
         current_blind.blind_type = "small"
-    elif round_num == 2:
+    elif round_num % 3 == 2:
         if big_blind:
             current_blind = big_blind
         current_blind.blind_type = "big"
-    elif round_num == 3:
+    elif round_num % 3 == 0:
         if boss_blinds:
             current_blind = random.choice(boss_blinds)
         current_blind_type = "boss"
@@ -1272,6 +1290,15 @@ def check_blind_defeated():
         return True
     return False
 get_current_blind()
+
+def change_notation(number):
+    if number > 999999999999:
+        saved_number = number
+        place = 0
+        while saved_number > 10:
+            saved_number /= 10
+            place += 1
+        number = f"{saved_number}e{place}"
 
 def detect_hand(cards):
     n = len(cards)
@@ -1727,6 +1754,7 @@ while running:
         final_score = saved_base_chips * saved_base_mult
     screen.blit(HandBackground_img, (20, HEIGHT / 2.75))
     screen.blit(ScoreBackground_img, (20, HEIGHT / 3.75))
+    screen.blit(GoalBackground_img, (110, HEIGHT / 7.2))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -1760,6 +1788,10 @@ while running:
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{total_score}", True, white)
     text_rect = text.get_rect(center=(180, HEIGHT / 3.17))
+    screen.blit(text, text_rect)
+    change_notation(target_score)
+    text = PixelFontS.render(f"{target_score}", True, red)
+    text_rect = text.get_rect(center=(190, HEIGHT / 5))
     screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
