@@ -71,6 +71,7 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
         
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
+PixelFontXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/30))
 toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
@@ -91,6 +92,8 @@ help_menu = False
 green = (0, 120, 0)
 white = (255, 255, 255)
 red = (230, 50, 50)
+yellow = (250, 220, 80)
+orange = (240, 150, 40)
 with open((os.path.join(TEXT_PATH,"HelpMenu.txt")), "r", encoding="utf-8") as file:
     helptext = file.read()
 
@@ -188,6 +191,8 @@ SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 105))
 ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (240, 75))
 GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (150, 100))
+MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (170, 60))
+RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (170, 50))
 SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
@@ -812,6 +817,7 @@ calc_progress = 0.0
 saved_base_chips  = 0
 saved_base_mult = 0
 saved_level = 0
+blind_reward = 0
 saved_hand = None
 sort_mode = "rank"
 current_scoring_card = None
@@ -863,8 +869,9 @@ scored = False
 scoring_in_progress = False
 calculating = False
 discarding = False
-round_num = 3
-ante = 15
+round_num = 1
+ante = 1
+money = 0
 blind_defeated = False
 target_score = 300
 contributing = []
@@ -1252,18 +1259,21 @@ def calculate_target_score(ante, round_num):
     multipliers = {1: 1.0, 2: 1.5, 3: 2.0, 4: 4.0}
     return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
-    global round_num, ante, current_blind, target_score
+    global round_num, ante, current_blind, target_score, blind_reward
     if round_num % 3 == 1:
         if small_blind:
             current_blind = small_blind
+            blind_reward = 3
         current_blind.blind_type = "small"
     elif round_num % 3 == 2:
         if big_blind:
             current_blind = big_blind
+            blind_reward = 4
         current_blind.blind_type = "big"
     elif round_num % 3 == 0:
         if boss_blinds:
             current_blind = random.choice(boss_blinds)
+            blind_reward = 5
         current_blind_type = "boss"
     if current_blind:
         current_blind.target_x = BLIND_X
@@ -1282,6 +1292,7 @@ def advance_to_next_blind():
     current_score = 0
     hands = 4
     discards = 4
+    money += blind_reward
     get_current_blind()
 def check_blind_defeated():
     global blind_defeated, current_score
@@ -1295,10 +1306,12 @@ def change_notation(number):
     if number > 999999999999:
         saved_number = number
         place = 0
-        while saved_number > 10:
+        while saved_number > 9:
             saved_number /= 10
+            saved_number = round(saved_number, 2)
             place += 1
         number = f"{saved_number}e{place}"
+    return number
 
 def detect_hand(cards):
     n = len(cards)
@@ -1608,25 +1621,25 @@ while running:
                             saved_level = Hand_levels.get(hand_type, 1)
                             saved_hand = hand_type
                             dev_selection = False
-                        scoring_queue = contributing.copy()
-                        for card in selected_cards:
-                            card.state = "played"
-                            card.play_timer = 0
-                            card.scaling_delay = 0
-                            card.is_contributing = card in contributing
-                            card.scaling_done = False
-                            card.scoring_animating = False
-                            card.scoring_complete = False
-                            card.scaling = False
-                        for card in contributing:
-                            card.is_contributing = True
-                        hands -= 1
-                        total_scoring_count = 0
-                        if contributing:
-                            scoring_in_progress = True
-                            if scoring_queue:
-                                scoring_queue[0].scaling = True
-                        scoring_sequence_index = 0
+                            scoring_queue = contributing.copy()
+                            for card in selected_cards:
+                                card.state = "played"
+                                card.play_timer = 0
+                                card.scaling_delay = 0
+                                card.is_contributing = card in contributing
+                                card.scaling_done = False
+                                card.scoring_animating = False
+                                card.scoring_complete = False
+                                card.scaling = False
+                            for card in contributing:
+                                card.is_contributing = True
+                            hands -= 1
+                            total_scoring_count = 0
+                            if contributing:
+                                scoring_in_progress = True
+                                if scoring_queue:
+                                    scoring_queue[0].scaling = True
+                            scoring_sequence_index = 0
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
                     if discards > 0 and not scoring_in_progress:
@@ -1755,6 +1768,8 @@ while running:
     screen.blit(HandBackground_img, (20, HEIGHT / 2.75))
     screen.blit(ScoreBackground_img, (20, HEIGHT / 3.75))
     screen.blit(GoalBackground_img, (110, HEIGHT / 7.2))
+    screen.blit(MoneyBackground_img, (100, HEIGHT / 1.7))
+    screen.blit(RoundBackground_img, (100, HEIGHT / 1.5))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -1762,7 +1777,8 @@ while running:
         else:
             text = PixelFontS.render(hand_type, True, white)
     else:
-        text = PixelFontS.render(f"{current_score}", True, white)
+        current_score_text = change_notation(current_score)
+        text = PixelFontS.render(f"{current_score_text}", True, white)
     text_rect = text.get_rect(center=(140, 20 + HEIGHT / 2.67))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{hands}", True, white)
@@ -1772,26 +1788,43 @@ while running:
     text_rect = text.get_rect(center=(205, HEIGHT / 1.79))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
-        text = PixelFontS.render(f"{saved_base_chips}", True, white)
+        saved_base_chips_text = change_notation(saved_base_chips)
+        text = PixelFontS.render(f"{saved_base_chips_text}", True, white)
     else:
-        text = PixelFontS.render(f"{chips}", True, white)
+        chips_text = change_notation(chips)
+        text = PixelFontS.render(f"{chips_text}", True, white)
     text_rect = text.get_rect(center=(80, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
-        text = PixelFontS.render(f"{saved_base_mult}", True, white)
+        saved_base_mult_text = change_notation(saved_base_mult)
+        text = PixelFontS.render(f"{saved_base_mult_text}", True, white)
     else:
-        text = PixelFontS.render(f"{mult}", True, white)
+        mult_text = change_notation(mult)
+        text = PixelFontS.render(f"{mult_text}", True, white)
     text_rect = text.get_rect(center=(200, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
     text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
     screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{total_score}", True, white)
+    total_score_text = change_notation(total_score)
+    text = PixelFontS.render(f"{total_score_text}", True, white)
     text_rect = text.get_rect(center=(180, HEIGHT / 3.17))
     screen.blit(text, text_rect)
-    change_notation(target_score)
-    text = PixelFontS.render(f"{target_score}", True, red)
+    target_score_text = change_notation(target_score)
+    text = PixelFontS.render(f"{target_score_text}", True, red)
     text_rect = text.get_rect(center=(190, HEIGHT / 5))
+    screen.blit(text, text_rect)
+    text = PixelFontS.render(f"{round_num}", True, orange)
+    text_rect = text.get_rect(center=(227, HEIGHT / 1.415))
+    screen.blit(text, text_rect)
+    text = PixelFontS.render(f"{ante}", True, orange)
+    text_rect = text.get_rect(center=(127, HEIGHT / 1.419))
+    screen.blit(text, text_rect)
+    text = PixelFontS.render(f"${money}", True, yellow)
+    text_rect = text.get_rect(center=(180, HEIGHT / 1.595))
+    screen.blit(text, text_rect)
+    text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
+    text_rect = text.get_rect(center=(220, HEIGHT / 4.35))
     screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
