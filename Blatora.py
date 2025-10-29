@@ -626,22 +626,7 @@ def blit_img():
                 
                 card_count = {}
                 deck.clear()
-                for root, dirs, files in os.walk(SUITS_DIR):
-                    for filename in files:
-                        if filename.endswith(".png"):
-                            filepath = os.path.join(root, filename)
-                            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (80, 110))
-                            name, _ = os.path.splitext(filename)
-                            rank, suit = name.split("Of")
-                            card_key = f"{rank}Of{suit}"
-                            if card_key in card_count:
-                                card_count[card_key] += 1
-                            else:
-                                card_count[card_key] = 1
-                            card = Card(rank, suit, image)
-                            deck.append(card)
-                
-   
+                deck = perm_deck.copy()
                 random.shuffle(deck)
                 
 
@@ -814,7 +799,6 @@ def animate_letters():
             letter_animation = False
 
 perm_deck = []
-deck = []
 handsize = 8
 chips = 0
 mult = 0
@@ -822,8 +806,10 @@ current_score = 0
 round_score = 0
 scored_counter = 0
 total_scoring_count = 0
-hands = 4
-discards = 4
+max_hand = 4
+max_discard = 4
+hands = max_hand
+discards = max_discard
 DRAG_THRESHOLD = 10
 calc_progress = 0.0
 saved_base_chips  = 0
@@ -885,6 +871,7 @@ round_num = 1
 ante = 1
 money = 0
 blind_defeated = False
+victory = False
 target_score = 300
 contributing = []
 BLIND_X = 10
@@ -1003,7 +990,7 @@ class Card:
                 self.x = self.target_x
                 self.y = self.target_y
         if self.scaling:
-            if self.scaling_delay < 60:
+            if self.scaling_delay < 30:
                 self.scaling_delay += 1
             else:
                 if not self.growing:
@@ -1081,7 +1068,6 @@ class ChipIndicator:
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
         surface.blit(text, text_rect)
-
 for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -1092,7 +1078,7 @@ for root, dirs, files in os.walk(SUITS_DIR):
             card = Card(rank, suit, image)
             perm_deck.append(card)
 
-deck = perm_deck
+deck = perm_deck.copy()
 
 random.shuffle(deck)
 
@@ -1273,8 +1259,8 @@ def calculate_target_score(ante, round_num):
     multipliers = {1: 1.0, 2: 1.5, 3: 2.0, 4: 4.0}
     return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
-    global round_num, ante, current_blind, target_score, blind_reward
-    if not current_blind:
+    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score
+    if not current_blind or victory:
         if round_num % 3 == 1:
             if small_blind:
                 current_blind = small_blind
@@ -1297,21 +1283,25 @@ def get_current_blind():
             current_blind.vy = 0
             current_blind.score_required = calculate_target_score(ante, round_num)
             target_score = current_blind.score_required
+            victory = False
+            total_score = 0
     return current_blind
 def advance_to_next_blind():
-    global round_num, ante, hands, discards, current_score
-    round_num += 1
-    if round_num > 3:
-        round_num = 1
+    global round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand
+    if round_num % 3 == 0:
         ante += 1
+    round_num += 1
     current_score = 0
-    hands = 4
-    discards = 4
+    money += hands
+    hands = max_hand
+    discards = max_discard
     money += blind_reward
-    get_current_blind()
+    hand.clear()
+    deck = perm_deck.copy()
+    random.shuffle(deck)
 def check_blind_defeated():
     global blind_defeated, current_score
-    if current_blind and current_score >= current_blind.score_required:
+    if current_blind and total_score >= target_score:
         blind_defeated = True
         return True
     else:
@@ -1998,6 +1988,10 @@ while running:
                         c.is_contributing = False
                         discard_queue.append(c)
                 discarding = True
+                victory = check_blind_defeated()
+                if victory:
+                    advance_to_next_blind()
+                    get_current_blind()
 
     if discarding:
         if discard_queue:
