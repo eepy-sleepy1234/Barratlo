@@ -12,6 +12,7 @@ from collections import Counter
 import sys
 import subprocess
 import webbrowser
+import re
 pygame.font.init()
 try:
     import numpy
@@ -668,11 +669,22 @@ def blit_img():
                     print("Invalid input")
                 dev_toggle = False
                 return
-            
+            elif dev_command.lower() == 'setround':
+                global ante, round_num
+                try:
+                    ante = int(input("set current ante:"))
+                    blind_num = int(input(f"set current blind:\n(1 for small blind, 2 for big blind, and 3 for boss blind)"))
+                    round_num = (ante * 3) + blind_num
+                    print(f"Round set: ante {ante}, round {round_num}")
+                except:
+                    print("Invalid input")
+                dev_toggle = False
+                return
             else:
                 print("Unknown command. Type 'help' for list of commands.")
                 dev_toggle = False
                 return
+            
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
         self.xpos = xpos
@@ -1244,7 +1256,9 @@ for root, dirs, files in os.walk(BLINDS_DIR):
     for filename in files:
         if filename.endswith(".png"):
             filepath = os.path.join(root, filename)
-            blind_name = os.path.splitext(filename)[0]
+            blind_name_raw = os.path.splitext(filename)[0]
+            blind_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', blind_name_raw)
+            blind_name = blind_name.title()
             image = pygame.transform.scale(load_image_safe(filepath), (100, 100))
             if "Small" in blind_name:
                 small_blind = Blind(blind_name, image, -150, -150, "small")
@@ -1260,28 +1274,29 @@ def calculate_target_score(ante, round_num):
     return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
     global round_num, ante, current_blind, target_score, blind_reward
-    if round_num % 3 == 1:
-        if small_blind:
-            current_blind = small_blind
-            blind_reward = 3
-        current_blind.blind_type = "small"
-    elif round_num % 3 == 2:
-        if big_blind:
-            current_blind = big_blind
-            blind_reward = 4
-        current_blind.blind_type = "big"
-    elif round_num % 3 == 0:
-        if boss_blinds:
-            current_blind = random.choice(boss_blinds)
-            blind_reward = 5
-        current_blind_type = "boss"
-    if current_blind:
-        current_blind.target_x = BLIND_X
-        current_blind.target_y = BLIND_Y
-        current_blind.vx = 0
-        current_blind.vy = 0
-        current_blind.score_required = calculate_target_score(ante, round_num)
-        target_score = current_blind.score_required
+    if not current_blind:
+        if round_num % 3 == 1:
+            if small_blind:
+                current_blind = small_blind
+                blind_reward = 3
+                current_blind.blind_type = "small"
+        elif round_num % 3 == 2:
+            if big_blind:
+                current_blind = big_blind
+                blind_reward = 4
+                current_blind.blind_type = "big"
+        elif round_num % 3 == 0:
+            if boss_blinds:
+                current_blind = random.choice(boss_blinds)
+                blind_reward = 5
+                current_blind_type = "boss"
+        if current_blind:
+            current_blind.target_x = BLIND_X
+            current_blind.target_y = BLIND_Y
+            current_blind.vx = 0
+            current_blind.vy = 0
+            current_blind.score_required = calculate_target_score(ante, round_num)
+            target_score = current_blind.score_required
     return current_blind
 def advance_to_next_blind():
     global round_num, ante, hands, discards, current_score
@@ -1299,7 +1314,8 @@ def check_blind_defeated():
     if current_blind and current_score >= current_blind.score_required:
         blind_defeated = True
         return True
-    return False
+    else:
+        return False
 get_current_blind()
 
 def change_notation(number):
@@ -1825,6 +1841,9 @@ while running:
     screen.blit(text, text_rect)
     text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
     text_rect = text.get_rect(center=(220, HEIGHT / 4.35))
+    screen.blit(text, text_rect)
+    text = PixelFontS.render(f"{current_blind.name}", True, white)
+    text_rect = text.get_rect(center=(190, HEIGHT / 12))
     screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
