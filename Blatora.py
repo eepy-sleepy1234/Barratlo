@@ -50,6 +50,7 @@ SOUNDS_DIR = os.path.join(ASSETS_DIR, "Sounds")
 VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
 TEXT_PATH = os.path.join(ASSETS_DIR, "Text")
 BLINDS_DIR = os.path.join(GUI_DIR, "Blinds")
+OVERLAY_DIR = os.path.join(ASSETS_DIR, "Overlays")
 
 
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
@@ -195,6 +196,7 @@ GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(G
 MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (170, 60))
 RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (170, 50))
 SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
+Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (80, 110))
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
 SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
@@ -817,6 +819,7 @@ saved_base_mult = 0
 saved_level = 0
 blind_reward = 0
 saved_hand = None
+boss_calculated = False
 sort_mode = "rank"
 current_scoring_card = None
 Hand_levels = {
@@ -925,11 +928,15 @@ ANTE_SCALING = {
 
 class Card:
     card_id_counter = 0
-    def __init__(self, rank, suit, image, slot=None, state="hand"):
+    def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
         self.image = image
         self.scale= 1.0
         self.rotation_speed = 0
         self.scaling_delay = 0
+        self.is_debuffed = debuff
+        self.enhancement = enhancement
+        self.edition = edition
+        self.seal = seal
         self.scaling = False
         self.growing = False
         self.scaling_done = False
@@ -939,12 +946,15 @@ class Card:
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
         Card.card_id_counter += 1
-        if self.value in (11, 12, 13):
-            self.chip_value = 10
-        elif self.value == 14:
-            self.chip_value = 11
+        if self.is_debuffed:
+            self.chip_value = 0
         else:
-            self.chip_value = self.value
+            if self.value in (11, 12, 13):
+                self.chip_value = 10
+            elif self.value == 14:
+                self.chip_value = 11
+            else:
+                self.chip_value = self.value
         self.name = f"{rank} of {suit}"
         self.rect = image.get_rect()
         self.state = state
@@ -1087,10 +1097,78 @@ for i in range(handsize):
     card = deck.pop()
     card.slot = i
     card.x, card.y = WIDTH + 100, HEIGHT - 170
+    card.state = "hand"
     hand.append(card)
 
 currentFrame = 0
 spacing = 600 / handsize
+
+def boss_debuff():
+    global round_num, boss_name, boss_calculated
+    if round_num % 3 == 0:
+        if current_blind.name == "The Bird":
+            for card in deck:
+                if card.suit == "Hearts":
+                    card.is_debuffed = True
+        if current_blind.name == "The Arrow":
+            for card in deck:
+                if card.suit == "Spades":
+                    card.is_debuffed = True
+        if current_blind.name == "The Cone":
+            for card in deck:
+                if card.suit == "Clubs":
+                    card.is_debuffed = True
+        if current_blind.name == "The Eye":
+            for card in deck:
+                if card.suit == "Diamonds":
+                    card.is_debuffed = True
+        if current_blind.name == "The Bounce":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Bow":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Bridge":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Chair":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Crate":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Luck":
+            for card in deck:
+                rand = random.randint(1, 10)
+                if rand == 1:
+                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
+        if current_blind.name == "The Fork":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Ramp":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Sandwich":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+        if current_blind.name == "The Twin":
+            for card in deck:
+                if card.suit == "idk":
+                    card.is_debuffed = True
+    else:
+        for card in deck:
+            card.is_debuffed = False
+            
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
     global scoring_in_progress, scoring_sequence_index
@@ -1143,6 +1221,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         scaled_w = int(card.image.get_width() * card.scale)
         scaled_h = int(card.image.get_height() * card.scale)
         scaled_img = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
+        if card.is_debuffed and not boss_calculated:
+            card.chip_value = 0
+            scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
+            scaled_img = scaled_img.copy()
+            scaled_img.blit(scaled_overlay, (0, 0))
         rotated = pygame.transform.rotate(scaled_img, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated, rect.topleft)
@@ -1297,7 +1380,10 @@ def advance_to_next_blind():
     discards = max_discard
     money += blind_reward
     hand.clear()
+    deck.clear()
     deck = perm_deck.copy()
+    print(len(perm_deck))
+    print(len(deck))
     random.shuffle(deck)
 def check_blind_defeated():
     global blind_defeated, current_score
@@ -1841,6 +1927,7 @@ while running:
     screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
     screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
+    boss_debuff()
     draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
     update_card_animation()
