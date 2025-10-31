@@ -397,15 +397,7 @@ def draw_settings():
 dev_selection = True
 blitting = False    
 def blit_img():
-    global blitting
-    global blitpositionx
-    global blitpositiony
-    global blitting_img
-    global blitting_img_original
-    global dev_toggle
-    global scaling
-    global dimensionsx
-    global dimensionsy
+    global blitting, ante, round_num, current_blind, target_score, blitpositionx, blitpositiony, blitting_img, blitting_img_original, dev_toggle, scaling, dimensionsx, dimensionsy
     if blitting and blitting_img_original:
         if scaling == 'wh':
             blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(HEIGHT/dimensionsy)))
@@ -512,7 +504,7 @@ def blit_img():
                 return
             
             elif dev_command.lower() == 'help':
-                print("Commands: \n Help\n reblit\n unblit\n cancel\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n")
+                print("Commands: \n Help\n reblit\n unblit\n cancel\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n setround\n setboss\n")
                 dev_toggle = False
                 return
 
@@ -657,14 +649,41 @@ def blit_img():
                 dev_toggle = False
                 return
             elif dev_command.lower() == 'setround':
-                global ante, round_num
                 try:
-                    ante = int(input("set current ante:"))
-                    blind_num = int(input(f"set current blind:\n(1 for small blind, 2 for big blind, and 3 for boss blind)"))
-                    round_num = (ante * 3) + blind_num
-                    print(f"Round set: ante {ante}, round {round_num}")
+                    new_round = int(input("Set round number: "))
+                    round_num = new_round
+                    # Calculate ante from round number
+                    ante = ((round_num - 1) // 3) + 1
+                    # Reset current blind and get new one
+                    current_blind = None
+                    get_current_blind()
+                    print(f"Round set to {round_num}, Ante: {ante}")
+                    print(f"Current blind: {current_blind.name if current_blind else 'None'}")
                 except:
                     print("Invalid input")
+                dev_toggle = False
+                return
+
+            elif dev_command.lower() == 'setboss':
+                if not boss_blinds:
+                    print("No boss blinds available")
+                    dev_toggle = False
+                    return
+                
+                print("Available boss blinds:")
+                for boss in boss_blinds:
+                    print(f"  - {boss.name}")
+                
+                boss_name = input("Enter boss blind name: ").strip()
+                if set_boss_blind(boss_name):
+                    # Force round to be a boss blind round (multiple of 3)
+                    if round_num % 3 != 0:
+                        round_num = ((round_num // 3) + 1) * 3
+                        ante = (round_num - 1) // 3 + 1
+                    print(f"Boss blind set to: {current_blind.name}")
+                    print(f"Round adjusted to: {round_num}, Ante: {ante}")
+                else:
+                    print(f"Boss blind '{boss_name}' not found")
                 dev_toggle = False
                 return
             else:
@@ -801,7 +820,7 @@ def animate_letters():
             letter_animation = False
 
 perm_deck = []
-handsize = 67
+handsize = 52
 chips = 0
 mult = 0
 current_score = 0
@@ -819,7 +838,6 @@ saved_base_mult = 0
 saved_level = 0
 blind_reward = 0
 saved_hand = None
-boss_calculated = False
 sort_mode = "rank"
 current_scoring_card = None
 Hand_levels = {
@@ -1146,7 +1164,7 @@ def boss_debuff():
                     card.is_debuffed = True
         if current_blind.name == "The Luck":
             for card in deck:
-                rand = random.randint(1, 10)
+                rand = random.randint(1, 5)
                 if rand == 1 and not card.debuff_assigned:
                     card.is_debuffed = True
         if current_blind.name == "The Fork":
@@ -1162,9 +1180,14 @@ def boss_debuff():
                 if card.suit == "idk":
                     card.is_debuffed = True
         if current_blind.name == "The Twin":
-            hand_type, contributing = detect_hand()
-            if hand_type in ("Pair", "Two Pair", "Three of a Kind", "Four of a Kind", "Full House", "Five of a Kind", "Flush Five", "Flush House"):
-                for card in contributing:
+            hand_type, contributing = detect_hand(selected_cards)
+            value_counts = {}
+            for card in contributing:
+                if card.state == "played":
+                    value_counts[card.value] = value_counts.get(card.value, 0) + 1
+            duplicate_values = [val for val, count in value_counts.items() if count > 1]
+            for card in contributing:
+                if card.value in duplicate_values:
                     card.is_debuffed = True
         for card in deck:
             card.debuff_assigned = True
@@ -1226,7 +1249,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         scaled_w = int(card.image.get_width() * card.scale)
         scaled_h = int(card.image.get_height() * card.scale)
         scaled_img = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
-        if card.is_debuffed and not boss_calculated:
+        if card.is_debuffed:
             card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
             scaled_img = scaled_img.copy()
@@ -1374,6 +1397,21 @@ def get_current_blind():
             victory = False
             total_score = 0
     return current_blind
+def set_boss_blind(boss_name):
+    global current_blind, target_score, blind_reward
+    for boss in boss_blinds:
+        if boss.name.lower() == boss_name.lower():
+            current_blind = boss
+            current_blind.target_x = BLIND_X
+            current_blind.target_y = BLIND_Y
+            current_blind.vx = 0
+            current_blind.vy = 0
+            current_blind.score_required = calculate_target_score(ante, round_num)
+            target_score = current_blind.score_required
+            blind_reward = 5
+            current_blind.blind_type = "boss"
+            return True
+    return False
 def advance_to_next_blind():
     global round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand
     if round_num % 3 == 0:
