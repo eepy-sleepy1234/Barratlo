@@ -801,7 +801,7 @@ def animate_letters():
             letter_animation = False
 
 perm_deck = []
-handsize = 8
+handsize = 67
 chips = 0
 mult = 0
 current_score = 0
@@ -878,7 +878,7 @@ victory = False
 target_score = 300
 contributing = []
 BLIND_X = 10
-BLIND_Y = 25
+BLIND_Y = 35
 total_score = 0
 saved_total_score = 0
 
@@ -934,6 +934,7 @@ class Card:
         self.rotation_speed = 0
         self.scaling_delay = 0
         self.is_debuffed = debuff
+        self.debuff_assigned = False
         self.enhancement = enhancement
         self.edition = edition
         self.seal = seal
@@ -1094,11 +1095,12 @@ random.shuffle(deck)
 
 hand = []
 for i in range(handsize):
-    card = deck.pop()
-    card.slot = i
-    card.x, card.y = WIDTH + 100, HEIGHT - 170
-    card.state = "hand"
-    hand.append(card)
+    if deck:
+        card = deck.pop()
+        card.slot = i
+        card.x, card.y = WIDTH + 100, HEIGHT - 170
+        card.state = "hand"
+        hand.append(card)
 
 currentFrame = 0
 spacing = 600 / handsize
@@ -1145,10 +1147,8 @@ def boss_debuff():
         if current_blind.name == "The Luck":
             for card in deck:
                 rand = random.randint(1, 10)
-                if rand == 1:
+                if rand == 1 and not card.debuff_assigned:
                     card.is_debuffed = True
-                else:
-                    card.is_debuffed = False
         if current_blind.name == "The Fork":
             for card in deck:
                 if card.suit == "idk":
@@ -1162,12 +1162,16 @@ def boss_debuff():
                 if card.suit == "idk":
                     card.is_debuffed = True
         if current_blind.name == "The Twin":
-            for card in deck:
-                if card.suit == "idk":
+            hand_type, contributing = detect_hand()
+            if hand_type in ("Pair", "Two Pair", "Three of a Kind", "Four of a Kind", "Full House", "Five of a Kind", "Flush Five", "Flush House"):
+                for card in contributing:
                     card.is_debuffed = True
+        for card in deck:
+            card.debuff_assigned = True
     else:
         for card in deck:
             card.is_debuffed = False
+            card.debuff_assigned = False
             
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
@@ -1189,6 +1193,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         target_x = start_x + i * spread
         target_y = center_y - max_vertical_offset * 2 * (t - 0.5)**2 + max_vertical_offset
         if card.state == "selected":
+            card.angle = (t - 0.5) * -2 * angle_range
             target_y -= 40
         elif card.state == "played":
             if card.scoring_x == 0:
@@ -1381,9 +1386,9 @@ def advance_to_next_blind():
     money += blind_reward
     hand.clear()
     deck.clear()
-    deck = perm_deck.copy()
-    print(len(perm_deck))
-    print(len(deck))
+    for card in perm_deck:
+        new_card = Card(card.rank, card.suit, card.image)
+        deck.append(new_card)
     random.shuffle(deck)
 def check_blind_defeated():
     global blind_defeated, current_score
@@ -1712,6 +1717,10 @@ while running:
                             saved_base_mult = Hand_Mult.get(hand_type, 1)
                             saved_level = Hand_levels.get(hand_type, 1)
                             saved_hand = hand_type
+                            if hand_type == "Royal Flush":
+                                saved_base_chips = (Hand_Chips.get("Straight Flush", 0) * Hand_levels.get("Straight Flush", 1))
+                                saved_base_mult = Hand_Mult.get("Straight Flush", 1)
+                                saved_level = Hand_levels.get("Straight Flush", 1)
                             dev_selection = False
                             scoring_queue = contributing.copy()
                             for card in selected_cards:
@@ -1854,6 +1863,10 @@ while running:
             level = 0
             base_chips = 0
             base_mult = 0
+        if hand_type == "Royal Flush":
+            level = Hand_levels.get("Straight Flush", 1)
+            base_chips = Hand_Chips.get("Straight Flush", 0)
+            base_mult = Hand_Mult.get("Straight Flush", 1)
         chips = base_chips * level
         mult = base_mult * level
         final_score = saved_base_chips * saved_base_mult
@@ -1919,7 +1932,7 @@ while running:
     text_rect = text.get_rect(center=(220, HEIGHT / 4.35))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{current_blind.name}", True, white)
-    text_rect = text.get_rect(center=(190, HEIGHT / 12))
+    text_rect = text.get_rect(center=(180, HEIGHT / 30))
     screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
