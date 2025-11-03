@@ -1124,7 +1124,7 @@ currentFrame = 0
 spacing = 600 / handsize
 
 def boss_debuff():
-    global round_num, boss_name, boss_calculated
+    global round_num, boss_name, boss_calculated, scoring_in_progress
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
@@ -1152,11 +1152,11 @@ def boss_debuff():
                     card.is_debuffed = True
         if current_blind.name == "The Bridge":
             for card in deck:
-                if card.suit == "idk":
+                if card.chip_value <= 9:
                     card.is_debuffed = True
         if current_blind.name == "The Chair":
             for card in deck:
-                if card.suit == "idk":
+                if card.chip_value >= 10:
                     card.is_debuffed = True
         if current_blind.name == "The Crate":
             for card in deck:
@@ -1172,12 +1172,14 @@ def boss_debuff():
                 if card.suit == "idk":
                     card.is_debuffed = True
         if current_blind.name == "The Ramp":
-            for card in deck:
-                if card.suit == "idk":
-                    card.is_debuffed = True
+            card.is_debuffed = False
         if current_blind.name == "The Sandwich":
-            for card in deck:
-                if card.suit == "idk":
+            played_card_count = 0
+            for card in hand:
+                if card.state in ("played", "scored"):
+                    played_card_count += 1
+            for card in hand:
+                if played_card_count != 3 and card.state in ("played", "scored"):
                     card.is_debuffed = True
         if current_blind.name == "The Twin":
             hand_type, contributing = detect_hand(selected_cards)
@@ -1368,7 +1370,10 @@ current_blind = None
 def calculate_target_score(ante, round_num):
     base_score = ANTE_SCALING[ante]
     multipliers = {1: 1.0, 2: 1.5, 3: 2.0, 4: 4.0}
-    return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
+    if current_blind.name == "The Ramp":
+        return int(base_score * multipliers[4])
+    else:
+        return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
     global round_num, ante, current_blind, target_score, blind_reward, victory, total_score
     if not current_blind or victory:
