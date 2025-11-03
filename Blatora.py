@@ -1124,7 +1124,7 @@ currentFrame = 0
 spacing = 600 / handsize
 
 def boss_debuff():
-    global round_num, boss_name, boss_calculated, scoring_in_progress
+    global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
@@ -1143,13 +1143,13 @@ def boss_debuff():
                 if card.suit == "Diamonds":
                     card.is_debuffed = True
         if current_blind.name == "The Bounce":
-            for card in deck:
-                if card.suit == "idk":
-                    card.is_debuffed = True
+            if final_score > target_score / 3:
+                final_score = target_score / 3
         if current_blind.name == "The Bow":
-            for card in deck:
-                if card.suit == "idk":
-                    card.is_debuffed = True
+            small_size = (width // blur_amount, height // blur_amount)
+            small_surf = pygame.transform.smoothscale(screen, small_size)
+            blurred = pygame.transform.smoothscale(small_surf, (WIDTH, height))
+            return blurred
         if current_blind.name == "The Bridge":
             for card in deck:
                 if card.chip_value <= 9:
@@ -1159,8 +1159,10 @@ def boss_debuff():
                 if card.chip_value >= 10:
                     card.is_debuffed = True
         if current_blind.name == "The Crate":
-            for card in deck:
-                if card.suit == "idk":
+            if card.state in ("played", "scored"):
+                played_card_count += 1
+            for card in hand:
+                if played_card_count != 4 and card.state in ("played", "scored"):
                     card.is_debuffed = True
         if current_blind.name == "The Luck":
             for card in deck:
@@ -1995,6 +1997,10 @@ while running:
     else:
         soseriousmusic.stop()
 
+    if current_blind:
+        current_blind.update()
+        current_blind.draw(screen)
+
     for toggle in guiToggleList:
         toggle.update_img(mouse_pos)
 
@@ -2014,10 +2020,6 @@ while running:
                 button.draw()
     if settings2.toggle:
         settings = True
-
-    if current_blind:
-        current_blind.update()
-        current_blind.draw(screen)
 
     if settings:
         screen.fill((255,255,255))
@@ -2045,6 +2047,10 @@ while running:
             y_offset += line_height + 5
 
         screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
+    if current_blind.name == "The Bow":
+        blurred = boss_debuff()
+        screen.blit(blurred, (0, 0))
+        
     
 
 
