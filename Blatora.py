@@ -954,6 +954,7 @@ class Card:
         self.rotation_speed = 0
         self.scaling_delay = 0
         self.is_debuffed = debuff
+        self.is_frozen = False
         self.debuff_assigned = False
         self.enhancement = enhancement
         self.edition = edition
@@ -1201,10 +1202,13 @@ def boss_debuff():
         if current_blind.name == "The Splinter":
             a = 1
         if current_blind.name == "The South":
+            for card in deck:
+                rand = random.randint(1, 5)
+                if rand == 1 and not card.debuff_assigned:
+                    card.is_frozen = True
+        if current_blind.name == "The Band":
             if max_handsize == handsize:
                 handsize -= 1
-        if current_blind.name == "The Band":
-            a = 1
         if current_blind.name == "The Check":
             for card in deck:
                 if card.value % 2 == 0:
@@ -1274,6 +1278,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         scaled_h = int(card.image.get_height() * card.scale)
         scaled_img = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
         if card.is_debuffed:
+            card.chip_value = 0
+            scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
+            scaled_img = scaled_img.copy()
+            scaled_img.blit(scaled_overlay, (0, 0))
+        if card.is_frozen:
             card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
             scaled_img = scaled_img.copy()
