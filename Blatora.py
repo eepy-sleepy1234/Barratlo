@@ -820,7 +820,8 @@ def animate_letters():
             letter_animation = False
 
 perm_deck = []
-handsize = 52
+max_handsize = 8
+handsize = max_handsize
 chips = 0
 mult = 0
 current_score = 0
@@ -840,6 +841,7 @@ blind_reward = 0
 saved_hand = None
 sort_mode = "rank"
 current_scoring_card = None
+discard_timer = 0
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1124,7 +1126,7 @@ currentFrame = 0
 spacing = 600 / handsize
 
 def boss_debuff():
-    global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score
+    global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
@@ -1138,17 +1140,18 @@ def boss_debuff():
             for card in deck:
                 if card.suit == "Clubs":
                     card.is_debuffed = True
-        if current_blind.name == "The Eye":
+        if current_blind.name == "The Bow":
             for card in deck:
                 if card.suit == "Diamonds":
                     card.is_debuffed = True
         if current_blind.name == "The Bounce":
             if final_score > target_score / 3:
-                final_score = target_score / 3
-        if current_blind.name == "The Bow":
-            small_size = (width // blur_amount, height // blur_amount)
+                final_score = int(target_score / 3)
+        if current_blind.name == "The Eye":
+            blur_amount = 25
+            small_size = (WIDTH // blur_amount, HEIGHT // blur_amount)
             small_surf = pygame.transform.smoothscale(screen, small_size)
-            blurred = pygame.transform.smoothscale(small_surf, (WIDTH, height))
+            blurred = pygame.transform.smoothscale(small_surf, (WIDTH, HEIGHT))
             return blurred
         if current_blind.name == "The Bridge":
             for card in deck:
@@ -1170,9 +1173,9 @@ def boss_debuff():
                 if rand == 1 and not card.debuff_assigned:
                     card.is_debuffed = True
         if current_blind.name == "The Fork":
-            for card in deck:
-                if card.suit == "idk":
-                    card.is_debuffed = True
+            if hands >= max_hand:
+                hands -= 1
+                discards -= 1
         if current_blind.name == "The Ramp":
             card.is_debuffed = False
         if current_blind.name == "The Sandwich":
@@ -1193,6 +1196,23 @@ def boss_debuff():
             for card in contributing:
                 if card.value in duplicate_values:
                     card.is_debuffed = True
+        if current_blind.name == "The Magnet":
+            a = 1
+        if current_blind.name == "The Splinter":
+            a = 1
+        if current_blind.name == "The South":
+            if max_handsize == handsize:
+                handsize -= 1
+        if current_blind.name == "The Band":
+            a = 1
+        if current_blind.name == "The Check":
+            for card in deck:
+                if card.value % 2 == 0:
+                    card.is_debuffed = True
+        if current_blind.name == "The Spear":
+            a = 1
+        if current_blind.name == "The Mouth":
+            a = 1
         for card in deck:
             card.debuff_assigned = True
     else:
@@ -2029,13 +2049,6 @@ while running:
     chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
     for indicator in chip_indicators:
         indicator.draw(screen)
-
-
-
-    if hovering:
-        screen.blit(cursor_hover, cursor_pos)
-    else:
-        screen.blit(cursor_normal, cursor_pos)
     if help_menu:
         screen.fill((255, 255, 255))
     
@@ -2045,12 +2058,14 @@ while running:
             if surface:
                 screen.blit(surface, (20, y_offset))
             y_offset += line_height + 5
-
         screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
-    if current_blind.name == "The Bow":
+    if hovering:
+        screen.blit(cursor_hover, cursor_pos)
+    else:
+        screen.blit(cursor_normal, cursor_pos)
+    if current_blind.name == "The Eye":
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
-        
     
 
 
