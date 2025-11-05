@@ -197,6 +197,9 @@ MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(
 RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (170, 50))
 SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (80, 110))
+Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (80, 110))
+Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (80, 110))
+Frozen3_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay3.png")), (80, 110))
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
 SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
@@ -842,6 +845,7 @@ saved_hand = None
 sort_mode = "rank"
 current_scoring_card = None
 discard_timer = 0
+mouth_triggered = False
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -901,6 +905,8 @@ BLIND_X = 10
 BLIND_Y = 35
 total_score = 0
 saved_total_score = 0
+is_straight = False
+is_flush = False
 
 SCORED_POSITIONS = [
     (WIDTH//2 - 150, HEIGHT//2 - 50),
@@ -954,8 +960,9 @@ class Card:
         self.rotation_speed = 0
         self.scaling_delay = 0
         self.is_debuffed = debuff
-        self.is_frozen = False
         self.debuff_assigned = False
+        self.is_frozen = False
+        self.freeze_timer = 0
         self.enhancement = enhancement
         self.edition = edition
         self.seal = seal
@@ -1127,7 +1134,7 @@ currentFrame = 0
 spacing = 600 / handsize
 
 def boss_debuff():
-    global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue
+    global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue, hand, deck, current_blind, selected_cards, mouth_triggered, is_straight
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
@@ -1163,11 +1170,13 @@ def boss_debuff():
                 if card.chip_value >= 10:
                     card.is_debuffed = True
         if current_blind.name == "The Crate":
-            if card.state in ("played", "scored"):
-                played_card_count += 1
+            played_card_count = 0
             for card in hand:
-                if played_card_count != 4 and card.state in ("played", "scored"):
-                    card.is_debuffed = True
+                if card.state in ("played", "scored"):
+                    played_card_count += 1
+                for card in hand:
+                    if played_card_count != 4 and card.state in ("played", "scored"):
+                        card.is_debuffed = True
         if current_blind.name == "The Luck":
             for card in deck:
                 rand = random.randint(1, 5)
@@ -1178,12 +1187,14 @@ def boss_debuff():
                 hands -= 1
                 discards -= 1
         if current_blind.name == "The Ramp":
-            card.is_debuffed = False
+            for card in deck:
+                card.is_debuffed = False
         if current_blind.name == "The Sandwich":
             played_card_count = 0
             for card in hand:
-                if card.state in ("played", "scored"):
-                    played_card_count += 1
+                if card.state:
+                    if card.state in ("played", "scored"):
+                        played_card_count += 1
             for card in hand:
                 if played_card_count != 3 and card.state in ("played", "scored"):
                     card.is_debuffed = True
@@ -1206,23 +1217,36 @@ def boss_debuff():
                 rand = random.randint(1, 5)
                 if rand == 1 and not card.debuff_assigned:
                     card.is_frozen = True
+                    card.freeze_timer = random.randint(1, 3)
         if current_blind.name == "The Band":
-            if max_handsize == handsize:
-                handsize -= 1
+            a = 1
         if current_blind.name == "The Check":
             for card in deck:
                 if card.value % 2 == 0:
                     card.is_debuffed = True
         if current_blind.name == "The Spear":
-            a = 1
+            hand_type, contributing = detect_hand(selected_cards)
+            for card in hand:
+                if card.state in ("played", "scored"):
+                        if not hand_type in ("Straight", "Straight Flush", "Royal Flush"):
+                            card.is_debuffed = True
         if current_blind.name == "The Mouth":
-            a = 1
+            for card in hand:
+                if card.state == "played" and not mouth_triggered:
+                    available = [c for c in selected_cards if not c.is_debuffed]
+                    if available:
+                        highest = max(available, key=lambda c: c.chip_value)
+                        highest.is_debuffed = True
+                        mouth_triggered = True
         for card in deck:
             card.debuff_assigned = True
     else:
         for card in deck:
             card.is_debuffed = False
             card.debuff_assigned = False
+    for card in hand:
+        if card.freeze_timer <= 0:
+            card.is_frozen = False
             
 
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
@@ -1283,10 +1307,18 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             scaled_img = scaled_img.copy()
             scaled_img.blit(scaled_overlay, (0, 0))
         if card.is_frozen:
-            card.chip_value = 0
-            scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
-            scaled_img = scaled_img.copy()
-            scaled_img.blit(scaled_overlay, (0, 0))
+            if card.freeze_timer == 3:
+                scaled_overlay = pygame.transform.smoothscale(Frozen_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+            if card.freeze_timer == 2:
+                scaled_overlay = pygame.transform.smoothscale(Frozen2_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+            if card.freeze_timer == 1:
+                scaled_overlay = pygame.transform.smoothscale(Frozen3_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
         rotated = pygame.transform.rotate(scaled_img, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated, rect.topleft)
@@ -1784,6 +1816,10 @@ while running:
                             break
                 if Playhand_rect.collidepoint(mouse_pos):
                     if hands > 0 and not scoring_in_progress:
+                        mouth_triggered = False
+                        for card in hand:
+                            if card.freeze_timer >= 0:
+                                card.freeze_timer -= 1
                         selected_cards = [card for card in hand if card.state == "selected"]
                         if len(selected_cards) > 0:
                             hand_type, contributing = detect_hand(selected_cards)
@@ -1818,6 +1854,9 @@ while running:
                             
                 if Discardhand_rect.collidepoint(mouse_pos):
                     if discards > 0 and not scoring_in_progress:
+                        for card in hand:
+                            if card.freeze_timer >= 0:
+                                card.freeze_timer -= 1
                         dev_selection = False
                         lerp_factor = 0.3
                         discard_timer = 0
@@ -1852,7 +1891,7 @@ while running:
                         card.dragging = False
                         if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                             if card.state == "hand":
-                                if sum(1 for c in hand if c.state == "selected") < 5:
+                                if sum(1 for c in hand if c.state == "selected") < 5 and not card.is_frozen:
                                     card.state = "selected"
                             else:
                                 card.state = "hand"
