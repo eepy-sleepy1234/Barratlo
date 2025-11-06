@@ -185,6 +185,8 @@ github_link = load_image_safe(os.path.join(GUI_DIR, 'GithubButton.png'))
 github_link = pygame.transform.scale(github_link,(int(HEIGHT/5), int(HEIGHT/10.5)))
 helpButtonimg = load_image_safe(os.path.join(GUI_DIR, 'HelpButton.png'))
 helpButtonimg = pygame.transform.scale(helpButtonimg,(int(HEIGHT/5), int(HEIGHT/10.5)))  
+foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
+FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
 
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
 Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
@@ -304,6 +306,7 @@ DEV_MODE = User_settings('Developer')
 dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
 Atttention_helper = User_settings('Attention Span Helper')
+Focy = User_settings('Focy')
 
 def dev_commands():
     global dev_toggle
@@ -1370,7 +1373,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         surface.blit(rotated, rect.topleft)
         card.rect = rect
 
-class Joker_Animation():
+class Animation():
     def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
         self.sprite_sheet = sprite_name
         self.frame_width = frame_width
@@ -1388,18 +1391,32 @@ class Joker_Animation():
         for i in range(frames):
             frame_x = i * frame_width
             frame_surface = sprite_name.subsurface((frame_x, 0, frame_width, frame_height))
+                        
             scaled = pygame.transform.smoothscale(frame_surface, (setWidth, setHeight))
             self.cached_frames.append(scaled)
         
     def animate(self):
+        global draw_fox
+        if self.current_frame >= self.frames - 1:
+            if self.sprite_sheet == FOXYSCARE:
+                draw_fox = False
+                self.reset_animation()
+                
+                return
         if currentFrame % self.frame_interval == 0:
             self.current_frame = (self.current_frame + 1) % self.frames
+            
+                
         
         screen.blit(self.cached_frames[self.current_frame], (self.xpos, self.ypos))
-    
+        
+
+            
     def reset_animation(self):
         self.current_frame = 1
-class Draggable_Animation(Joker_Animation):
+    
+
+class Draggable_Animation(Animation):
     def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
         super().__init__(sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight)
         self.dragging = False
@@ -1417,10 +1434,11 @@ class Draggable_Animation(Joker_Animation):
         self.rect.y = int(self.ypos)
 
 
-spinningBG = Joker_Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
-settingsButton = Joker_Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
+spinningBG = Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
+settingsButton = Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
+focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
 
 class Blind:
     def __init__(self, name, image, x, y, state):
@@ -1580,6 +1598,8 @@ def wrap_text(text, font, max_width):
         lines.append(' '.join(current_line))
     return lines
 
+
+draw_fox = False
 def detect_hand(cards):
     n = len(cards)
     if n == 0:
@@ -1755,6 +1775,26 @@ while startGame == False:
         screen.blit(cursor_hover, cursor_pos)
     else:
         screen.blit(cursor_normal, cursor_pos)   
+
+    if Focy.toggle:
+    
+        
+        if random.randint(1, 10000)  == 1:
+            print("focy")
+            
+            subprocess.run(['powershell', '-Command', 
+            '$obj = New-Object -ComObject WScript.Shell;'
+            '$obj.SendKeys([char]173);'
+            'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
+            shell=True)
+            
+            foxsound.play()
+                
+                
+            draw_fox = True
+    if draw_fox:
+    
+        focy_scare.animate()
     pygame.display.flip()
     clock.tick(60)
     currentFrame += 1
@@ -2190,8 +2230,25 @@ while running:
         screen.blit(blurred, (0, 0))
     
 
-
+    if Focy.toggle:
     
+        
+        if random.randint(1, 10000)  == 1:
+            print("focy")
+            
+            subprocess.run(['powershell', '-Command', 
+            '$obj = New-Object -ComObject WScript.Shell;'
+            '$obj.SendKeys([char]173);'
+            'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
+            shell=True)
+            
+            foxsound.play()
+                
+                
+            draw_fox = True
+    if draw_fox:
+    
+        focy_scare.animate()
     pygame.display.flip()   ###########################################################
     clock.tick(60)
     currentFrame += 1
@@ -2293,3 +2350,4 @@ while running:
 
 close_video()
 pygame.quit()
+
