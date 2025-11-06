@@ -74,6 +74,7 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
 PixelFontXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/30))
+PixelFontXXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/50))
 toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
@@ -951,6 +952,36 @@ ANTE_SCALING = {
     15: 77000000000000000000,
     16: 860000000000000000000000,
     }
+BOSS_DESC = {
+    "The Arrow": "All cards with the Spade suit are debuffed",
+    "The Band": "-1 handsize",
+    "The Bird": "All cards with the Heart suit are debuffed",
+    "The Bounce": "Score caps out at one-third target score",
+    "The Bow": "All cards with the Diamond suit are debuffed",
+    "The Bridge": "All cards with a rank under 10 are debuffed",
+    "The Chair": "All cards with a rank above 9 are debuffed",
+    "The Claw": "Played hand must contain an even number of cards",
+    "The Cone": "All cards with the Club suit are debuffed",
+    "The Crate": "All cards with an odd rank are debuffed",
+    "The Eye": "screen blurred",
+    "The Fork": "-1 to both hands and discards",
+    "The Luck": "1 in 5 cards are debuffed",
+    "The Ramp": "Target score is doubled",
+    "The Sandwich": "Played hand must contain an odd number of cards",
+    "The Sign": "Face cards are frozen at the start of the round",
+    "The South": "1 in 5 cards are frozen",
+    "The Splinter": "All cards with a black suit are debuffed",
+    "The Twin": "Played hand cannot contain duplicate ranks",
+    "The Check": "All cards with an even rank are debuffed",
+    "The Spear": "Played hand must contain a straight",
+    "The Mouth": "The played card with the highest rank is debuffed",
+    "The Magnet": "All cards with a red suit are frozen at the start of the round",
+    "The ": "",
+    "The ": "",
+    "The ": "",
+    "The ": "",
+    "The ": "",
+    }
 
 class Card:
     card_id_counter = 0
@@ -1170,13 +1201,9 @@ def boss_debuff():
                 if card.chip_value >= 10:
                     card.is_debuffed = True
         if current_blind.name == "The Crate":
-            played_card_count = 0
-            for card in hand:
-                if card.state in ("played", "scored"):
-                    played_card_count += 1
-                for card in hand:
-                    if played_card_count != 4 and card.state in ("played", "scored"):
-                        card.is_debuffed = True
+            for card in deck:
+                if card.value % 2 == 0:
+                    card.is_debuffed = True
         if current_blind.name == "The Luck":
             for card in deck:
                 rand = random.randint(1, 5)
@@ -1196,7 +1223,7 @@ def boss_debuff():
                     if card.state in ("played", "scored"):
                         played_card_count += 1
             for card in hand:
-                if played_card_count != 3 and card.state in ("played", "scored"):
+                if played_card_count not in (1, 3, 5) and card.state in ("played", "scored"):
                     card.is_debuffed = True
         if current_blind.name == "The Twin":
             hand_type, contributing = detect_hand(selected_cards)
@@ -1209,9 +1236,13 @@ def boss_debuff():
                 if card.value in duplicate_values:
                     card.is_debuffed = True
         if current_blind.name == "The Magnet":
-            a = 1
+            for card in deck:
+                if card.suit in ("Hearts", "Diamonds"):
+                    card.freeze_timer = 4
         if current_blind.name == "The Splinter":
-            a = 1
+            for card in hand:
+                if card.suit in ("Spades", "Clubs"):
+                    card.is_debuffed = True
         if current_blind.name == "The South":
             for card in deck:
                 rand = random.randint(1, 5)
@@ -1219,7 +1250,8 @@ def boss_debuff():
                     card.is_frozen = True
                     card.freeze_timer = random.randint(1, 3)
         if current_blind.name == "The Band":
-            a = 1
+            if handsize == max_handsize:
+                handsize -= 1
         if current_blind.name == "The Check":
             for card in deck:
                 if card.value % 2 == 0:
@@ -1238,12 +1270,26 @@ def boss_debuff():
                         highest = max(available, key=lambda c: c.chip_value)
                         highest.is_debuffed = True
                         mouth_triggered = True
+        if current_blind.name == "The Claw":
+            played_card_count = 0
+            for card in hand:
+                if card.state:
+                    if card.state in ("played", "scored"):
+                        played_card_count += 1
+            for card in hand:
+                if played_card_count not in (2, 4) and card.state in ("played", "scored"):
+                    card.is_debuffed = True
+        if current_blind.name == "The Sign":
+            for card in deck:
+                if card.rank in ("J", "Q", "K"):
+                    card.freeze_timer = 4
         for card in deck:
             card.debuff_assigned = True
     else:
         for card in deck:
             card.is_debuffed = False
             card.debuff_assigned = False
+        handsize = max_handsize
     for card in hand:
         if card.freeze_timer <= 0:
             card.is_frozen = False
@@ -1515,6 +1561,24 @@ def change_notation(number):
             place += 1
         number = f"{saved_number}e{place}"
     return number
+
+def wrap_text(text, font, max_width):
+    words = text.split(' ')
+    lines = []
+    current_line = []
+    for word in words:
+        test_line = ' '.join(current_line + [word])
+        if font.size(test_line)[0] <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+            else:
+                lines.append(word)
+    if current_line:
+        lines.append(' '.join(current_line))
+    return lines
 
 def detect_hand(cards):
     n = len(cards)
@@ -2047,6 +2111,16 @@ while running:
     text = PixelFontS.render(f"{current_blind.name}", True, white)
     text_rect = text.get_rect(center=(180, HEIGHT / 30))
     screen.blit(text, text_rect)
+    if current_blind.name not in ("Small Blind", "Big Blind"):
+        max_width = 150
+        lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
+        line_height = PixelFontXXS.get_height() + 0.1
+        total_height = len(lines) * line_height
+        start_y = (HEIGHT / 10) - (total_height / 2)
+        for i, line in enumerate(lines):
+            text = PixelFontXXS.render(line, True, white)
+            text_rect = text.get_rect(center=(190,start_y + i * line_height))
+            screen.blit(text, text_rect)
 
     screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
     screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
