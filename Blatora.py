@@ -1779,7 +1779,7 @@ while startGame == False:
     if Focy.toggle:
     
         
-        if random.randint(1, 15000)  == 1:
+        if random.randint(1, 20000)  == 1:
             print("focy")
             
             subprocess.run(['powershell', '-Command', 
@@ -2233,7 +2233,7 @@ while running:
     if Focy.toggle:
     
         
-        if random.randint(1, 15000)  == 1:
+        if random.randint(1, 20000)  == 1:
             print("focy")
             
             subprocess.run(['powershell', '-Command', 
@@ -2350,5 +2350,6 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
