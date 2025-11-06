@@ -307,7 +307,7 @@ dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
 Atttention_helper = User_settings('Attention Span Helper')
 Focy = User_settings('Focy')
-
+Focy.toggle = True
 def dev_commands():
     global dev_toggle
     global dev_command
@@ -1779,7 +1779,7 @@ while startGame == False:
     if Focy.toggle:
     
         
-        if random.randint(1, 10000)  == 1:
+        if random.randint(1, 15000)  == 1:
             print("focy")
             
             subprocess.run(['powershell', '-Command', 
@@ -2229,11 +2229,11 @@ while running:
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
     
-
+    if random.randint(1,1000000000)
     if Focy.toggle:
     
         
-        if random.randint(1, 10000)  == 1:
+        if random.randint(1, 15000)  == 1:
             print("focy")
             
             subprocess.run(['powershell', '-Command', 
@@ -2350,4 +2350,5 @@ while running:
 
 close_video()
 pygame.quit()
+
 
