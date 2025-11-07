@@ -359,7 +359,7 @@ class GUITOGGLES():
                 self.sprite = self.original_image                  
                                                     
                     
-question = GUITOGGLES(WIDTH - (WIDTH/20), 0 + WIDTH/20, Question_mark, scale_factor=1.15, isbutton=False)
+question = GUITOGGLES(WIDTH/18, HEIGHT/1.53, Question_mark, scale_factor=1.15, isbutton=False)
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
@@ -1503,7 +1503,7 @@ def calculate_target_score(ante, round_num):
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
-    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score
+    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, shop
     if not current_blind or victory:
         if round_num % 3 == 1:
             if small_blind:
@@ -1523,6 +1523,9 @@ def get_current_blind():
         if current_blind:
             current_blind.target_x = BLIND_X
             current_blind.target_y = BLIND_Y
+            if shop:
+                current_blind.target_x = -100
+                current_blind.target_y = -100
             current_blind.vx = 0
             current_blind.vy = 0
             current_blind.score_required = calculate_target_score(ante, round_num)
@@ -2054,20 +2057,6 @@ while running:
     screen.blit(SideBar_img, (0, 0))
     
 
-    if Atttention_helper.toggle:
-        frame = get_video_frame()
-        if VideoVelocityX == 0:
-            VideoVelocityX = random.randint(0, 10)
-        if VideoVelocityY == 0:
-            VideoVelocityY = random.randint(0, 10)
-        if VIDEO_X >= WIDTH - VIDEO_WIDTH or VIDEO_X <= 0:
-            VideoVelocityX *= -1
-        if VIDEO_Y >= HEIGHT - VIDEO_HEIGHT or VIDEO_Y <= 0:
-            VideoVelocityY *= -1
-        VIDEO_X += VideoVelocityX
-        VIDEO_Y += VideoVelocityY
-        if frame:
-            screen.blit(frame, (VIDEO_X, VIDEO_Y))
     if not calculating:
         selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
         if len(selected_cards) > 0:
@@ -2172,9 +2161,23 @@ while running:
         screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
         screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
+    if Atttention_helper.toggle:
+        frame = get_video_frame()
+        if VideoVelocityX == 0:
+            VideoVelocityX = random.randint(0, 10)
+        if VideoVelocityY == 0:
+            VideoVelocityY = random.randint(0, 10)
+        if VIDEO_X >= WIDTH - VIDEO_WIDTH or VIDEO_X <= 0:
+            VideoVelocityX *= -1
+        if VIDEO_Y >= HEIGHT - VIDEO_HEIGHT or VIDEO_Y <= 0:
+            VideoVelocityY *= -1
+        VIDEO_X += VideoVelocityX
+        VIDEO_Y += VideoVelocityY
+        if frame:
+            screen.blit(frame, (VIDEO_X, VIDEO_Y))
+
     boss_debuff()
-    if not shop:
-        draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
+    draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
     update_card_animation()
 
@@ -2185,7 +2188,7 @@ while running:
     else:
         soseriousmusic.stop()
 
-    if current_blind and not shop:
+    if current_blind:
         current_blind.update()
         current_blind.draw(screen)
 
@@ -2231,7 +2234,7 @@ while running:
         screen.blit(cursor_hover, cursor_pos)
     else:
         screen.blit(cursor_normal, cursor_pos)
-    if current_blind.name == "The Eye":
+    if current_blind.name == "The Eye" and not shop:
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
     
@@ -2269,13 +2272,13 @@ while running:
                 for c in hand:
                     if c.slot > index:
                         c.slot -= 1
-                if deck:
+                if deck and not shop:
                     new_card = deck.pop()
                     new_card.slot = index
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
                     sort_hand()
-    if deck and len(hand) < handsize and not dev_selection:
+    if deck and len(hand) < handsize and not dev_selection and not shop:
         index = card.slot
         new_card = deck.pop()
         new_card.slot = index
@@ -2342,6 +2345,9 @@ while running:
                 if victory:
                     advance_to_next_blind()
                     get_current_blind()
+                    for card in hand:
+                        discard_queue.append(card)
+                    discarding = True
 
     if discarding:
         if discard_queue:
