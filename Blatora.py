@@ -850,6 +850,7 @@ sort_mode = "rank"
 current_scoring_card = None
 discard_timer = 0
 mouth_triggered = False
+shop = False
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1561,9 +1562,10 @@ def advance_to_next_blind():
         deck.append(new_card)
     random.shuffle(deck)
 def check_blind_defeated():
-    global blind_defeated, current_score
+    global blind_defeated, current_score, shop
     if current_blind and total_score >= target_score:
         blind_defeated = True
+        shop = True
         return True
     else:
         return False
@@ -1830,7 +1832,7 @@ overlay.set_alpha(128)
 while running:
     global discard_queue
     global scoring_queue
-    question.should_draw = True 
+    question.should_draw = True
     mouse_pos = pygame.mouse.get_pos()
     
     cursor_pos = pygame.mouse.get_pos()
@@ -2088,8 +2090,9 @@ while running:
         mult = base_mult * level
         final_score = saved_base_chips * saved_base_mult
     screen.blit(HandBackground_img, (20, HEIGHT / 2.75))
-    screen.blit(ScoreBackground_img, (20, HEIGHT / 3.75))
-    screen.blit(GoalBackground_img, (110, HEIGHT / 7.2))
+    if not shop:
+        screen.blit(ScoreBackground_img, (20, HEIGHT / 3.75))
+        screen.blit(GoalBackground_img, (110, HEIGHT / 7.2))
     screen.blit(MoneyBackground_img, (100, HEIGHT / 1.7))
     screen.blit(RoundBackground_img, (100, HEIGHT / 1.5))
     font = pygame.font.SysFont(None, 40)
@@ -2125,17 +2128,18 @@ while running:
         text = PixelFontS.render(f"{mult_text}", True, white)
     text_rect = text.get_rect(center=(200, HEIGHT / 2.2))
     screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
-    screen.blit(text, text_rect)
-    total_score_text = change_notation(total_score)
-    text = PixelFontS.render(f"{total_score_text}", True, white)
-    text_rect = text.get_rect(center=(180, HEIGHT / 3.17))
-    screen.blit(text, text_rect)
-    target_score_text = change_notation(target_score)
-    text = PixelFontS.render(f"{target_score_text}", True, red)
-    text_rect = text.get_rect(center=(190, HEIGHT / 5))
-    screen.blit(text, text_rect)
+    if not shop:
+        text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
+        screen.blit(text, text_rect)
+        total_score_text = change_notation(total_score)
+        text = PixelFontS.render(f"{total_score_text}", True, white)
+        text_rect = text.get_rect(center=(180, HEIGHT / 3.17))
+        screen.blit(text, text_rect)
+        target_score_text = change_notation(target_score)
+        text = PixelFontS.render(f"{target_score_text}", True, red)
+        text_rect = text.get_rect(center=(190, HEIGHT / 5))
+        screen.blit(text, text_rect)
     text = PixelFontS.render(f"{round_num}", True, orange)
     text_rect = text.get_rect(center=(227, HEIGHT / 1.415))
     screen.blit(text, text_rect)
@@ -2145,13 +2149,14 @@ while running:
     text = PixelFontS.render(f"${money}", True, yellow)
     text_rect = text.get_rect(center=(180, HEIGHT / 1.595))
     screen.blit(text, text_rect)
-    text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
-    text_rect = text.get_rect(center=(220, HEIGHT / 4.35))
-    screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{current_blind.name}", True, white)
-    text_rect = text.get_rect(center=(180, HEIGHT / 30))
-    screen.blit(text, text_rect)
-    if current_blind.name not in ("Small Blind", "Big Blind"):
+    if not shop:
+        text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
+        text_rect = text.get_rect(center=(220, HEIGHT / 4.35))
+        screen.blit(text, text_rect)
+        text = PixelFontS.render(f"{current_blind.name}", True, white)
+        text_rect = text.get_rect(center=(180, HEIGHT / 30))
+        screen.blit(text, text_rect)
+    if current_blind.name not in ("Small Blind", "Big Blind") and not shop:
         max_width = 150
         lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
         line_height = PixelFontXXS.get_height() + 0.1
@@ -2161,14 +2166,15 @@ while running:
             text = PixelFontXXS.render(line, True, white)
             text_rect = text.get_rect(center=(190,start_y + i * line_height))
             screen.blit(text, text_rect)
-
-    screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
-    screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
-    screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
-    screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
+    if not shop:
+        screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
+        screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
+        screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
+        screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
     boss_debuff()
-    draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
+    if not shop:
+        draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
     update_card_animation()
 
@@ -2179,7 +2185,7 @@ while running:
     else:
         soseriousmusic.stop()
 
-    if current_blind:
+    if current_blind and not shop:
         current_blind.update()
         current_blind.draw(screen)
 
@@ -2229,7 +2235,7 @@ while running:
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
     
-    if random.randint(1,1000000000000) or Focy.toggle:
+    if Focy.toggle:
         
     
     
