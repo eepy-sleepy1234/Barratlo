@@ -2229,12 +2229,12 @@ while running:
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
     
-    if random.randint(1,100000000000) or Focy.toggle:
+    if random.randint(1,1000000000000) or Focy.toggle:
         
     
     
         
-        if random.randint(1, 20000)  == 1:
+        if random.randint(1, 15000)  == 1:
           
             
             subprocess.run(['powershell', '-Command', 
@@ -2351,6 +2351,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
