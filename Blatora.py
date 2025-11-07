@@ -307,7 +307,7 @@ dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
 Atttention_helper = User_settings('Attention Span Helper')
 Focy = User_settings('Focy')
-Focy.toggle = True
+
 def dev_commands():
     global dev_toggle
     global dev_command
@@ -2229,7 +2229,7 @@ while running:
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
     
-    if random.randint(1,1000000000)
+    if random.randint(1,100000000000)
     if Focy.toggle:
     
         
@@ -2350,6 +2350,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
