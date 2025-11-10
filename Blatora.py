@@ -34,7 +34,7 @@ except ImportError:
 
     
 
-WIDTH, HEIGHT = 1000,800
+WIDTH, HEIGHT = 1920,1080
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 
@@ -220,27 +220,27 @@ xbutton = load_image_safe(os.path.join(GUI_DIR, 'XButton.png'))
 xbutton = pygame.transform.scale(xbutton, (int(HEIGHT/10), int(HEIGHT/10)))
 
 # ==================== GAME UI BUTTONS ====================
-Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
-Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
-SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
-SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
+Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (WIDTH/8.33, HEIGHT/16))
+Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (WIDTH/8.33, HEIGHT/16))
+SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (WIDTH/8.33, HEIGHT/16))
+SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, HEIGHT/16))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD, (WIDTH, HEIGHT))
 
-HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 105))
-ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (240, 75))
-GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (150, 100))
-MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (170, 60))
-RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (170, 50))
-SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
+HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (WIDTH/4.16, HEIGHT/7.62))
+ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (WIDTH/4.16, HEIGHT/10.66))
+GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (WIDTH/6.67, HEIGHT/8))
+MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (WIDTH/5.88, HEIGHT/13.33))
+RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (WIDTH/5.88, HEIGHT/16))
+SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (WIDTH/3.57, HEIGHT/1.33))
 
 # ==================== OVERLAYS ====================
-Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (80, 110))
-Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (80, 110))
-Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (80, 110))
-Frozen3_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay3.png")), (80, 110))
+Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
+Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
+Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (WIDTH/12.5, HEIGHT/7.27))
+Frozen3_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay3.png")), (WIDTH/12.5, HEIGHT/7.27))
 
 # ==================== BUTTON RECTANGLES ====================
 STARTBUTTON_X = int((WIDTH/2) - ((WIDTH/4.4)/2))
@@ -948,19 +948,19 @@ blind_defeated = False
 victory = False
 target_score = 300
 contributing = []
-BLIND_X = 10
-BLIND_Y = 35
+BLIND_X = WIDTH/100
+BLIND_Y = HEIGHT/22.86
 total_score = 0
 saved_total_score = 0
 is_straight = False
 is_flush = False
 
 SCORED_POSITIONS = [
-    (WIDTH//2 - 150, HEIGHT//2 - 50),
-    (WIDTH//2 - 50, HEIGHT//2 - 50),
-    (WIDTH//2 + 50, HEIGHT//2 - 50),
-    (WIDTH//2 + 150, HEIGHT//2 - 50),
-    (WIDTH//2 + 250, HEIGHT//2 - 50)
+    (WIDTH//2.86, HEIGHT//2.29),
+    (WIDTH//2.22, HEIGHT//2.29),
+    (WIDTH//1.81, HEIGHT//2.29),
+    (WIDTH//1.54, HEIGHT//2.29),
+    (WIDTH//1.33, HEIGHT//2.29)
 ]
 
 SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"]
@@ -1159,7 +1159,7 @@ class ChipIndicator:
             self.alpha = int(255 * (1 - (self.age - 40) / 20))
         return self.age < self.lifetime
     def draw(self, surface):
-        diamond_size = 60
+        diamond_size = HEIGHT/13.33
         half = diamond_size//2
         diamond_points = [
             (self.x, self.y - half),
@@ -1179,7 +1179,6 @@ class ChipIndicator:
         pygame.draw.polygon(diamond_surface, (0, 100, 255, self.alpha), adjusted_points)
         diamond_surface.set_alpha(self.alpha)
         surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
-        font = pygame.font.SysFont(None, 48)
         text = PixelFont.render(f"+{self.chip_value}", True, (255, 255, 255))
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
@@ -1188,7 +1187,7 @@ for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
         if filename.endswith(".png"):
             filepath = os.path.join(root, filename)
-            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (80, 110))
+            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (HEIGHT/10, HEIGHT/7.27))
             name, _ = os.path.splitext(filename)
             rank, suit = name.split("Of")
             card = Card(rank, suit, image)
@@ -1208,7 +1207,7 @@ for i in range(handsize):
         hand.append(card)
 
 currentFrame = 0
-spacing = 600 / handsize
+spacing = 600 / handsize * WIDTH/1500
 
 def boss_debuff():
     global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue, hand, deck, current_blind, selected_cards, mouth_triggered, is_straight
@@ -1361,7 +1360,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         target_y = center_y - max_vertical_offset * 2 * (t - 0.5)**2 + max_vertical_offset
         if card.state == "selected":
             card.angle = (t - 0.5) * -2 * angle_range
-            target_y -= 40
+            target_y -= HEIGHT/20
         elif card.state == "played":
             if card.scoring_x == 0:
                 if scoring_sequence_index < len(SCORED_POSITIONS):
@@ -1382,8 +1381,8 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             card.angle = (t - 0.5) * -2 * angle_range
         if card.scoring_x != 0:
             if card.is_contributing:
-                if card.scoring_y == HEIGHT//2 - 50:
-                    card.scoring_y -= 25
+                if card.scoring_y == HEIGHT//2.29:
+                    card.scoring_y -= HEIGHT/32
             target_x, target_y = card.scoring_x, card.scoring_y
             if not card.scaling:
                 card.angle = 0
@@ -1486,9 +1485,6 @@ shopAnimation = Animation(SHOPANIMATIONIMG, 700, 1600, 24, 86, 0,0, WIDTH, HEIGH
 
 
 shop_down = False 
-def toggle_shop():
-    global shop_down
-    if 
 class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
@@ -1534,7 +1530,7 @@ for root, dirs, files in os.walk(BLINDS_DIR):
             blind_name_raw = os.path.splitext(filename)[0]
             blind_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', blind_name_raw)
             blind_name = blind_name.title()
-            image = pygame.transform.scale(load_image_safe(filepath), (100, 100))
+            image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/8))
             if "Small" in blind_name:
                 small_blind = Blind(blind_name, image, -150, -150, "small")
             elif "Big" in blind_name:
@@ -2061,8 +2057,8 @@ while running:
                         center_y = HEIGHT - 100
                         max_v_offset = -30
                         t = i / (n - 1) if n > 1 else 0.5
-                        slot_target_x = start_x + i * spread_local
-                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset
+                        slot_target_x = start_x + i * spread_local * WIDTH/1000
+                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
                         if not card.state == "played":
                             card.target_x = slot_target_x
                             card.target_y = slot_target_y
@@ -2127,12 +2123,12 @@ while running:
         chips = base_chips * level
         mult = base_mult * level
         final_score = saved_base_chips * saved_base_mult
-    screen.blit(HandBackground_img, (20, HEIGHT / 2.75))
+    screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
     if not shop:
-        screen.blit(ScoreBackground_img, (20, HEIGHT / 3.75))
-        screen.blit(GoalBackground_img, (110, HEIGHT / 7.2))
-    screen.blit(MoneyBackground_img, (100, HEIGHT / 1.7))
-    screen.blit(RoundBackground_img, (100, HEIGHT / 1.5))
+        screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
+        screen.blit(GoalBackground_img, (WIDTH/9.09, HEIGHT / 7.2))
+    screen.blit(MoneyBackground_img, (WIDTH/10, HEIGHT / 1.7))
+    screen.blit(RoundBackground_img, (WIDTH/10, HEIGHT / 1.5))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -2142,13 +2138,13 @@ while running:
     else:
         current_score_text = change_notation(current_score)
         text = PixelFontS.render(f"{current_score_text}", True, white)
-    text_rect = text.get_rect(center=(140, 20 + HEIGHT / 2.67))
+    text_rect = text.get_rect(center=(WIDTH/7.14, HEIGHT / 2.5))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{hands}", True, white)
-    text_rect = text.get_rect(center=(70, HEIGHT / 1.79))
+    text_rect = text.get_rect(center=(WIDTH/14.29, HEIGHT / 1.79))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{discards}", True, white)
-    text_rect = text.get_rect(center=(205, HEIGHT / 1.79))
+    text_rect = text.get_rect(center=(WIDTH/4.88, HEIGHT / 1.79))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
         saved_base_chips_text = change_notation(saved_base_chips)
@@ -2156,7 +2152,7 @@ while running:
     else:
         chips_text = change_notation(chips)
         text = PixelFontS.render(f"{chips_text}", True, white)
-    text_rect = text.get_rect(center=(80, HEIGHT / 2.2))
+    text_rect = text.get_rect(center=(WIDTH/12.5, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
         saved_base_mult_text = change_notation(saved_base_mult)
@@ -2164,7 +2160,7 @@ while running:
     else:
         mult_text = change_notation(mult)
         text = PixelFontS.render(f"{mult_text}", True, white)
-    text_rect = text.get_rect(center=(200, HEIGHT / 2.2))
+    text_rect = text.get_rect(center=(WIDTH/5, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     if not shop:
         text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
@@ -2172,30 +2168,30 @@ while running:
         screen.blit(text, text_rect)
         total_score_text = change_notation(total_score)
         text = PixelFontS.render(f"{total_score_text}", True, white)
-        text_rect = text.get_rect(center=(180, HEIGHT / 3.17))
+        text_rect = text.get_rect(center=(WIDTH/5.4, HEIGHT / 3.17))
         screen.blit(text, text_rect)
         target_score_text = change_notation(target_score)
         text = PixelFontS.render(f"{target_score_text}", True, red)
-        text_rect = text.get_rect(center=(190, HEIGHT / 5))
+        text_rect = text.get_rect(center=(WIDTH/5.4, HEIGHT / 5))
         screen.blit(text, text_rect)
     text = PixelFontS.render(f"{round_num}", True, orange)
-    text_rect = text.get_rect(center=(227, HEIGHT / 1.415))
+    text_rect = text.get_rect(center=(WIDTH/4.41, HEIGHT / 1.415))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{ante}", True, orange)
-    text_rect = text.get_rect(center=(127, HEIGHT / 1.419))
+    text_rect = text.get_rect(center=(WIDTH/7.87, HEIGHT / 1.419))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"${money}", True, yellow)
-    text_rect = text.get_rect(center=(180, HEIGHT / 1.595))
+    text_rect = text.get_rect(center=(WIDTH/5.56, HEIGHT / 1.595))
     screen.blit(text, text_rect)
     if not shop:
         text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
-        text_rect = text.get_rect(center=(220, HEIGHT / 4.35))
+        text_rect = text.get_rect(center=(WIDTH/4.55, HEIGHT / 4.35))
         screen.blit(text, text_rect)
         text = PixelFontS.render(f"{current_blind.name}", True, white)
-        text_rect = text.get_rect(center=(180, HEIGHT / 30))
+        text_rect = text.get_rect(center=(WIDTH/5.56, HEIGHT / 30))
         screen.blit(text, text_rect)
     if current_blind.name not in ("Small Blind", "Big Blind") and not shop:
-        max_width = 150
+        max_width = WIDTH/6.67
         lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
         line_height = PixelFontXXS.get_height() + 0.1
         total_height = len(lines) * line_height
@@ -2226,7 +2222,7 @@ while running:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
 
     boss_debuff()
-    draw_hand(screen, hand, WIDTH / 2, HEIGHT - 100, spread=spacing, max_vertical_offset=-30, angle_range=8)
+    draw_hand(screen, hand, WIDTH / 2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
 
     update_card_animation()
 
@@ -2412,9 +2408,4 @@ while running:
 
 close_video()
 pygame.quit()
-
-
-
-
-
 
