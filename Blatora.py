@@ -34,7 +34,7 @@ except ImportError:
 
     
 
-WIDTH, HEIGHT = 1000, 800
+WIDTH, HEIGHT = 1000,800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 
@@ -173,68 +173,104 @@ def close_video():
         video_cap = None
 
 
+
+
+
+
+# ==================== SOUNDS ====================
+foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
+soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
+
+# ==================== SPRITESHEETS ====================
+FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
+SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
+SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
+SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
+SHOPANIMATIONIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'Shop_Animation.png'))
+
+
+# ==================== CURSORS ====================
 cursor_normal = load_image_safe(os.path.join(GUI_DIR, 'CursorNormal.png'))
 cursor_hover = load_image_safe(os.path.join(GUI_DIR, 'CursorHover.png'))
 cursor_normal = pygame.transform.scale(cursor_normal, (32, 32))
 cursor_hover = pygame.transform.scale(cursor_hover, (32, 32))
+
+# ==================== GUI BUTTONS ====================
 Question_mark = load_image_safe(os.path.join(GUI_DIR, 'QuestionMark.png'))
 Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
-Settings_2 = load_image_safe(os.path.join(GUI_DIR, 'Settings2.png'))
-Settings_2 = pygame.transform.scale(Settings_2,(int(HEIGHT/5), int(HEIGHT/10.5)))
-github_link = load_image_safe(os.path.join(GUI_DIR, 'GithubButton.png'))
-github_link = pygame.transform.scale(github_link,(int(HEIGHT/5), int(HEIGHT/10.5)))
-helpButtonimg = load_image_safe(os.path.join(GUI_DIR, 'HelpButton.png'))
-helpButtonimg = pygame.transform.scale(helpButtonimg,(int(HEIGHT/5), int(HEIGHT/10.5)))  
-foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
-FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
 
-soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
+Settings_2 = load_image_safe(os.path.join(GUI_DIR, 'Settings2.png'))
+Settings_2 = pygame.transform.scale(Settings_2, (int(HEIGHT/5), int(HEIGHT/10.5)))
+
+github_link = load_image_safe(os.path.join(GUI_DIR, 'GithubButton.png'))
+github_link = pygame.transform.scale(github_link, (int(HEIGHT/5), int(HEIGHT/10.5)))
+
+helpButtonimg = load_image_safe(os.path.join(GUI_DIR, 'HelpButton.png'))
+helpButtonimg = pygame.transform.scale(helpButtonimg, (int(HEIGHT/5), int(HEIGHT/10.5)))
+
+STARTBUTTON = load_image_safe(os.path.join(GUI_DIR, 'StartButton.png'))
+STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON, (int(WIDTH/4.4), int(HEIGHT/10)))
+
+SETTINGONIMG = load_image_safe(os.path.join(GUI_DIR, 'Setting_on.png'))
+SETTINGOFFIMG = load_image_safe(os.path.join(GUI_DIR, 'Setting_off.png'))
+SETTINGONIMG = pygame.transform.scale(SETTINGONIMG, (int(HEIGHT/5), int(HEIGHT/10)))
+SETTINGOFFIMG = pygame.transform.scale(SETTINGOFFIMG, (int(HEIGHT/5), int(HEIGHT/10)))
+
+xbutton = load_image_safe(os.path.join(GUI_DIR, 'XButton.png'))
+xbutton = pygame.transform.scale(xbutton, (int(HEIGHT/10), int(HEIGHT/10)))
+
+# ==================== GAME UI BUTTONS ====================
 Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (120, 50))
 Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (120, 50))
 SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (120, 50))
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (120, 50))
+
+# ==================== BACKGROUNDS & PANELS ====================
+STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
+STARTCARD = pygame.transform.smoothscale(STARTCARD, (WIDTH, HEIGHT))
+
 HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (240, 105))
 ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (240, 75))
 GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (150, 100))
 MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (170, 60))
 RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (170, 50))
 SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (280, 600))
+
+# ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (80, 110))
 Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (80, 110))
 Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (80, 110))
 Frozen3_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay3.png")), (80, 110))
-STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
-STARTCARD = pygame.transform.smoothscale(STARTCARD,(WIDTH,HEIGHT))
-SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
-SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
-STARTBUTTON = load_image_safe(os.path.join(GUI_DIR, 'StartButton.png'))
-STARTBUTTON = pygame.transform.smoothscale(STARTBUTTON,(int(WIDTH/4.4),int(HEIGHT/10)))
-STARTBUTTON_X = int((WIDTH/2)- ((WIDTH/4.4)/2))
-STARTBUTTON_Y = (HEIGHT/2)+CENTERLETTERH/2
+
+# ==================== BUTTON RECTANGLES ====================
+STARTBUTTON_X = int((WIDTH/2) - ((WIDTH/4.4)/2))
+STARTBUTTON_Y = (HEIGHT/2) + CENTERLETTERH/2
 start_button_rect = STARTBUTTON.get_rect()
 start_button_rect.topleft = (STARTBUTTON_X, STARTBUTTON_Y)
-SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
-SETTINGONIMG = load_image_safe(os.path.join(GUI_DIR, 'Setting_on.png'))
-SETTINGOFFIMG = load_image_safe(os.path.join(GUI_DIR, 'Setting_off.png'))
-SETTINGONIMG = pygame.transform.scale(SETTINGONIMG,(int(HEIGHT/5),int(HEIGHT/10)))
-SETTINGOFFIMG = pygame.transform.scale(SETTINGOFFIMG, (int(HEIGHT/5),int(HEIGHT/10)))
+
 SETTINGSRECT = SETTINGONIMG.get_rect()
-xbutton = load_image_safe(os.path.join(GUI_DIR, 'XButton.png'))
-xbutton = pygame.transform.scale(xbutton,(int(HEIGHT/10), int(HEIGHT/10)))
+
 xbutton_rect = xbutton.get_rect()
 xbutton_rect.topleft = ((WIDTH - xbutton_rect.width), 0)
+
 playhandw = Playhand_img.get_width()
 playhandh = Playhand_img.get_height()
 sortrankw = SortbuttonSuit_img.get_width()
 sortrankh = SortbuttonSuit_img.get_height()
+
 SortbuttonSuit_rect = SortbuttonSuit_img.get_rect()
-SortbuttonSuit_rect.topleft = (int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+SortbuttonSuit_rect.topleft = (int(WIDTH/2 - (sortrankw + sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+
 SortbuttonRank_rect = SortbuttonRank_img.get_rect()
-SortbuttonRank_rect.topleft = (int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+SortbuttonRank_rect.topleft = (int(WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
+
 Playhand_rect = Playhand_img.get_rect()
-Playhand_rect.topleft = (int(0 + playhandw/4), HEIGHT - int(playhandh *2 ))
+Playhand_rect.topleft = (int(0 + playhandw/4), HEIGHT - int(playhandh * 2))
+
 Discardhand_rect = Playhand_img.get_rect()
-Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 ))
+Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh * 2))
+
+# ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -242,6 +278,7 @@ for root, dirs, files in os.walk(LETTERS_DIR):
             letter_name = os.path.splitext(filename)[0]
             image = pygame.transform.scale(load_image_safe(filepath), (int(LETTERW), int(LETTERH)))
             letter_images[letter_name] = image
+
 StartingBimg = letter_images['StartBimg']
 StartingAimg = letter_images['StartAimg']
 StartingLimg = letter_images['StartLimg']
@@ -826,6 +863,11 @@ def animate_letters():
         if abs(StartingB.xpos - StartingB.target_x) < 1:
             letter_animation = False
 
+
+
+        
+    
+    
 perm_deck = []
 max_handsize = 8
 handsize = max_handsize
@@ -1440,7 +1482,13 @@ settingsButton = Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT
 soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
+shopAnimation = Animation(SHOPANIMATIONIMG, 700, 1600, 24, 86, 0,0, WIDTH, HEIGHT)
 
+
+shop_down = False 
+def toggle_shop():
+    global shop_down
+    if 
 class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
@@ -1724,6 +1772,7 @@ while startGame == False:
                     settings = False
     screen.fill((0, 0, 0))  
     spinningBG.animate()
+    shopAnimation.animate()
     settingsButton.animate()
 
     if Atttention_helper.toggle and not prev_attention_state:
