@@ -13,6 +13,7 @@ import sys
 import subprocess
 import webbrowser
 import re
+pygame.init()
 pygame.font.init()
 try:
     import numpy
@@ -33,8 +34,8 @@ except ImportError:
     print("Installed opencv-python")
 
     
-
-WIDTH, HEIGHT = 1920,1080
+screen_info = pygame.display.Info()
+WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 
@@ -84,7 +85,7 @@ currentFrame = 0
 card_x = -WIDTH  
 card_target_x = 0  
 card_animating = False  
-card_speed = 15
+card_speed = int(WIDTH/66.666666666)
 letter_images = {}
 fade_alpha = 255
 letters = []
@@ -113,7 +114,6 @@ for line in help_lines:
 
 helpMenu  = PixelFont.render(helptext, True, (0, 0, 0))
 clock = pygame.time.Clock()
-pygame.init()
 pygame.mixer.init()
 
 
@@ -220,21 +220,21 @@ xbutton = load_image_safe(os.path.join(GUI_DIR, 'XButton.png'))
 xbutton = pygame.transform.scale(xbutton, (int(HEIGHT/10), int(HEIGHT/10)))
 
 # ==================== GAME UI BUTTONS ====================
-Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (WIDTH/8.33, HEIGHT/16))
-Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (WIDTH/8.33, HEIGHT/16))
-SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (WIDTH/8.33, HEIGHT/16))
-SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, HEIGHT/16))
+Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (WIDTH/8.33, WIDTH/20))
+Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (WIDTH/8.33, WIDTH/20))
+SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (WIDTH/8.33, WIDTH/20))
+SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, WIDTH/20))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD, (WIDTH, HEIGHT))
 
-HandBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (WIDTH/4.16, HEIGHT/7.62))
-ScoreBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (WIDTH/4.16, HEIGHT/10.66))
-GoalBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (WIDTH/6.67, HEIGHT/8))
-MoneyBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (WIDTH/5.88, HEIGHT/13.33))
-RoundBackground_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (WIDTH/5.88, HEIGHT/16))
-SideBar_img = pygame.transform.smoothscale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (WIDTH/3.57, HEIGHT/1.33))
+HandBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (HEIGHT/3.33, HEIGHT/7.62))
+ScoreBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (HEIGHT/3.33, HEIGHT/10.66))
+GoalBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (HEIGHT/5.33, HEIGHT/8))
+MoneyBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (HEIGHT/4.71, HEIGHT/13.33))
+RoundBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (HEIGHT/4.71, HEIGHT/16))
+SideBar_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (HEIGHT/2.86, HEIGHT/1.33))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -396,7 +396,7 @@ class GUITOGGLES():
                 self.sprite = self.original_image                  
                                                     
                     
-question = GUITOGGLES(WIDTH/18, HEIGHT/1.53, Question_mark, scale_factor=1.15, isbutton=False)
+question = GUITOGGLES(WIDTH/24, HEIGHT/1.49, Question_mark, scale_factor=1.15, isbutton=False)
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
@@ -1597,8 +1597,8 @@ def get_current_blind():
             current_blind.target_x = BLIND_X
             current_blind.target_y = BLIND_Y
             if shop:
-                current_blind.target_x = -100
-                current_blind.target_y = -100
+                current_blind.target_x = -500
+                current_blind.target_y = -500
             current_blind.vx = 0
             current_blind.vy = 0
             current_blind.score_required = calculate_target_score(ante, round_num)
@@ -1940,6 +1940,8 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
                 dev_toggle = True
+            if event.key == pygame.K_ESCAPE:
+                running = False
        
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -2155,9 +2157,9 @@ while running:
     screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
     if not shop:
         screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
-        screen.blit(GoalBackground_img, (WIDTH/9.09, HEIGHT / 7.2))
-    screen.blit(MoneyBackground_img, (WIDTH/10, HEIGHT / 1.7))
-    screen.blit(RoundBackground_img, (WIDTH/10, HEIGHT / 1.5))
+        screen.blit(GoalBackground_img, (WIDTH/12, HEIGHT / 7.2))
+    screen.blit(MoneyBackground_img, (WIDTH/14, HEIGHT / 1.7))
+    screen.blit(RoundBackground_img, (WIDTH/14, HEIGHT / 1.5))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -2167,13 +2169,13 @@ while running:
     else:
         current_score_text = change_notation(current_score)
         text = PixelFontS.render(f"{current_score_text}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/7.14, HEIGHT / 2.5))
+    text_rect = text.get_rect(center=(WIDTH/9.4, HEIGHT / 2.5))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{hands}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/14.29, HEIGHT / 1.79))
+    text_rect = text.get_rect(center=(WIDTH/20, HEIGHT / 1.79))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{discards}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/4.88, HEIGHT / 1.79))
+    text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT / 1.79))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
         saved_base_chips_text = change_notation(saved_base_chips)
@@ -2181,7 +2183,7 @@ while running:
     else:
         chips_text = change_notation(chips)
         text = PixelFontS.render(f"{chips_text}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/12.5, HEIGHT / 2.2))
+    text_rect = text.get_rect(center=(WIDTH/15, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     if scoring_in_progress or calculating:
         saved_base_mult_text = change_notation(saved_base_mult)
@@ -2189,7 +2191,7 @@ while running:
     else:
         mult_text = change_notation(mult)
         text = PixelFontS.render(f"{mult_text}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/5, HEIGHT / 2.2))
+    text_rect = text.get_rect(center=(WIDTH/7, HEIGHT / 2.2))
     screen.blit(text, text_rect)
     if not shop:
         text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
@@ -2197,37 +2199,37 @@ while running:
         screen.blit(text, text_rect)
         total_score_text = change_notation(total_score)
         text = PixelFontS.render(f"{total_score_text}", True, white)
-        text_rect = text.get_rect(center=(WIDTH/5.4, HEIGHT / 3.17))
+        text_rect = text.get_rect(center=(WIDTH/7.5, HEIGHT / 3.17))
         screen.blit(text, text_rect)
         target_score_text = change_notation(target_score)
         text = PixelFontS.render(f"{target_score_text}", True, red)
-        text_rect = text.get_rect(center=(WIDTH/5.4, HEIGHT / 5))
+        text_rect = text.get_rect(center=(WIDTH/7.4, HEIGHT / 5))
         screen.blit(text, text_rect)
     text = PixelFontS.render(f"{round_num}", True, orange)
-    text_rect = text.get_rect(center=(WIDTH/4.41, HEIGHT / 1.415))
+    text_rect = text.get_rect(center=(WIDTH/6.3, HEIGHT / 1.415))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"{ante}", True, orange)
-    text_rect = text.get_rect(center=(WIDTH/7.87, HEIGHT / 1.419))
+    text_rect = text.get_rect(center=(WIDTH/11, HEIGHT / 1.419))
     screen.blit(text, text_rect)
     text = PixelFontS.render(f"${money}", True, yellow)
-    text_rect = text.get_rect(center=(WIDTH/5.56, HEIGHT / 1.595))
+    text_rect = text.get_rect(center=(WIDTH/7.7, HEIGHT / 1.595))
     screen.blit(text, text_rect)
     if not shop:
         text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
-        text_rect = text.get_rect(center=(WIDTH/4.55, HEIGHT / 4.35))
+        text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
         screen.blit(text, text_rect)
         text = PixelFontS.render(f"{current_blind.name}", True, white)
-        text_rect = text.get_rect(center=(WIDTH/5.56, HEIGHT / 30))
+        text_rect = text.get_rect(center=(WIDTH/8, HEIGHT / 30))
         screen.blit(text, text_rect)
     if current_blind.name not in ("Small Blind", "Big Blind") and not shop:
-        max_width = WIDTH/6.67
+        max_width = WIDTH/8
         lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
         line_height = PixelFontXXS.get_height() + 0.1
         total_height = len(lines) * line_height
         start_y = (HEIGHT / 10) - (total_height / 2)
         for i, line in enumerate(lines):
             text = PixelFontXXS.render(line, True, white)
-            text_rect = text.get_rect(center=(190,start_y + i * line_height))
+            text_rect = text.get_rect(center=(WIDTH/7.4, start_y + i * line_height))
             screen.blit(text, text_rect)
     if not shop:
         screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
