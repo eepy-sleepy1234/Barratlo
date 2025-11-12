@@ -1,4 +1,5 @@
 import os
+import html
 try:
     import pygame
 except ImportError:
@@ -52,7 +53,8 @@ VIDEO_PATH = os.path.join(ASSETS_DIR, "Soobway.mp4")
 TEXT_PATH = os.path.join(ASSETS_DIR, "Text")
 BLINDS_DIR = os.path.join(GUI_DIR, "Blinds")
 OVERLAY_DIR = os.path.join(ASSETS_DIR, "Overlays")
-
+scroll_offset = 0
+scroll_speed = 30
 
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
 
@@ -71,7 +73,7 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
             surf = pygame.Surface((80, 110))
             surf.fill((200, 200, 200))  
             return surf
-        
+OSDmono =  pygame.font.Font((os.path.join(FONTS_DIR, 'OSD mono.ttf')), int(HEIGHT/30))        
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
 PixelFontXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/30))
@@ -98,19 +100,50 @@ white = (255, 255, 255)
 red = (230, 50, 50)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
-with open((os.path.join(TEXT_PATH,"HelpMenu.txt")), "r", encoding="utf-8") as file:
+with open((os.path.join(TEXT_PATH,"HelpMenu.md")), "r", encoding="utf-8") as file:
     helptext = file.read()
 
 help_lines = helptext.split('\n')
 helpMenu_surfaces = []
-line_height = PixelFont.get_height()
+scroll_offset = 0
+scroll_speed = 30
+line_height = OSDmono.get_height()
+
 
 for line in help_lines:
-    if line.strip():  
-        surface = PixelFont.render(line, True, (0, 0, 0))
-        helpMenu_surfaces.append(surface)
-    else:
+
+    clean_line = html.unescape(line.replace('\t', '    ').rstrip())
+
+
+    if not clean_line.strip():
         helpMenu_surfaces.append(None)
+        continue
+
+
+    if '**' in clean_line:
+        parts = clean_line.split('**')
+        surfaces = []
+        for i, part in enumerate(parts):
+            if i % 2 == 1: 
+                bold_font = pygame.font.Font(os.path.join(FONTS_DIR, 'OSD mono.ttf'), int(HEIGHT / 30))
+                bold_font.set_bold(True)
+                text_surface = bold_font.render(part, True, (0, 0, 0))
+            else:
+                text_surface = OSDmono.render(part, True, (0, 0, 0))
+            surfaces.append(text_surface)
+
+
+        total_width = sum(s.get_width() for s in surfaces)
+        combined_surface = pygame.Surface((total_width, line_height), pygame.SRCALPHA)
+        x = 0
+        for s in surfaces:
+            combined_surface.blit(s, (x, 0))
+            x += s.get_width()
+
+        helpMenu_surfaces.append(combined_surface)
+    else:
+        surface = OSDmono.render(clean_line, True, (0, 0, 0))
+        helpMenu_surfaces.append(surface)
 
 helpMenu  = PixelFont.render(helptext, True, (0, 0, 0))
 clock = pygame.time.Clock()
@@ -1940,8 +1973,22 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
                 dev_toggle = True
-            if event.key == pygame.K_ESCAPE:
-                running = False
+            if event.key == pygame.K_ESCAPE:  # Add this here instead
+                if help_menu:
+                    help_menu = False
+                    helpButton.toggle = False
+                elif settings:
+                    settings = False
+                    settings2.toggle = False
+                else:
+                    running = False
+                
+        if event.type == pygame.MOUSEWHEEL and help_menu:
+            scroll_offset += event.y * scroll_speed
+            # Prevent over-scrolling
+            max_scroll = -max(0, len(helpMenu_surfaces) * line_height - HEIGHT + 200)
+            scroll_offset = max(max_scroll, min(0, scroll_offset))
+            
        
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -2297,15 +2344,29 @@ while running:
     for indicator in chip_indicators:
         indicator.draw(screen)
     if help_menu:
-        screen.fill((255, 255, 255))
-    
-        y_offset = 20
-        
-        for surface in helpMenu_surfaces:
-            if surface:
-                screen.blit(surface, (20, y_offset))
-            y_offset += line_height + 5
-        screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
+            screen.fill((255,255,255))
+
+            start_y = 100 + scroll_offset
+            visible_top = 0  # Allow drawing from top of screen
+            visible_bottom = HEIGHT  # Allow drawing to bottom of screen
+
+            for surface in helpMenu_surfaces:
+                if surface:
+                # Check if this line is visible (with some padding for smooth scrolling)
+                    if visible_top - line_height < start_y < visible_bottom + line_height:
+                        screen.blit(surface, (100, start_y))
+            
+            # Always increment, whether we drew or not
+                start_y += line_height
+
+        # Optional scroll bar indicator
+            total_height = len(helpMenu_surfaces) * line_height
+            view_height = HEIGHT - 200
+            if total_height > view_height:
+                bar_height = max(20, int(view_height * (view_height / total_height)))
+                bar_y = int((-scroll_offset / total_height) * view_height + 100)
+                pygame.draw.rect(screen, (100, 100, 100), (WIDTH - 40, bar_y, 20, bar_height))
+            screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
     if hovering:
         screen.blit(cursor_hover, cursor_pos)
     else:
@@ -2439,5 +2500,6 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
