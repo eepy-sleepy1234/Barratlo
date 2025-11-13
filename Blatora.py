@@ -257,6 +257,7 @@ Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Pla
 Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (WIDTH/8.33, WIDTH/20))
 SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (WIDTH/8.33, WIDTH/20))
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, WIDTH/20))
+CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -268,6 +269,7 @@ GoalBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 MoneyBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MoneyBackground.png")), (HEIGHT/4.71, HEIGHT/13.33))
 RoundBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (HEIGHT/4.71, HEIGHT/16))
 SideBar_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (HEIGHT/2.86, HEIGHT/1.33))
+CashOutBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutBackground.png")), (HEIGHT/1.3, HEIGHT))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -290,6 +292,8 @@ playhandw = Playhand_img.get_width()
 playhandh = Playhand_img.get_height()
 sortrankw = SortbuttonSuit_img.get_width()
 sortrankh = SortbuttonSuit_img.get_height()
+CashOutw = CashOutButton_img.get_width()
+CashOuth = CashOutButton_img.get_height()
 
 SortbuttonSuit_rect = SortbuttonSuit_img.get_rect()
 SortbuttonSuit_rect.topleft = (int(WIDTH/2 - (sortrankw + sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
@@ -302,6 +306,9 @@ Playhand_rect.topleft = (int(0 + playhandw/4), HEIGHT - int(playhandh * 2))
 
 Discardhand_rect = Playhand_img.get_rect()
 Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh * 2))
+
+CashOut_rect = CashOutButton_img.get_rect()
+CashOut_rect.topleft = (int(WIDTH - (CashOutw + CashOutw/4)), HEIGHT - int(CashOuth * 2))
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -925,7 +932,7 @@ sort_mode = "rank"
 current_scoring_card = None
 discard_timer = 0
 mouth_triggered = False
-shop = False
+GameState = "Playing"
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1220,7 +1227,7 @@ for root, dirs, files in os.walk(SUITS_DIR):
     for filename in files:
         if filename.endswith(".png"):
             filepath = os.path.join(root, filename)
-            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (HEIGHT/10, HEIGHT/7.27))
+            image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (HEIGHT/8, HEIGHT/5.82))
             name, _ = os.path.splitext(filename)
             rank, suit = name.split("Of")
             card = Card(rank, suit, image)
@@ -1528,10 +1535,10 @@ def shopAnimaton():
     
     global shop_down
 
-    if not shop and not shop_down:
+    if not GameState == "Playing" and not shop_down:
         shopAnimation.current_frame = 0
         
-    if shop:
+    if GameState == "Shop":
         if shop_down == False:
             if shopAnimation.current_frame >= 66:
                 shop_down = True
@@ -1609,7 +1616,7 @@ def calculate_target_score(ante, round_num):
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
-    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, shop
+    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState
     if not current_blind or victory:
         if round_num % 3 == 1:
             if small_blind:
@@ -1629,7 +1636,7 @@ def get_current_blind():
         if current_blind:
             current_blind.target_x = BLIND_X
             current_blind.target_y = BLIND_Y
-            if shop:
+            if not GameState == "Playing":
                 current_blind.target_x = -500
                 current_blind.target_y = -500
             current_blind.vx = 0
@@ -1671,10 +1678,10 @@ def advance_to_next_blind():
         deck.append(new_card)
     random.shuffle(deck)
 def check_blind_defeated():
-    global blind_defeated, current_score, shop
+    global blind_defeated, current_score, GameState
     if current_blind and total_score >= target_score:
         blind_defeated = True
-        shop = True
+        GameState = "Cashing"
         return True
     else:
         return False
@@ -1772,7 +1779,7 @@ def detect_hand(cards):
 
 letter_animation = True
 running = True
-
+GameState = "Playing"
 letter_classes()
 animate_letters()
 
@@ -2016,6 +2023,10 @@ while running:
                     settings = False
                     settings2.toggle = False
 
+                if CashOut_rect.collidepoint(event.pos):
+                    if GameState == "Cashing":
+                        GameState = "Shop"
+
                     ###Gui toggles###
                 if settings == False:
                     for toggle in guiToggleList:
@@ -2039,7 +2050,7 @@ while running:
                     selected_count = sum(1 for card in hand if card.state == "selected")
                 if not scoring_in_progress:
                     for card in reversed(hand):
-                        if card.rect.collidepoint(mouse_pos):
+                        if card.rect.collidepoint(mouse_pos) and not calculating:
                             card.dragging = True
                             card.drag_offset_x = card.x - mouse_x
                             card.drag_offset_y = card.y - mouse_y
@@ -2159,7 +2170,7 @@ while running:
                 soserious.ypos = mouse_y + soserious.drag_offset_y
             if not scoring_in_progress:
                 for card in hand:
-                    if getattr(card, "dragging", False) and not card.state == "played":
+                    if getattr(card, "dragging", False) and not card.state == "played" and not calculating:
                         dx = mouse_x - card.drag_start[0]
                         dy = mouse_y - card.drag_start[1]
                         if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
@@ -2202,11 +2213,14 @@ while running:
         mult = base_mult * level
         final_score = saved_base_chips * saved_base_mult
     screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
-    if not shop:
+    if GameState == "Playing":
         screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
         screen.blit(GoalBackground_img, (WIDTH/12, HEIGHT / 7.2))
     screen.blit(MoneyBackground_img, (WIDTH/14, HEIGHT / 1.7))
     screen.blit(RoundBackground_img, (WIDTH/14, HEIGHT / 1.5))
+    if GameState == "Cashing":
+        screen.blit(CashOutBackground_img, (WIDTH/3.5, HEIGHT / 2))
+        screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -2240,7 +2254,7 @@ while running:
         text = PixelFontS.render(f"{mult_text}", True, white)
     text_rect = text.get_rect(center=(WIDTH/7, HEIGHT / 2.2))
     screen.blit(text, text_rect)
-    if not shop:
+    if GameState == "Playing":
         text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
         text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
         screen.blit(text, text_rect)
@@ -2261,14 +2275,14 @@ while running:
     text = PixelFontS.render(f"${money}", True, yellow)
     text_rect = text.get_rect(center=(WIDTH/7.7, HEIGHT / 1.595))
     screen.blit(text, text_rect)
-    if not shop:
+    if GameState == "Playing":
         text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
         text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
         screen.blit(text, text_rect)
         text = PixelFontS.render(f"{current_blind.name}", True, white)
         text_rect = text.get_rect(center=(WIDTH/8, HEIGHT / 30))
         screen.blit(text, text_rect)
-    if current_blind.name not in ("Small Blind", "Big Blind") and not shop:
+    if current_blind.name not in ("Small Blind", "Big Blind") and GameState == "Playing":
         max_width = WIDTH/8
         lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
         line_height = PixelFontXXS.get_height() + 0.1
@@ -2278,7 +2292,7 @@ while running:
             text = PixelFontXXS.render(line, True, white)
             text_rect = text.get_rect(center=(WIDTH/7.4, start_y + i * line_height))
             screen.blit(text, text_rect)
-    if not shop:
+    if GameState == "Playing":
         screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
         screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
         screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
@@ -2347,19 +2361,14 @@ while running:
             screen.fill((255,255,255))
 
             start_y = 100 + scroll_offset
-            visible_top = 0  # Allow drawing from top of screen
-            visible_bottom = HEIGHT  # Allow drawing to bottom of screen
+            visible_top = 0
+            visible_bottom = HEIGHT
 
             for surface in helpMenu_surfaces:
                 if surface:
-                # Check if this line is visible (with some padding for smooth scrolling)
                     if visible_top - line_height < start_y < visible_bottom + line_height:
                         screen.blit(surface, (100, start_y))
-            
-            # Always increment, whether we drew or not
                 start_y += line_height
-
-        # Optional scroll bar indicator
             total_height = len(helpMenu_surfaces) * line_height
             view_height = HEIGHT - 200
             if total_height > view_height:
@@ -2371,7 +2380,7 @@ while running:
         screen.blit(cursor_hover, cursor_pos)
     else:
         screen.blit(cursor_normal, cursor_pos)
-    if current_blind.name == "The Eye" and not shop:
+    if current_blind.name == "The Eye" and GameState == "Playing":
         blurred = boss_debuff()
         screen.blit(blurred, (0, 0))
     
@@ -2409,13 +2418,13 @@ while running:
                 for c in hand:
                     if c.slot > index:
                         c.slot -= 1
-                if deck and not shop:
+                if deck and GameState == "Playing":
                     new_card = deck.pop()
                     new_card.slot = index
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
                     sort_hand()
-    if deck and len(hand) < handsize and not dev_selection and not shop:
+    if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
         index = card.slot
         new_card = deck.pop()
         new_card.slot = index
@@ -2496,7 +2505,6 @@ while running:
                 discard_timer += 1
         else:
             discarding = False
-            
 
 close_video()
 pygame.quit()
