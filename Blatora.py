@@ -252,6 +252,9 @@ SETTINGOFFIMG = pygame.transform.scale(SETTINGOFFIMG, (int(HEIGHT/5), int(HEIGHT
 xbutton = load_image_safe(os.path.join(GUI_DIR, 'XButton.png'))
 xbutton = pygame.transform.scale(xbutton, (int(HEIGHT/10), int(HEIGHT/10)))
 
+quitButtonimg = load_image_safe(os.path.join(GUI_DIR, 'QuitButton.png'))
+quitButtonimg = pygame.transform.scale(quitButtonimg, (int(HEIGHT/5), int(HEIGHT/10.5)))
+
 # ==================== GAME UI BUTTONS ====================
 Playhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PlayHandButton.png")), (WIDTH/8.33, WIDTH/20))
 Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DiscardHandButton.png")), (WIDTH/8.33, WIDTH/20))
@@ -440,6 +443,9 @@ question = GUITOGGLES(WIDTH/24, HEIGHT/1.49, Question_mark, scale_factor=1.15, i
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
+
+###Keep Quit Button At Bottem of list###
+quitButton  = GUITOGGLES(0,0, quitButtonimg , scale_factor = 1.15, isbutton = True)
 
 def update_gui_buttons():
 
@@ -2039,6 +2045,10 @@ while running:
                                 toggle.toggle = False
                             if toggle == helpButton:
                                 help_menu = True
+
+                            if toggle == quitButton:
+                                
+                                running = False
                     
                 if SO_SERIOUS.toggle and soserious.rect.collidepoint(mouse_pos):
                     soserious.dragging = True
@@ -2508,6 +2518,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
