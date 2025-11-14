@@ -95,6 +95,7 @@ letter_animation = True
 endBG = False
 settings = False 
 help_menu = False
+CashOutBlitted = False
 green = (0, 120, 0)
 white = (255, 255, 255)
 red = (230, 50, 50)
@@ -311,7 +312,7 @@ Discardhand_rect = Playhand_img.get_rect()
 Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh * 2))
 
 CashOut_rect = CashOutButton_img.get_rect()
-CashOut_rect.topleft = (int(WIDTH - (CashOutw + CashOutw/4)), HEIGHT - int(CashOuth * 2))
+CashOut_rect.topleft = (WIDTH/3.2, HEIGHT / 1.9)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -444,7 +445,7 @@ settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
 
-###Keep Quit Button At Bottem of list###
+###Keep Quit Button At Botteom of list###
 quitButton  = GUITOGGLES(0,0, quitButtonimg , scale_factor = 1.15, isbutton = True)
 
 def update_gui_buttons():
@@ -938,7 +939,7 @@ sort_mode = "rank"
 current_scoring_card = None
 discard_timer = 0
 mouth_triggered = False
-GameState = "Playing"
+GameState = None
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1481,7 +1482,6 @@ class Animation():
             frame_surface = sprite_name.subsurface((frame_x, 0, frame_width, frame_height))
             if self.sprite_sheet == SHOPANIMATIONIMG:
                 scaled = pygame.transform.scale(frame_surface, (setWidth, setHeight))
-                print("scaled")
             else:
                 
                 scaled = pygame.transform.smoothscale(frame_surface, (setWidth, setHeight))
@@ -1493,7 +1493,6 @@ class Animation():
             if self.sprite_sheet == FOXYSCARE:
                 draw_fox = False
                 self.reset_animation()
-                
                 return
         if currentFrame % self.frame_interval == 0:
             self.current_frame = (self.current_frame + 1) % self.frames
@@ -1541,7 +1540,7 @@ def shopAnimaton():
     
     global shop_down
 
-    if not GameState == "Playing" and not shop_down:
+    if GameState == "Playing" and not shop_down:
         shopAnimation.current_frame = 0
         
     if GameState == "Shop":
@@ -1642,7 +1641,7 @@ def get_current_blind():
         if current_blind:
             current_blind.target_x = BLIND_X
             current_blind.target_y = BLIND_Y
-            if not GameState == "Playing":
+            if GameState in ("Shop", "Cashing", "Blinds"):
                 current_blind.target_x = -500
                 current_blind.target_y = -500
             current_blind.vx = 0
@@ -1668,7 +1667,7 @@ def set_boss_blind(boss_name):
             return True
     return False
 def advance_to_next_blind():
-    global round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand
+    global round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState
     if round_num % 3 == 0:
         ante += 1
     round_num += 1
@@ -1676,7 +1675,6 @@ def advance_to_next_blind():
     money += hands
     hands = max_hand
     discards = max_discard
-    money += blind_reward
     hand.clear()
     deck.clear()
     for card in perm_deck:
@@ -1687,11 +1685,9 @@ def check_blind_defeated():
     global blind_defeated, current_score, GameState
     if current_blind and total_score >= target_score:
         blind_defeated = True
-        GameState = "Cashing"
         return True
     else:
         return False
-get_current_blind()
 
 def change_notation(number):
     if number > 999999999999:
@@ -1785,7 +1781,6 @@ def detect_hand(cards):
 
 letter_animation = True
 running = True
-GameState = "Playing"
 letter_classes()
 animate_letters()
 
@@ -1829,8 +1824,9 @@ while startGame == False:
             
             if event.button == 1:
                 if start_button_rect.collidepoint(event.pos):
-                    
                     card_animating = True
+                    GameState = "Playing"
+                    get_current_blind()
                 elif settings:  
                     for setting in settingsList:
                         if setting.rect.collidepoint(event.pos):
@@ -1971,14 +1967,13 @@ while running:
             break
         
     update_gui_buttons()
-    
+
 
     if Atttention_helper.toggle and not prev_attention_state:
         init_video()
     elif not Atttention_helper.toggle and prev_attention_state:
         close_video()
     prev_attention_state = Atttention_helper.toggle
-    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -1986,15 +1981,8 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
                 dev_toggle = True
-            if event.key == pygame.K_ESCAPE:  # Add this here instead
-                if help_menu:
-                    help_menu = False
-                    helpButton.toggle = False
-                elif settings:
-                    settings = False
-                    settings2.toggle = False
-                else:
-                    running = False
+            if event.key == pygame.K_ESCAPE:
+                question.toggle = not question.toggle
                 
         if event.type == pygame.MOUSEWHEEL and help_menu:
             scroll_offset += event.y * scroll_speed
@@ -2028,10 +2016,9 @@ while running:
                 if xbutton_rect.collidepoint(event.pos):
                     settings = False
                     settings2.toggle = False
-
-                if CashOut_rect.collidepoint(event.pos):
-                    if GameState == "Cashing":
-                        GameState = "Shop"
+                    
+                if CashOut_rect.collidepoint(mouse_pos) and CashOutBlitted:
+                    GameState = "Shop"
 
                     ###Gui toggles###
                 if settings == False:
@@ -2231,6 +2218,7 @@ while running:
     if GameState == "Cashing":
         screen.blit(CashOutBackground_img, (WIDTH/3.5, HEIGHT / 2))
         screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
+        CashOutBlitted = True
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
@@ -2499,6 +2487,7 @@ while running:
                 discarding = True
                 victory = check_blind_defeated()
                 if victory:
+                    GameState = "Cashing"
                     advance_to_next_blind()
                     get_current_blind()
                     for card in hand:
