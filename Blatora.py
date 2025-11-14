@@ -95,7 +95,6 @@ letter_animation = True
 endBG = False
 settings = False 
 help_menu = False
-CashOutBlitted = False
 green = (0, 120, 0)
 white = (255, 255, 255)
 red = (230, 50, 50)
@@ -274,6 +273,7 @@ MoneyBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DI
 RoundBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "RoundBackground.png")), (HEIGHT/4.71, HEIGHT/16))
 SideBar_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (HEIGHT/2.86, HEIGHT/1.33))
 CashOutBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutBackground.png")), (HEIGHT/1.3, HEIGHT))
+ShopBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBackground.png")), (HEIGHT/1.14, HEIGHT))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -2017,7 +2017,7 @@ while running:
                     settings = False
                     settings2.toggle = False
                     
-                if CashOut_rect.collidepoint(mouse_pos) and CashOutBlitted:
+                if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                     GameState = "Shop"
 
                     ###Gui toggles###
@@ -2218,7 +2218,8 @@ while running:
     if GameState == "Cashing":
         screen.blit(CashOutBackground_img, (WIDTH/3.5, HEIGHT / 2))
         screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
-        CashOutBlitted = True
+    if GameState == "Shop":
+        screen.blit(ShopBackground_img, (WIDTH/3, HEIGHT/2))
     font = pygame.font.SysFont(None, 40)
     if not calculating:
         if scoring_in_progress:
