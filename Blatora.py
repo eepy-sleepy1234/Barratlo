@@ -1001,6 +1001,7 @@ total_score = 0
 saved_total_score = 0
 is_straight = False
 is_flush = False
+ShopCount = 2
 
 SCORED_POSITIONS = [
     (WIDTH//2.86, HEIGHT//2.29),
@@ -1681,6 +1682,7 @@ def advance_to_next_blind():
         new_card = Card(card.rank, card.suit, card.image)
         deck.append(new_card)
     random.shuffle(deck)
+    
 def check_blind_defeated():
     global blind_defeated, current_score, GameState
     if current_blind and total_score >= target_score:
@@ -1688,6 +1690,146 @@ def check_blind_defeated():
         return True
     else:
         return False
+
+class Joker:
+    card_id_counter = 0
+    def __init__(self, image, rarity, name, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
+        self.image = image
+        self.scale= 1.0
+        self.rotation_speed = 0
+        self.scaling_delay = 0
+        self.is_debuffed = debuff
+        self.debuff_assigned = False
+        self.enhancement = enhancement
+        self.edition = edition
+        self.seal = seal
+        self.scaling = False
+        self.growing = False
+        self.scaling_done = False
+        self.scoring_complete = False
+        self.card_id = Card.card_id_counter
+        Card.card_id_counter += 1
+        self.name = name
+        self.rect = image.get_rect()
+        self.state = state
+        self.slot = slot
+        self.vx = 0
+        self.vy = 0
+        self.x = 0
+        self.target_x = 0
+        self.scoring_x = 0
+        self.scoring_y = 0
+        self.y = 0
+        self.angle = 0
+        self.target_y = 0
+        self.dragging = False
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        self.was_dragged = False
+        self.scoring_animating = False
+        self.idx = 0
+    def update(self):
+        stiffness = 0.3
+        damping = 0.7
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        if not self.dragging:
+            self.vx += dx * stiffness
+            self.vy += dy * stiffness
+            self.vx *= damping
+            self.vy *= damping
+            if abs(self.vx) > 0.1:
+                self.x += self.vx
+            if abs(self.vy) > 0.1:
+                self.y += self.vy
+        elif self.scoring_animating:
+            lerp_t = 0.18
+            self.x += (self.target_x - self.x) * lerp_t
+            self.y += (self.target_y - self.y) * lerp_t
+            self.angle += (0 - self.angle) * 0.15
+            if abs(self.x - self.target_x) < 2 and abs(self.y - self.target_y) < 2:
+                self.x = self.target_x
+                self.y = self.target_y
+        if self.scaling:
+            if self.scaling_delay < 30:
+                self.scaling_delay += 1
+            else:
+                if not self.growing:
+                    if self.scale > 0.51:
+                        self.scale -= 0.1
+                        self.rotation_speed = 3
+                    else:
+                        self.scale = 0.5
+                        self.rotation_speed = -3
+                        self.growing = True
+                else:
+                    if self.scale < 1.0:
+                        self.scale += 0.1
+                    else:
+                        self.scale = 1.0
+                        self.rotation_speed = 0
+                        self.scaling = False
+                        self.growing = False
+                        self.scaling_done = True
+                        self.scoring_animating = False
+                        self.scaling_delay = 10
+                        self.angle = 0
+        self.angle += self.rotation_speed
+
+Common_Jokers = []
+Uncommon_Jokers = []
+Rare_Jokers = []
+Legendary_Jokers = []
+Active_Jokers = []
+Shop_Jokers = []
+for root, dirs, files in os.walk(JOKERS_DIR):
+    for filename in files:
+        if filename.endswith(".png"):
+            filepath = os.path.join(root, filename)
+            Joker_name_raw = os.path.splitext(filename)[0]
+            rarity = Joker_name_raw[-1]
+            Joker_name_raw = Joker_name_raw[:-1]
+            Joker_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', Joker_name_raw)
+            Joker_name = Joker_name.title()
+            image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
+            joker = Joker(image, rarity, Joker_name)
+            if rarity == 'C':
+                Common_Jokers.append(joker)
+            elif rarity == 'U':
+                Uncommon_Jokers.append(joker)
+            elif rarity == 'R':
+                Rare_Jokers.append(joker)
+            elif rarity == 'L':
+                Legendary_Jokers.append(joker)
+
+def draw_jokers(surface, cards, center_x, center_y, spread=20,):
+    n = len(cards)
+    if n == 0:
+        return
+    total_width = (n - 1) * spread + 80
+    start_x = center_x - total_width / 2.25
+    for i, joker in enumerate(cards):
+        t = i / (n - 1) if n > 1 else 0.5
+        target_x = start_x + i * spread
+        target_y = 0
+        if joker.state == "shop":
+            huhidk = 0
+        elif joker.state == "active":
+            huhidk = 0
+        joker.target_x = target_x
+        joker.target_y = target_y
+        angle = joker.angle
+        scaled_w = int(joker.image.get_width() * joker.scale)
+        scaled_h = int(joker.image.get_height() * joker.scale)
+        scaled_img = pygame.transform.smoothscale(joker.image, (scaled_w, scaled_h))
+        if joker.is_debuffed:
+            scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
+            scaled_img = scaled_img.copy()
+            scaled_img.blit(scaled_overlay, (0, 0))
+        rotated = pygame.transform.rotate(scaled_img, angle)
+        rect = rotated.get_rect(center=(joker.x, joker.y))
+        surface.blit(rotated, rect.topleft)
+        joker.rect = rect
 
 def change_notation(number):
     if number > 999999999999:
@@ -2314,6 +2456,7 @@ while running:
 
     boss_debuff()
     draw_hand(screen, hand, WIDTH / 2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
+    draw_jokers(screen, Shop_Jokers, WIDTH / 2, HEIGHT/1.2, spread=spacing)
 
     update_card_animation()
 
@@ -2489,6 +2632,16 @@ while running:
                 victory = check_blind_defeated()
                 if victory:
                     GameState = "Cashing"
+                    for i in range(ShopCount):
+                        rarity_choice = random.randint(1, 100)
+                        if rarity_choice <= 55:
+                            Shop_Jokers.append(random.choice(Common_Jokers))
+                        elif rarity_choice <= 90:
+                            Shop_Jokers.append(random.choice(Uncommon_Jokers))
+                        else:
+                            Shop_Jokers.append(random.choice(Rare_Jokers))
+                    for joker in Shop_Jokers:
+                        joker.state = "shop"
                     advance_to_next_blind()
                     get_current_blind()
                     for card in hand:
