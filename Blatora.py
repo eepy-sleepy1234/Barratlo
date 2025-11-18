@@ -1532,7 +1532,8 @@ settingsButton = Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT
 soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
-shopAnimation = Animation(SHOPANIMATIONIMG, 700, 1600, 24, 86, 0,0, int(WIDTH/3.5), (WIDTH/3.5 * 2.28571428571))
+shopAnimation = Animation(SHOPANIMATIONIMG, 476, 1600, 24, 87, 0 + ((HEIGHT/2.86 - HEIGHT/3.3)/2),0, int(HEIGHT/3.3), (HEIGHT/3.3 * 3.36134453782))
+
 
 
 shop_down = False
@@ -2704,6 +2705,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
