@@ -33,7 +33,7 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python"])
     import cv2
     print("Installed opencv-python")
-
+    print("michigan")
     
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
@@ -2661,6 +2661,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
