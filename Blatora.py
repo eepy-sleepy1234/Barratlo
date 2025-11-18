@@ -33,7 +33,7 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python"])
     import cv2
     print("Installed opencv-python")
-    print("michigan")
+
     
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
@@ -1802,20 +1802,17 @@ for root, dirs, files in os.walk(JOKERS_DIR):
             elif rarity == 'L':
                 Legendary_Jokers.append(joker)
 
-def draw_jokers(surface, cards, center_x, center_y, spread=20,):
+def draw_jokers(surface, cards, center_x, center_y, spread=20):
     n = len(cards)
     if n == 0:
         return
     total_width = (n - 1) * spread + 80
     start_x = center_x - total_width / 2.25
     for i, joker in enumerate(cards):
+        joker.spread = spread
         t = i / (n - 1) if n > 1 else 0.5
         target_x = start_x + i * spread
         target_y = 0
-        if joker.state == "shop":
-            huhidk = 0
-        elif joker.state == "active":
-            huhidk = 0
         joker.target_x = target_x
         joker.target_y = target_y
         angle = joker.angle
@@ -2161,6 +2158,14 @@ while running:
                     
                 if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                     GameState = "Shop"
+                    for i in range(ShopCount):
+                        rarity_choice = random.randint(1, 100)
+                        if rarity_choice <= 55:
+                            Shop_Jokers.append(random.choice(Common_Jokers))
+                        elif rarity_choice <= 90:
+                            Shop_Jokers.append(random.choice(Uncommon_Jokers))
+                        else:
+                            Shop_Jokers.append(random.choice(Rare_Jokers))
 
                     ###Gui toggles###
                 if settings == False:
@@ -2196,6 +2201,14 @@ while running:
                             card.drag_start = (mouse_x, mouse_y)
                             card.was_dragged = False
                             break
+                for card in reversed(Shop_Jokers):
+                    if card.rect.collidepoint(mouse_pos):
+                        card.dragging = True
+                        card.drag_offset_x = card.x - mouse_x
+                        card.drag_offset_y = card.y - mouse_y
+                        card.drag_start = (mouse_x, mouse_y)
+                        card.was_dragged = False
+                        break
                 if Playhand_rect.collidepoint(mouse_pos):
                     if hands > 0 and not scoring_in_progress:
                         mouth_triggered = False
@@ -2292,6 +2305,28 @@ while running:
                             card.target_y = slot_target_y
                         card.vx = 0
                         card.vy = 0
+                for card in Shop_Jokers:
+                    if getattr(card, "dragging", False):
+                        card.dragging = False
+                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                            if card.state == "selected":
+                                card.state = "normal"
+                            elif card.state == "normal":
+                                card.state = "selected"
+                        n = len(hand)
+                        spread_local = card.spread
+                        total_width = (n - 1) * spread_local + 80
+                        start_x = (WIDTH / 2) - total_width / 2
+                        i = card.slot
+                        center_y = HEIGHT - 100
+                        max_v_offset = -30
+                        t = i / (n - 1) if n > 1 else 0.5
+                        slot_target_x = start_x + i * spread_local * WIDTH/1000
+                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                        card.target_x = slot_target_x
+                        card.target_y = slot_target_y
+                        card.vx = 0
+                        card.vy = 0
         if event.type == pygame.MOUSEMOTION:
             mouse_x, mouse_y = event.pos
             current_blind = get_current_blind()
@@ -2325,6 +2360,24 @@ while running:
                                 hand.pop(current_index)
                                 hand.insert(new_index, card)
                                 for idx, c in enumerate(hand):
+                                    c.slot = idx
+                for card in Shop_Jokers:
+                    if getattr(card, "dragging", False):
+                        dx = mouse_x - card.drag_start[0]
+                        dy = mouse_y - card.drag_start[1]
+                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                            card.was_dragged = True
+                            card.x = mouse_x + card.drag_offset_x
+                            card.y = mouse_y + card.drag_offset_y
+                            card.target_x = card.x
+                            card.target_y = card.y
+                            n = len(Shop_Jokers)
+                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
+                            current_index = Shop_Jokers.index(card)
+                            if new_index != current_index:
+                                Shop_Jokers.pop(current_index)
+                                Shop_Jokers.insert(new_index, card)
+                                for idx, c in enumerate(Shop_Jokers):
                                     c.slot = idx
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
@@ -2455,8 +2508,8 @@ while running:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
 
     boss_debuff()
-    draw_hand(screen, hand, WIDTH / 2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
-    draw_jokers(screen, Shop_Jokers, WIDTH / 2, HEIGHT/1.2, spread=spacing)
+    draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
+    draw_jokers(screen, Shop_Jokers, WIDTH/2, HEIGHT/2, spread=spacing)
 
     update_card_animation()
 
@@ -2632,16 +2685,6 @@ while running:
                 victory = check_blind_defeated()
                 if victory:
                     GameState = "Cashing"
-                    for i in range(ShopCount):
-                        rarity_choice = random.randint(1, 100)
-                        if rarity_choice <= 55:
-                            Shop_Jokers.append(random.choice(Common_Jokers))
-                        elif rarity_choice <= 90:
-                            Shop_Jokers.append(random.choice(Uncommon_Jokers))
-                        else:
-                            Shop_Jokers.append(random.choice(Rare_Jokers))
-                    for joker in Shop_Jokers:
-                        joker.state = "shop"
                     advance_to_next_blind()
                     get_current_blind()
                     for card in hand:
@@ -2661,7 +2704,6 @@ while running:
 
 close_video()
 pygame.quit()
-
 
 
 
