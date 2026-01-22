@@ -928,7 +928,7 @@ max_hand = 4
 max_discard = 4
 hands = max_hand
 discards = max_discard
-DRAG_THRESHOLD = 10
+DRAG_THRESHOLD = 20
 calc_progress = 0.0
 saved_base_chips  = 0
 saved_base_mult = 0
@@ -1813,7 +1813,7 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
         joker.spread = spread
         t = i / (n - 1) if n > 1 else 0.5
         target_x = start_x + i * spread
-        target_y = 0
+        target_y = center_y
         joker.target_x = target_x
         joker.target_y = target_y
         angle = joker.angle
@@ -2373,13 +2373,8 @@ while running:
                             card.target_x = card.x
                             card.target_y = card.y
                             n = len(Shop_Jokers)
-                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
-                            current_index = Shop_Jokers.index(card)
-                            if new_index != current_index:
-                                Shop_Jokers.pop(current_index)
-                                Shop_Jokers.insert(new_index, card)
-                                for idx, c in enumerate(Shop_Jokers):
-                                    c.slot = idx
+                            for idx, c in enumerate(Shop_Jokers):
+                                c.slot = idx
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
     
@@ -2510,7 +2505,8 @@ while running:
 
     boss_debuff()
     draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
-    draw_jokers(screen, Shop_Jokers, WIDTH/2, HEIGHT/2, spread=spacing)
+    jokerSpacing = 600 / (len(Shop_Jokers) + 1) * WIDTH/1500
+    draw_jokers(screen, Shop_Jokers, WIDTH/1.6, HEIGHT/1.6, spread=jokerSpacing)
 
     update_card_animation()
 
@@ -2620,6 +2616,8 @@ while running:
                     new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                     hand.append(new_card)
                     sort_hand()
+    for joker in Shop_Jokers:
+        joker.update()
     if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
         index = card.slot
         new_card = deck.pop()
@@ -2705,10 +2703,3 @@ while running:
 
 close_video()
 pygame.quit()
-
-
-
-
-
-
-
