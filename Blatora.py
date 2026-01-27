@@ -261,6 +261,7 @@ Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "
 SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (WIDTH/8.33, WIDTH/20))
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, WIDTH/20))
 CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
+ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/7.27))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -313,6 +314,9 @@ Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int
 
 CashOut_rect = CashOutButton_img.get_rect()
 CashOut_rect.topleft = (WIDTH/3.2, HEIGHT / 1.9)
+
+ShopBuy_rect = ShopBuy_img.get_rect()
+ShopBuy_rect.topleft =(-100, -100)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -445,7 +449,7 @@ settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
 
-###Keep Quit Button At Botteom of list###
+###Keep Quit Button At Bottom of list###
 quitButton  = GUITOGGLES(0,0, quitButtonimg , scale_factor = 1.15, isbutton = True)
 
 def update_gui_buttons():
@@ -916,6 +920,7 @@ def animate_letters():
     
     
 perm_deck = []
+Active_Jokers = []
 max_handsize = 8
 handsize = max_handsize
 chips = 0
@@ -940,6 +945,7 @@ current_scoring_card = None
 discard_timer = 0
 mouth_triggered = False
 GameState = None
+maxJokerCount = 6
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1696,6 +1702,7 @@ class Joker:
     card_id_counter = 0
     def __init__(self, image, rarity, name, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
         self.image = image
+        self.rarity = rarity
         self.scale= 1.0
         self.rotation_speed = 0
         self.scaling_delay = 0
@@ -1709,7 +1716,7 @@ class Joker:
         self.scaling_done = False
         self.scoring_complete = False
         self.card_id = Card.card_id_counter
-        Card.card_id_counter += 1
+        self.card_id_counter += 1
         self.name = name
         self.rect = image.get_rect()
         self.state = state
@@ -1729,6 +1736,15 @@ class Joker:
         self.was_dragged = False
         self.scoring_animating = False
         self.idx = 0
+        match rarity:
+            case 'C':
+                self.price = 3
+            case 'U':
+                self.price = 6
+            case 'R':
+                self.price = 8
+            case 'L':
+                self.price = 20
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -1814,6 +1830,8 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
         t = i / (n - 1) if n > 1 else 0.5
         target_x = start_x + i * spread
         target_y = center_y
+        if joker.state == "selected":
+            target_y -= 40
         joker.target_x = target_x
         joker.target_y = target_y
         angle = joker.angle
@@ -2082,6 +2100,11 @@ def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
     idx = max(0, min(hand_len - 1, idx))
     return idx
 
+def get_selected_shop_jokers(joker):
+     if joker.state == "selected":
+        return (joker.x, joker.y, joker)
+     else:
+        return (-100, -100, -1)
 
 overlay = pygame.Surface((WIDTH, HEIGHT))
 overlay.fill((0, 0, 0))  
@@ -2266,6 +2289,16 @@ while running:
                 if SortbuttonSuit_rect.collidepoint(mouse_pos):
                     sort_mode = "suit"
                     sort_hand()
+                if ShopBuy_rect.collidepoint(mouse_pos):
+                    if len(Active_Jokers) < maxJokerCount:
+                        for card in Shop_Jokers:
+                            trash, trash2, joker = get_selected_shop_jokers(card)
+                            if joker != -1 and money > card.price:
+                                Active_Jokers.append(joker)
+                                Shop_Jokers.remove(joker)
+                                money -= card.price
+                    else:
+                        print("no space")
             if event.button == 3:
                 if not scoring_in_progress:
                     for card in hand:
@@ -2309,16 +2342,17 @@ while running:
                 for card in Shop_Jokers:
                     if getattr(card, "dragging", False):
                         card.dragging = False
+                        trash, trash2, joker = get_selected_shop_jokers(card)
                         if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                             if card.state == "selected":
                                 card.state = "normal"
-                            elif card.state == "normal":
+                            elif joker == -1:
                                 card.state = "selected"
                         n = len(hand)
                         spread_local = card.spread
                         total_width = (n - 1) * spread_local + 80
                         start_x = (WIDTH / 2) - total_width / 2
-                        i = card.slot
+                        i = card.slot if card.slot else 1
                         center_y = HEIGHT - 100
                         max_v_offset = -30
                         t = i / (n - 1) if n > 1 else 0.5
@@ -2503,10 +2537,21 @@ while running:
         if frame:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
 
+    for joker in Shop_Jokers:
+        buyX, buyY, trash = get_selected_shop_jokers(joker)
+        if buyX > 0:
+            screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY))
+            ShopBuy_rect = ShopBuy_img.get_rect()
+            ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY)
+            text = PixelFontXXS.render(f"{joker.price}", True, white)
+            text_rect = text.get_rect(center=(100, 100))
+
     boss_debuff()
     draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
     jokerSpacing = 600 / (len(Shop_Jokers) + 1) * WIDTH/1500
-    draw_jokers(screen, Shop_Jokers, WIDTH/1.6, HEIGHT/1.6, spread=jokerSpacing)
+    draw_jokers(screen, Shop_Jokers, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
+    jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
+    draw_jokers(screen, Active_Jokers, WIDTH/1.6, HEIGHT/1.2, spread=jokerSpacing)
 
     update_card_animation()
 
