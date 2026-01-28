@@ -261,7 +261,8 @@ Discardhand_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "
 SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonRank.png")), (WIDTH/8.33, WIDTH/20))
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, WIDTH/20))
 CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
-ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/7.27))
+ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/14.54))
+SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -317,6 +318,9 @@ CashOut_rect.topleft = (WIDTH/3.2, HEIGHT / 1.9)
 
 ShopBuy_rect = ShopBuy_img.get_rect()
 ShopBuy_rect.topleft =(-100, -100)
+
+SellButton_rect = SellButton_img.get_rect()
+SellButton_rect.topleft =(-100, -100)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -921,6 +925,8 @@ def animate_letters():
     
 perm_deck = []
 Active_Jokers = []
+shopJokerSelected = False
+ActiveJokerSelected = False
 max_handsize = 8
 handsize = max_handsize
 chips = 0
@@ -996,7 +1002,7 @@ calculating = False
 discarding = False
 round_num = 1
 ante = 1
-money = 0
+money = 1000
 blind_defeated = False
 victory = False
 target_score = 300
@@ -1680,7 +1686,7 @@ def advance_to_next_blind():
         ante += 1
     round_num += 1
     current_score = 0
-    money += hands
+    money += hands + blind_reward
     hands = max_hand
     discards = max_discard
     hand.clear()
@@ -2102,9 +2108,9 @@ def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
 
 def get_selected_shop_jokers(joker):
      if joker.state == "selected":
-        return (joker.x, joker.y, joker)
+        return (joker.x, joker.y)
      else:
-        return (-100, -100, -1)
+        return (-100, -100)
 
 overlay = pygame.Surface((WIDTH, HEIGHT))
 overlay.fill((0, 0, 0))  
@@ -2184,12 +2190,20 @@ while running:
                     GameState = "Shop"
                     for i in range(ShopCount):
                         rarity_choice = random.randint(1, 100)
-                        if rarity_choice <= 55:
-                            Shop_Jokers.append(random.choice(Common_Jokers))
-                        elif rarity_choice <= 90:
-                            Shop_Jokers.append(random.choice(Uncommon_Jokers))
-                        else:
-                            Shop_Jokers.append(random.choice(Rare_Jokers))
+                        while True:
+                            if rarity_choice <= 55:
+                                joker = random.choice(Common_Jokers)
+                                if joker not in Shop_Jokers:
+                                    break
+                            elif rarity_choice <= 90:
+                                joker = random.choice(Uncommon_Jokers)
+                                if joker not in Shop_Jokers:
+                                    break
+                            else:
+                                joker = random.choice(Rare_Jokers)
+                                if joker not in Shop_Jokers:
+                                    break
+                        Shop_Jokers.append(joker)
 
                     ###Gui toggles###
                 if settings == False:
@@ -2226,6 +2240,14 @@ while running:
                             card.was_dragged = False
                             break
                 for card in reversed(Shop_Jokers):
+                    if card.rect.collidepoint(mouse_pos):
+                        card.dragging = True
+                        card.drag_offset_x = card.x - mouse_x
+                        card.drag_offset_y = card.y - mouse_y
+                        card.drag_start = (mouse_x, mouse_y)
+                        card.was_dragged = False
+                        break
+                for card in reversed(Active_Jokers):
                     if card.rect.collidepoint(mouse_pos):
                         card.dragging = True
                         card.drag_offset_x = card.x - mouse_x
@@ -2292,13 +2314,20 @@ while running:
                 if ShopBuy_rect.collidepoint(mouse_pos):
                     if len(Active_Jokers) < maxJokerCount:
                         for card in Shop_Jokers:
-                            trash, trash2, joker = get_selected_shop_jokers(card)
-                            if joker != -1 and money > card.price:
-                                Active_Jokers.append(joker)
-                                Shop_Jokers.remove(joker)
+                            if card.state == "selected" and money > card.price:
+                                shopJokerSelected = False
+                                card.state = "normal"
+                                Active_Jokers.append(card)
+                                Shop_Jokers.remove(card)
                                 money -= card.price
                     else:
                         print("no space")
+                if SellButton_rect.collidepoint(mouse_pos):
+                    for card in Active_Jokers:
+                        if card.state == "selected":
+                            ActiveJokerSelected = False
+                            Active_Jokers.remove(card)
+                            money += card.price / 2
             if event.button == 3:
                 if not scoring_in_progress:
                     for card in hand:
@@ -2342,13 +2371,38 @@ while running:
                 for card in Shop_Jokers:
                     if getattr(card, "dragging", False):
                         card.dragging = False
-                        trash, trash2, joker = get_selected_shop_jokers(card)
                         if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                             if card.state == "selected":
                                 card.state = "normal"
-                            elif joker == -1:
+                                shopJokerSelected = False
+                            elif not shopJokerSelected:
                                 card.state = "selected"
-                        n = len(hand)
+                                shopJokerSelected = True
+                        n = len(Shop_Jokers)
+                        spread_local = card.spread
+                        total_width = (n - 1) * spread_local + 80
+                        start_x = (WIDTH / 2) - total_width / 2
+                        i = card.slot if card.slot else 1
+                        center_y = HEIGHT - 100
+                        max_v_offset = -30
+                        t = i / (n - 1) if n > 1 else 0.5
+                        slot_target_x = start_x + i * spread_local * WIDTH/1000
+                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                        card.target_x = slot_target_x
+                        card.target_y = slot_target_y
+                        card.vx = 0
+                        card.vy = 0
+                for card in Active_Jokers:
+                    if getattr(card, "dragging", False):
+                        card.dragging = False
+                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                            if card.state == "selected":
+                                ActiveJokerSelected = False
+                                card.state = "normal"
+                            elif not ActiveJokerSelected:
+                                ActiveJokerSelected = True
+                                card.state = "selected"
+                        n = len(Active_Jokers)
                         spread_local = card.spread
                         total_width = (n - 1) * spread_local + 80
                         start_x = (WIDTH / 2) - total_width / 2
@@ -2396,18 +2450,36 @@ while running:
                                 hand.insert(new_index, card)
                                 for idx, c in enumerate(hand):
                                     c.slot = idx
-                for card in Shop_Jokers:
-                    if getattr(card, "dragging", False):
-                        dx = mouse_x - card.drag_start[0]
-                        dy = mouse_y - card.drag_start[1]
-                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                            card.was_dragged = True
-                            card.x = mouse_x + card.drag_offset_x
-                            card.y = mouse_y + card.drag_offset_y
-                            card.target_x = card.x
-                            card.target_y = card.y
-                            n = len(Shop_Jokers)
-                            for idx, c in enumerate(Shop_Jokers):
+            for card in Shop_Jokers:
+                if getattr(card, "dragging", False):
+                    dx = mouse_x - card.drag_start[0]
+                    dy = mouse_y - card.drag_start[1]
+                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                        card.was_dragged = True
+                        card.x = mouse_x + card.drag_offset_x
+                        card.y = mouse_y + card.drag_offset_y
+                        card.target_x = card.x
+                        card.target_y = card.y
+                        n = len(Shop_Jokers)
+                        for idx, c in enumerate(Shop_Jokers):
+                            c.slot = idx
+            for card in Active_Jokers:
+                if getattr(card, "dragging", False):
+                    dx = mouse_x - card.drag_start[0]
+                    dy = mouse_y - card.drag_start[1]
+                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                        card.was_dragged = True
+                        card.x = mouse_x + card.drag_offset_x
+                        card.y = mouse_y + card.drag_offset_y
+                        card.target_x = card.x
+                        card.target_y = card.y
+                        n = len(Active_Jokers)
+                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.6)
+                        current_index = Active_Jokers.index(card)
+                        if new_index != current_index:
+                            Active_Jokers.pop(current_index)
+                            Active_Jokers.insert(new_index, card)
+                            for idx, c in enumerate(Active_Jokers):
                                 c.slot = idx
     screen.fill(green)
     screen.blit(SideBar_img, (0, 0))
@@ -2538,20 +2610,30 @@ while running:
             screen.blit(frame, (VIDEO_X, VIDEO_Y))
 
     for joker in Shop_Jokers:
-        buyX, buyY, trash = get_selected_shop_jokers(joker)
+        buyX, buyY = get_selected_shop_jokers(joker)
         if buyX > 0:
-            screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY))
+            screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
             ShopBuy_rect = ShopBuy_img.get_rect()
-            ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY)
-            text = PixelFontXXS.render(f"{joker.price}", True, white)
-            text_rect = text.get_rect(center=(100, 100))
+            ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+            text = PixelFontS.render(f"{joker.price}", True, white)
+            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            screen.blit(text, text_rect)
+    for joker in Active_Jokers:
+        buyX, buyY = get_selected_shop_jokers(joker)
+        if buyX > 0:
+            screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+            SellButton_rect = SellButton_img.get_rect()
+            SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+            text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
+            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            screen.blit(text, text_rect)
 
     boss_debuff()
     draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
     jokerSpacing = 600 / (len(Shop_Jokers) + 1) * WIDTH/1500
     draw_jokers(screen, Shop_Jokers, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
     jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
-    draw_jokers(screen, Active_Jokers, WIDTH/1.6, HEIGHT/1.2, spread=jokerSpacing)
+    draw_jokers(screen, Active_Jokers, WIDTH/1.4, HEIGHT/8, spread=jokerSpacing)
 
     update_card_animation()
 
@@ -2662,6 +2744,8 @@ while running:
                     hand.append(new_card)
                     sort_hand()
     for joker in Shop_Jokers:
+        joker.update()
+    for joker in Active_Jokers:
         joker.update()
     if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
         index = card.slot
