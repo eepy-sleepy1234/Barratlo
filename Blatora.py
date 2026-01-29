@@ -14,6 +14,7 @@ import sys
 import subprocess
 import webbrowser
 import re
+import time
 pygame.init()
 pygame.font.init()
 try:
@@ -263,6 +264,8 @@ SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
 ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/14.54))
 SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
+RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Reroll.png")), (WIDTH/9.1, HEIGHT/12.5))
+NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -276,6 +279,9 @@ RoundBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DI
 SideBar_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (HEIGHT/2.86, HEIGHT/1.33))
 CashOutBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutBackground.png")), (HEIGHT/1.3, HEIGHT))
 ShopBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBackground.png")), (HEIGHT/1.14, HEIGHT))
+GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "bg.png")), (WIDTH, HEIGHT))
+JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "JokerBG.png")), (HEIGHT/1.5, HEIGHT/4.5))
+ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -315,6 +321,12 @@ Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int
 
 CashOut_rect = CashOutButton_img.get_rect()
 CashOut_rect.topleft = (WIDTH/3.2, HEIGHT / 1.9)
+
+Reroll_rect = RerollButton_img.get_rect()
+Reroll_rect.topleft = (WIDTH/2.95, HEIGHT/1.53)
+
+NextRound_rect = NextRoundButton_img.get_rect()
+NextRound_rect.topleft = (WIDTH/2.95, HEIGHT/1.83)
 
 ShopBuy_rect = ShopBuy_img.get_rect()
 ShopBuy_rect.topleft =(-100, -100)
@@ -951,7 +963,8 @@ current_scoring_card = None
 discard_timer = 0
 mouth_triggered = False
 GameState = None
-maxJokerCount = 6
+maxJokerCount = 900
+rerollCost = 0
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1689,6 +1702,7 @@ def advance_to_next_blind():
     money += hands + blind_reward
     hands = max_hand
     discards = max_discard
+    rerollCost = 3
     hand.clear()
     deck.clear()
     for card in perm_deck:
@@ -2193,17 +2207,18 @@ while running:
                         while True:
                             if rarity_choice <= 55:
                                 joker = random.choice(Common_Jokers)
-                                if joker not in Shop_Jokers:
+                                if joker not in Shop_Jokers and joker not in Active_Jokers:
                                     break
                             elif rarity_choice <= 90:
                                 joker = random.choice(Uncommon_Jokers)
-                                if joker not in Shop_Jokers:
+                                if joker not in Shop_Jokers and joker not in Active_Jokers:
                                     break
                             else:
                                 joker = random.choice(Rare_Jokers)
-                                if joker not in Shop_Jokers:
+                                if joker not in Shop_Jokers and joker not in Active_Jokers:
                                     break
                         Shop_Jokers.append(joker)
+                    break
 
                     ###Gui toggles###
                 if settings == False:
@@ -2326,8 +2341,36 @@ while running:
                     for card in Active_Jokers:
                         if card.state == "selected":
                             ActiveJokerSelected = False
+                            card.state = "normal"
                             Active_Jokers.remove(card)
-                            money += card.price / 2
+                            money += int(card.price / 2)
+                if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
+                    if rerollCost <= money:
+                        for joker in Shop_Jokers:
+                            joker.x = -100
+                            joker.y = -100
+                        Shop_Jokers.clear()
+                        money -= rerollCost
+                        rerollCost += 3
+                        for i in range(ShopCount):
+                            rarity_choice = random.randint(1, 100)
+                            while True:
+                                if rarity_choice <= 55:
+                                    joker = random.choice(Common_Jokers)
+                                    if joker not in Shop_Jokers and joker not in Active_Jokers:
+                                        break
+                                elif rarity_choice <= 90:
+                                    joker = random.choice(Uncommon_Jokers)
+                                    if joker not in Shop_Jokers and joker not in Active_Jokers:
+                                        break
+                                else:
+                                    joker = random.choice(Rare_Jokers)
+                                    if joker not in Shop_Jokers and joker not in Active_Jokers:
+                                        break
+                            Shop_Jokers.append(joker)
+                if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
+                    GameState = "Blinds"
+                    Shop_Jokers.clear()
             if event.button == 3:
                 if not scoring_in_progress:
                     for card in hand:
@@ -2474,14 +2517,14 @@ while running:
                         card.target_x = card.x
                         card.target_y = card.y
                         n = len(Active_Jokers)
-                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.6)
+                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.8)
                         current_index = Active_Jokers.index(card)
                         if new_index != current_index:
                             Active_Jokers.pop(current_index)
                             Active_Jokers.insert(new_index, card)
                             for idx, c in enumerate(Active_Jokers):
                                 c.slot = idx
-    screen.fill(green)
+    screen.blit(GameBackground_img, (0, 0))
     screen.blit(SideBar_img, (0, 0))
     
 
@@ -2517,7 +2560,11 @@ while running:
         screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
     if GameState == "Shop":
         screen.blit(ShopBackground_img, (WIDTH/3, HEIGHT/2))
-    font = pygame.font.SysFont(None, 40)
+        screen.blit(RerollButton_img, (WIDTH/2.95, HEIGHT/1.53))
+        text = PixelFontS.render(f"${rerollCost}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
+        screen.blit(text, text_rect)
+        screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
     if not calculating:
         if scoring_in_progress:
             text = PixelFontS.render(saved_hand, True, white)
@@ -2594,6 +2641,9 @@ while running:
         screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
         screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
+    screen.blit(JokerBG_img,(WIDTH/2.7, HEIGHT/30))
+    screen.blit(ConsBG_img,(WIDTH/1.3, HEIGHT/30))
+
     if Atttention_helper.toggle:
         frame = get_video_frame()
         if VideoVelocityX == 0:
@@ -2633,7 +2683,7 @@ while running:
     jokerSpacing = 600 / (len(Shop_Jokers) + 1) * WIDTH/1500
     draw_jokers(screen, Shop_Jokers, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
     jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
-    draw_jokers(screen, Active_Jokers, WIDTH/1.4, HEIGHT/8, spread=jokerSpacing)
+    draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
 
     update_card_animation()
 
