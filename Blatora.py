@@ -1499,8 +1499,10 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             enhancement = "Default"
         else:
             enhancement = card.enhancement
-        card_base = "f{enhancement}" + "Base.png"
-        scaled_base = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
+        filepath = enhancement + "Base.png"
+        filepath = os.path.join(BASES_DIR, filepath)
+        card_base = pygame.image.load(filepath).convert_alpha()
+        scaled_base = pygame.transform.smoothscale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
             card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
