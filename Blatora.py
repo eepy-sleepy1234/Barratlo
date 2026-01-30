@@ -2812,7 +2812,7 @@ while running:
         text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
         screen.blit(text, text_rect)
         screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
-    if GameState == "Blinds":
+    
         
     if not calculating:
         if scoring_in_progress:
@@ -3144,5 +3144,6 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
