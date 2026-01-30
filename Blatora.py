@@ -1,12 +1,5 @@
 import os
 import html
-try:
-    import pygame
-except ImportError:
-    print("pygame not found. Installing...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pygame"])
-    import pygame
-    print("Installed pygame")
 import random
 import math
 from collections import Counter
@@ -17,23 +10,7 @@ import re
 import time
 pygame.init()
 pygame.font.init()
-try:
-    import numpy
-except ImportError:
-    print("numpy not found. Installing...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
-    import numpy
-    print("Installed numpy")
-    
-try:
-    import cv2
-except ImportError:
-    import subprocess
-    import sys
-    print("opencv-python not found. Installing...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python"])
-    import cv2
-    print("Installed opencv-python")
+
 
     
 screen_info = pygame.display.Info()
@@ -3164,3 +3141,4 @@ while running:
 
 close_video()
 pygame.quit()
+
