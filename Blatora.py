@@ -56,6 +56,7 @@ BLINDS_DIR = os.path.join(GUI_DIR, "Blinds")
 OVERLAY_DIR = os.path.join(ASSETS_DIR, "Overlays")
 CONS_DIR = os.path.join(ASSETS_DIR, "ConsCards")
 JOKERSOUND_DIR = os.path.join(SOUNDS_DIR, "Jokers")
+BASES_DIR = os.path.join(ASSETS_DIR, "CardBases")
 scroll_offset = 0
 scroll_speed = 30
 
@@ -903,16 +904,27 @@ def letter_classes():
     
     global shuffled_letters
     shuffled_letters = LetterPosx.copy()
-    random.shuffle(shuffled_letters)
-    if shuffled_letters == LetterPosx:
+    
+
+    while True:
         random.shuffle(shuffled_letters)
-    StartingB.target_x = shuffled_letters[0]
-    StartingA.target_x = shuffled_letters[1]
-    StartingL.target_x = shuffled_letters[2]
-    StartingA2.target_x = shuffled_letters[3]
-    StartingT.target_x = shuffled_letters[4]
-    StartingR.target_x = shuffled_letters[5]
-    StartingO.target_x = shuffled_letters[6]
+        
+        
+        StartingB.target_x = shuffled_letters[0]
+        StartingA.target_x = shuffled_letters[1]
+        StartingL.target_x = shuffled_letters[2]
+        StartingA2.target_x = shuffled_letters[3]
+        StartingT.target_x = shuffled_letters[4]
+        StartingR.target_x = shuffled_letters[5]
+        StartingO.target_x = shuffled_letters[6]
+        
+   
+        temp_order = sorted(Letters, key=lambda letter: letter.target_x)
+        temp_string = ''.join([letter.letter for letter in temp_order])
+        
+
+        if temp_string != "BALATRO":
+            break
 
     
             
@@ -1483,6 +1495,12 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         scaled_w = int(card.image.get_width() * card.scale)
         scaled_h = int(card.image.get_height() * card.scale)
         scaled_img = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
+        if card.enhancement == None:
+            enhancement = "Default"
+        else:
+            enhancement = card.enhancement
+        card_base = "f{enhancement}" + "Base.png"
+        scaled_base = pygame.transform.smoothscale(card.image, (scaled_w, scaled_h))
         if card.is_debuffed:
             card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
@@ -1502,7 +1520,9 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
         rotated = pygame.transform.rotate(scaled_img, angle)
+        rotated_base = pygame.transform.rotate(scaled_base, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
+        surface.blit(rotated_base, rect.topleft)
         surface.blit(rotated, rect.topleft)
         card.rect = rect
 
@@ -2235,7 +2255,6 @@ while startGame == False:
     
         
         if random.randint(1, 20000)  == 1:
-            print("focy")
             
             subprocess.run(['powershell', '-Command', 
             '$obj = New-Object -ComObject WScript.Shell;'
@@ -2512,8 +2531,6 @@ while running:
                                         Active_Jokers.append(card)
                                         Shop_Cards.remove(card)
                                         money -= card.price
-                                else:
-                                    print("no space")
                                 if isinstance(card, Consumable):
                                     if len(Held_Consumables) < maxConsCount:
                                         shopJokerSelected = False
