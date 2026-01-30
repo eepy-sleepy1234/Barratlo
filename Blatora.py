@@ -38,7 +38,7 @@ except ImportError:
     
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -269,6 +269,8 @@ ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Shop
 SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
 RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Reroll.png")), (WIDTH/9.1, HEIGHT/12.5))
 NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
+SelectBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/17.5, HEIGHT/43.5))
+SkipBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/23.4, HEIGHT/38.5))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -285,6 +287,8 @@ ShopBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "bg.png")), (WIDTH, HEIGHT))
 JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "JokerBG.png")), (HEIGHT/1.5, HEIGHT/4.5))
 ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
+BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (HEIGHT/8.3, HEIGHT))
+BlindName_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindName.png")), (WIDTH/17.5, HEIGHT/43.5))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -2828,6 +2832,8 @@ while running:
         text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
         screen.blit(text, text_rect)
         screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
+    if GameState == "Blinds":
+        
     if not calculating:
         if scoring_in_progress:
             text = PixelFontS.render(saved_hand, True, white)
