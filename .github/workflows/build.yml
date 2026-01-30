@@ -1,8 +1,8 @@
 name: Build Blatora EXE
 
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [created]
   workflow_dispatch:
 
 jobs:
@@ -25,8 +25,9 @@ jobs:
       run: |
         pyinstaller --onefile --windowed --add-data "assets;assets" --name Blatora blatora.py
     
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
       with:
-        name: Blatora-Game
-        path: dist/Blatora.exe
+        files: dist/Blatora.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
