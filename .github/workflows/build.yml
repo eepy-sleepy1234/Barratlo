@@ -23,11 +23,11 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install pygame==2.5.2 pyinstaller
+        pip install pygame==2.5.2 numpy opencv-python pyinstaller
     
     - name: Build EXE with PyInstaller
       run: |
-        pyinstaller --onefile --windowed --add-data "assets;assets" --name Blatora blatora.py
+        pyinstaller --onefile --windowed --add-data "assets;assets" --hidden-import=numpy --hidden-import=cv2 --collect-all cv2 --name Blatora blatora.py
     
     - name: Create Release and Upload
       uses: softprops/action-gh-release@v1
