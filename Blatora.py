@@ -8,6 +8,9 @@ import subprocess
 import webbrowser
 import re
 import time
+import pygame
+import numpy
+import cv2
 pygame.init()
 pygame.font.init()
 
@@ -3141,4 +3144,5 @@ while running:
 
 close_video()
 pygame.quit()
+
 
