@@ -55,6 +55,7 @@ TEXT_PATH = os.path.join(ASSETS_DIR, "Text")
 BLINDS_DIR = os.path.join(GUI_DIR, "Blinds")
 OVERLAY_DIR = os.path.join(ASSETS_DIR, "Overlays")
 CONS_DIR = os.path.join(ASSETS_DIR, "ConsCards")
+JOKERSOUND_DIR = os.path.join(SOUNDS_DIR, "Jokers")
 scroll_offset = 0
 scroll_speed = 30
 
@@ -343,6 +344,15 @@ for root, dirs, files in os.walk(LETTERS_DIR):
             letter_name = os.path.splitext(filename)[0]
             image = pygame.transform.scale(load_image_safe(filepath), (int(LETTERW), int(LETTERH)))
             letter_images[letter_name] = image
+
+jokerSound = {}
+for root, dirs, files in os.walk(JOKERSOUND_DIR):
+    for filename in files:
+        if filename.endswith((".mp3", ".wav")):
+            filepath = os.path.join(root, filename)
+            name = os.path.splitext(filename)[0]
+            sound = pygame.mixer.Sound(filepath)
+            jokerSound[name] = sound
 
 StartingBimg = letter_images['StartBimg']
 StartingAimg = letter_images['StartAimg']
@@ -931,7 +941,13 @@ def animate_letters():
         if abs(StartingB.xpos - StartingB.target_x) < 1:
             letter_animation = False
 
-
+def loadAudio(file):
+    quackplay = pygame.mixer.Sound(os.path.join(SOUNDS_DIR,Quack.mp3))
+    try:
+        sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, file))
+        return sound
+    except:
+        return quackplay
 
         
     
@@ -940,7 +956,7 @@ perm_deck = []
 Active_Jokers = []
 shopJokerSelected = False
 ActiveJokerSelected = False
-HeldConsSelected = False
+ActiveJokerSelected = False
 max_handsize = 8
 handsize = max_handsize
 chips = 0
@@ -1017,7 +1033,7 @@ calculating = False
 discarding = False
 round_num = 1
 ante = 1
-money = 0
+money = 10000
 blind_defeated = False
 victory = False
 target_score = 300
@@ -1767,6 +1783,14 @@ class Joker:
                 self.price = 8
             case 'L':
                 self.price = 20
+        self.sound = jokerSound.get(self.name)
+        def playsound(self, loop):
+            
+            if self.sound:
+                if loop:
+                    self.sound.play(-1)
+                else:
+                    self.sound.play(0)
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -1860,14 +1884,18 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
         scaled_w = int(joker.image.get_width() * joker.scale)
         scaled_h = int(joker.image.get_height() * joker.scale)
         scaled_img = pygame.transform.smoothscale(joker.image, (scaled_w, scaled_h))
-        if joker.is_debuffed:
-            scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
-            scaled_img = scaled_img.copy()
-            scaled_img.blit(scaled_overlay, (0, 0))
-        rotated = pygame.transform.rotate(scaled_img, angle)
-        rect = rotated.get_rect(center=(joker.x, joker.y))
-        surface.blit(rotated, rect.topleft)
-        joker.rect = rect
+        try:
+            if joker.is_debuffed:
+                scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+        except AttributeError:
+            a = 2
+        finally:
+            rotated = pygame.transform.rotate(scaled_img, angle)
+            rect = rotated.get_rect(center=(joker.x, joker.y))
+            surface.blit(rotated, rect.topleft)
+            joker.rect = rect
 
 class Consumable:
     card_id_counter = 0
@@ -1902,6 +1930,7 @@ class Consumable:
         self.was_dragged = False
         self.scoring_animating = False
         self.idx = 0
+        self.price = 3
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -1954,6 +1983,7 @@ DragonCards = []
 SharkCards = []
 SplatoonCards = []
 Held_Consumables = []
+maxConsCount = 2
 for root, dirs, files in os.walk(CONS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2473,16 +2503,24 @@ while running:
                     sort_mode = "suit"
                     sort_hand()
                 if ShopBuy_rect.collidepoint(mouse_pos):
-                    if len(Active_Jokers) < maxJokerCount:
                         for card in Shop_Cards:
                             if card.state == "selected" and money > card.price:
-                                shopJokerSelected = False
-                                card.state = "normal"
-                                Active_Jokers.append(card)
-                                Shop_Cards.remove(card)
-                                money -= card.price
-                    else:
-                        print("no space")
+                                if len(Active_Jokers) < maxJokerCount:
+                                    if isinstance(card, Joker):
+                                        shopJokerSelected = False
+                                        card.state = "normal"
+                                        Active_Jokers.append(card)
+                                        Shop_Cards.remove(card)
+                                        money -= card.price
+                                else:
+                                    print("no space")
+                                if isinstance(card, Consumable):
+                                    if len(Held_Consumables) < maxConsCount:
+                                        shopJokerSelected = False
+                                        card.state = "normal"
+                                        Held_Consumables.append(card)
+                                        Shop_Cards.remove(card)
+                                        money -= card.price
                 if SellButton_rect.collidepoint(mouse_pos):
                     for card in Active_Jokers:
                         if card.state == "selected":
@@ -2492,7 +2530,7 @@ while running:
                             money += int(card.price / 2)
                     for card in Held_Consumables:
                         if card.state == "selected":
-                            HeldConsSelected = False
+                            ActiveJokerSelected = False
                             card.state = "normal"
                             Held_Consumables.remove(card)
                             money += int(card.price / 2)
@@ -2507,19 +2545,31 @@ while running:
                         for i in range(ShopCount):
                             rarity_choice = random.randint(1, 100)
                             while True:
-                                if rarity_choice <= 55:
-                                    joker = random.choice(Common_Jokers)
-                                    if joker not in Shop_Cards and joker not in Active_Jokers:
+                                if rarity_choice <= 5:
+                                    card = random.choice(SplatoonCards)
+                                    if card not in Shop_Cards and card not in Held_Consumables:
                                         break
-                                elif rarity_choice <= 90:
-                                    joker = random.choice(Uncommon_Jokers)
-                                    if joker not in Shop_Cards and joker not in Active_Jokers:
+                                if rarity_choice <= 28:
+                                    card = random.choice(DragonCards)
+                                    if card not in Shop_Cards and card not in Held_Consumables:
+                                        break
+                                if rarity_choice <= 50:
+                                    card = random.choice(SharkCards)
+                                    if card not in Shop_Cards and card not in Held_Consumables:
+                                        break
+                                if rarity_choice <= 75:
+                                    card = random.choice(Common_Jokers)
+                                    if card not in Shop_Cards and card not in Active_Jokers:
+                                        break
+                                elif rarity_choice <= 95:
+                                    card = random.choice(Uncommon_Jokers)
+                                    if card not in Shop_Cards and card not in Active_Jokers:
                                         break
                                 else:
-                                    joker = random.choice(Rare_Jokers)
-                                    if joker not in Shop_Cards and joker not in Active_Jokers:
+                                    card = random.choice(Rare_Jokers)
+                                    if card not in Shop_Cards and card not in Active_Jokers:
                                         break
-                            Shop_Cards.append(joker)
+                            Shop_Cards.append(card)
                 if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
                     GameState = "Blinds"
                     Shop_Cards.clear()
@@ -2616,10 +2666,10 @@ while running:
                         card.dragging = False
                         if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                             if card.state == "selected":
-                                HeldConsSelected = False
+                                ActiveJokerSelected = False
                                 card.state = "normal"
                             elif not ActiveJokerSelected:
-                                HeldConsSelected = True
+                                ActiveJokerSelected = True
                                 card.state = "selected"
                         n = len(Held_Consumables)
                         spread_local = card.spread
@@ -2871,6 +2921,15 @@ while running:
             text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
             text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
             screen.blit(text, text_rect)
+    for joker in Held_Consumables:
+        buyX, buyY = get_selected_Shop_Cards(joker)
+        if buyX > 0:
+            screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+            SellButton_rect = SellButton_img.get_rect()
+            SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+            text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
+            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            screen.blit(text, text_rect)
 
     boss_debuff()
     draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
@@ -2878,8 +2937,8 @@ while running:
     draw_jokers(screen, Shop_Cards, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
     jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
     draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
-    consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/1500
-    draw_consumables(screen, Held_Consumables, WIDTH/1.5, HEIGHT/7, spread=consSpacing)
+    consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
+    draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
 
     update_card_animation()
 
@@ -2993,6 +3052,8 @@ while running:
         joker.update()
     for joker in Active_Jokers:
         joker.update()
+    for card in Held_Consumables:
+        card.update()
     if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
         index = card.slot
         new_card = deck.pop()
