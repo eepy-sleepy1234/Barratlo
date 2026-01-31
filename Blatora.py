@@ -944,7 +944,7 @@ def animate_letters():
             letter_animation = False
 
 def loadAudio(file):
-    quackplay = pygame.mixer.Sound(os.path.join(SOUNDS_DIR,'Quack.mp3'))
+    quackplay = pygame.mixer.Sound(os.path.join(SOUNDS_DIR,'Quack.wav'))
     try:
         sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, file))
         return sound
@@ -3199,6 +3199,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
