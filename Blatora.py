@@ -951,7 +951,10 @@ def loadAudio(file):
     except:
         return quackplay
 
-        
+
+mainMusic = loadAudio('Music.mp3')
+mainMusic.play(-1)
+
     
     
 perm_deck = []
@@ -3196,6 +3199,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
