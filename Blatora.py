@@ -321,10 +321,10 @@ ShopBuy_rect.topleft =(-100, -100)
 SellButton_rect = SellButton_img.get_rect()
 SellButton_rect.topleft =(-100, -100)
 
-SkipBlind_rect = SellButton_img.get_rect()
+SkipBlind_rect = SkipBlind_img.get_rect()
 SkipBlind_rect.topleft =(-100, -100)
 
-SelectBlind_rect = SellButton_img.get_rect()
+SelectBlind_rect = SelectBlind_img.get_rect()
 SelectBlind_rect.topleft =(-100, -100)
 
 # ==================== LETTER IMAGES ====================
@@ -2369,6 +2369,7 @@ while running:
                     GameState = "Shop"
                     money += totalReward
                     totalReward = 0
+                    rerollCost = 3
                     for i in range(ShopCount):
                         rarity_choice = random.randint(1, 100)
                         while True:
@@ -2515,7 +2516,7 @@ while running:
                     sort_hand()
                 if ShopBuy_rect.collidepoint(mouse_pos):
                         for card in Shop_Cards:
-                            if card.state == "selected" and money > card.price:
+                            if card.state == "selected" and money >= card.price:
                                 if len(Active_Jokers) < maxJokerCount:
                                     if isinstance(card, Joker):
                                         shopJokerSelected = False
@@ -2586,6 +2587,7 @@ while running:
                 if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                     GameState = "Playing"
                     get_current_blind()
+                    BLIND_X, BLIND_Y = 100, 100
                     for i in range(handsize):
                         if deck:
                             card = deck.pop()
