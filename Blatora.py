@@ -37,6 +37,7 @@ OVERLAY_DIR = os.path.join(ASSETS_DIR, "Overlays")
 CONS_DIR = os.path.join(ASSETS_DIR, "ConsCards")
 JOKERSOUND_DIR = os.path.join(SOUNDS_DIR, "Jokers")
 BASES_DIR = os.path.join(ASSETS_DIR, "CardBases")
+PACKS_DIR = os.path.join(ASSETS_DIR, "CardPacks")
 scroll_offset = 0
 scroll_speed = 30
 
@@ -2039,6 +2040,134 @@ def draw_consumables(surface, cards, center_x, center_y, spread=20):
         surface.blit(rotated, rect.topleft)
         cons.rect = rect
 
+class Cardpack:
+    card_id_counter = 0
+    def __init__(self, image, name, slot=None, state="hand"):
+        self.image = image
+        self.scale= 1.0
+        self.rotation_speed = 0
+        self.scaling_delay = 0
+        self.scaling = False
+        self.growing = False
+        self.scaling_done = False
+        self.scoring_complete = False
+        self.card_id = Card.card_id_counter
+        self.card_id_counter += 1
+        self.name = name
+        self.rect = image.get_rect()
+        self.state = state
+        self.slot = slot
+        self.vx = 0
+        self.vy = 0
+        self.x = 0
+        self.target_x = 0
+        self.scoring_x = 0
+        self.scoring_y = 0
+        self.y = 0
+        self.angle = 0
+        self.target_y = 0
+        self.dragging = False
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        self.was_dragged = False
+        self.scoring_animating = False
+        self.idx = 0
+        self.price = 3
+    def update(self):
+        stiffness = 0.3
+        damping = 0.7
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        if not self.dragging:
+            self.vx += dx * stiffness
+            self.vy += dy * stiffness
+            self.vx *= damping
+            self.vy *= damping
+            if abs(self.vx) > 0.1:
+                self.x += self.vx
+            if abs(self.vy) > 0.1:
+                self.y += self.vy
+        elif self.scoring_animating:
+            lerp_t = 0.18
+            self.x += (self.target_x - self.x) * lerp_t
+            self.y += (self.target_y - self.y) * lerp_t
+            self.angle += (0 - self.angle) * 0.15
+            if abs(self.x - self.target_x) < 2 and abs(self.y - self.target_y) < 2:
+                self.x = self.target_x
+                self.y = self.target_y
+        if self.scaling:
+            if self.scaling_delay < 30:
+                self.scaling_delay += 1
+            else:
+                if not self.growing:
+                    if self.scale > 0.51:
+                        self.scale -= 0.1
+                        self.rotation_speed = 3
+                    else:
+                        self.scale = 0.5
+                        self.rotation_speed = -3
+                        self.growing = True
+                else:
+                    if self.scale < 1.0:
+                        self.scale += 0.1
+                    else:
+                        self.scale = 1.0
+                        self.rotation_speed = 0
+                        self.scaling = False
+                        self.growing = False
+                        self.scaling_done = True
+                        self.scoring_animating = False
+                        self.scaling_delay = 10
+                        self.angle = 0
+        self.angle += self.rotation_speed
+
+def draw_cardpacks(surface, cards, center_x, center_y, spread=20):
+    n = len(cards)
+    if n == 0:
+        return
+    total_width = (n - 1) * spread + 80
+    start_x = center_x - total_width / 2.25
+    for i, pack in enumerate(cards):
+        pack.spread = spread
+        t = i / (n - 1) if n > 1 else 0.5
+        target_x = start_x + i * spread
+        target_y = center_y
+        if pack.state == "selected":
+            target_y -= 40
+        pack.target_x = target_x
+        pack.target_y = target_y
+        angle = pack.angle
+        scaled_w = int(pack.image.get_width() * pack.scale)
+        scaled_h = int(pack.image.get_height() * pack.scale)
+        scaled_img = pygame.transform.smoothscale(pack.image, (scaled_w, scaled_h))
+        rotated = pygame.transform.rotate(scaled_img, angle)
+        rect = rotated.get_rect(center=(pack.x, pack.y))
+        surface.blit(rotated, rect.topleft)
+        pack.rect = rect
+
+StandardPacks = []
+DragonPacks = []
+SplatoonPacks = []
+SharkPacks = []
+ShopPacks = []
+for root, dirs, files in os.walk(PACKS_DIR):
+    for filename in files:
+        if filename.endswith(".png"):
+            filepath = os.path.join(root, filename)
+            Pack_name_raw = filename
+            Pack_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', Pack_name_raw)
+            Pack_name = Pack_name.title()
+            image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
+            cardpack = Cardpack(image, Pack_name)
+            if "Standard" in Pack_name:
+                StandardPacks.append(cardpack)
+            elif "Shark" in Pack_name:
+                SharkPacks.append(cardpack)
+            elif "Splatoon" in Pack_name:
+                SplatoonPacks.append(cardpack)
+            elif "Dragon" in Pack_name:
+                DragonPacks.append(cardpack)
+
 def change_notation(number):
     if number > 999999999999:
         saved_number = number
@@ -2403,8 +2532,27 @@ while running:
                                 if card not in Shop_Cards and card not in Active_Jokers:
                                     break
                         Shop_Cards.append(card)
+                    for i in range(2):
+                        rarity_choice = random.randint(1, 100)
+                        while True:
+                            if rarity_choice <= 5:
+                                pack = random.choice(SplatoonPacks)
+                                if pack not in ShopPacks:
+                                    break
+                            if rarity_choice <= 37:
+                                pack = random.choice(StandardPacks)
+                                if pack not in ShopPacks:
+                                    break
+                            if rarity_choice <= 68:
+                                pack = random.choice(SharkPacks)
+                                if pack not in ShopPacks:
+                                    break
+                            else:
+                                pack = random.choice(DragonPacks)
+                                if pack not in ShopPacks:
+                                    break
+                        ShopPacks.append(pack)
                     break
-
                     ###Gui toggles###
                 if settings == False:
                     for toggle in guiToggleList:
@@ -2456,6 +2604,14 @@ while running:
                         card.was_dragged = False
                         break
                 for card in reversed(Held_Consumables):
+                    if card.rect.collidepoint(mouse_pos):
+                        card.dragging = True
+                        card.drag_offset_x = card.x - mouse_x
+                        card.drag_offset_y = card.y - mouse_y
+                        card.drag_start = (mouse_x, mouse_y)
+                        card.was_dragged = False
+                        break
+                for card in reversed(ShopPacks):
                     if card.rect.collidepoint(mouse_pos):
                         card.dragging = True
                         card.drag_offset_x = card.x - mouse_x
@@ -2536,6 +2692,10 @@ while running:
                                         Held_Consumables.append(card)
                                         Shop_Cards.remove(card)
                                         money -= card.price
+                        for pack in ShopPacks:
+                            if pack.state == "selected" and money >= pack.price:
+                                print("pack open")
+                                money -= pack.price
                 if SellButton_rect.collidepoint(mouse_pos):
                     for card in Active_Jokers:
                         if card.state == "selected":
@@ -2721,6 +2881,30 @@ while running:
                         card.target_y = slot_target_y
                         card.vx = 0
                         card.vy = 0
+                for card in ShopPacks:
+                    if getattr(card, "dragging", False):
+                        card.dragging = False
+                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                            if card.state == "selected":
+                                ActiveJokerSelected = False
+                                card.state = "normal"
+                            elif not ActiveJokerSelected:
+                                ActiveJokerSelected = True
+                                card.state = "selected"
+                        n = len(ShopPacks)
+                        spread_local = card.spread
+                        total_width = (n - 1) * spread_local + 80
+                        start_x = (WIDTH / 2) - total_width / 2
+                        i = card.slot if card.slot else 1
+                        center_y = HEIGHT - 100
+                        max_v_offset = -30
+                        t = i / (n - 1) if n > 1 else 0.5
+                        slot_target_x = start_x + i * spread_local * WIDTH/1000
+                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                        card.target_x = slot_target_x
+                        card.target_y = slot_target_y
+                        card.vx = 0
+                        card.vy = 0
         if event.type == pygame.MOUSEMOTION:
             mouse_x, mouse_y = event.pos
             current_blind = get_current_blind()
@@ -2804,6 +2988,19 @@ while running:
                             Held_Consumables.insert(new_index, card)
                             for idx, c in enumerate(Held_Consumables):
                                 c.slot = idx
+            for card in ShopPacks:
+                if getattr(card, "dragging", False):
+                    dx = mouse_x - card.drag_start[0]
+                    dy = mouse_y - card.drag_start[1]
+                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                        card.was_dragged = True
+                        card.x = mouse_x + card.drag_offset_x
+                        card.y = mouse_y + card.drag_offset_y
+                        card.target_x = card.x
+                        card.target_y = card.y
+                        n = len(ShopPacks)
+                        for idx, c in enumerate(ShopPacks):
+                            c.slot = idx
     screen.blit(GameBackground_img, (0, 0))
     screen.blit(SideBar_img, (0, 0))
     
@@ -3002,6 +3199,16 @@ while running:
             text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
             text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
             screen.blit(text, text_rect)
+        for joker in ShopPacks:
+            buyX, buyY = get_selected_Shop_Cards(joker)
+            if buyX > 0:
+                screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+                ShopBuy_rect = ShopBuy_img.get_rect()
+                ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                text = PixelFontS.render(f"{joker.price}", True, white)
+                text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+                screen.blit(text, text_rect)
+    
 
     boss_debuff()
     draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
@@ -3011,6 +3218,8 @@ while running:
     draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
     consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
     draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
+    consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
+    draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
     update_card_animation()
 
@@ -3133,6 +3342,8 @@ while running:
         joker.update()
     for card in Held_Consumables:
         card.update()
+    for pack in ShopPacks:
+        pack.update()
     if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
         index = card.slot
         new_card = deck.pop()
@@ -3218,9 +3429,3 @@ while running:
 
 close_video()
 pygame.quit()
-
-
-
-
-
-
