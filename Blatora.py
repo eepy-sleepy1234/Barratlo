@@ -42,9 +42,6 @@ scroll_speed = 30
 
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
 
-
-
-
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     """Load image with fallback to placeholder if file not found"""
     try:
@@ -62,9 +59,9 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
             return surf
 
 Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Loading.png")), (WIDTH, HEIGHT))
-
 screen.blit(Loading_img,(0,0))
 pygame.display.flip()
+
 OSDmono =  pygame.font.Font((os.path.join(FONTS_DIR, 'OSD mono.ttf')), int(HEIGHT/30))        
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
@@ -336,7 +333,6 @@ SelectBlind_rect = SelectBlind_img.get_rect()
 SelectBlind_rect.topleft =(-100, -100)
 
 # ==================== LETTER IMAGES ====================
-
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -1310,7 +1306,7 @@ currentFrame = 0
 spacing = 600 / handsize * WIDTH/1500
 
 def boss_debuff():
-    global round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue, hand, deck, current_blind, selected_cards, mouth_triggered, is_straight
+    global handsize, max_handsize, round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue, hand, deck, current_blind, selected_cards, mouth_triggered, is_straight
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
@@ -2434,7 +2430,7 @@ while running:
                     soserious.was_dragged = False
                 else:
                     selected_count = sum(1 for card in hand if card.state == "selected")
-                if not scoring_in_progress:
+                if not scoring_in_progress and not GameState == "Dead":
                     for card in reversed(hand):
                         if card.rect.collidepoint(mouse_pos) and not calculating:
                             card.dragging = True
@@ -2595,8 +2591,10 @@ while running:
                     break
                 if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                     GameState = "Playing"
+                    current_blind = None
+                    victory = False
+                    BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
                     get_current_blind()
-                    BLIND_X, BLIND_Y = 100, 100
                     for i in range(handsize):
                         if deck:
                             card = deck.pop()
@@ -2607,6 +2605,9 @@ while running:
                     break
                 if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                     round_num += 1
+                    current_blind = None
+                    victory = False
+                    get_current_blind()
                     break
             if event.button == 3:
                 if not scoring_in_progress:
@@ -3100,6 +3101,13 @@ while running:
     if draw_fox:
     
         focy_scare.animate()
+    if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score:
+        GameState = "Dead"
+    if GameState == "Dead":
+        redScreen = pygame.Surface((WIDTH, HEIGHT))
+        redScreen.fill((255, 0, 0))
+        redScreen.set_alpha(50)
+        screen.blit(redScreen, (0, 0))
     pygame.display.flip()   ###########################################################
     clock.tick(60)
     currentFrame += 1
@@ -3210,6 +3218,7 @@ while running:
 
 close_video()
 pygame.quit()
+
 
 
 
