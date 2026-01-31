@@ -90,6 +90,7 @@ white = (255, 255, 255)
 red = (230, 50, 50)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
+black = (0, 0, 0)
 with open((os.path.join(TEXT_PATH,"HelpMenu.md")), "r", encoding="utf-8") as file:
     helptext = file.read()
 
@@ -1673,6 +1674,7 @@ for root, dirs, files in os.walk(BLINDS_DIR):
             else:
                 blind_obj = Blind(blind_name, image, -150, -150, "boss")
                 boss_blinds.append(blind_obj)
+boss_blind = random.choice(boss_blinds)
 current_blind = None
 def calculate_target_score(ante, round_num):
     base_score = ANTE_SCALING[ante]
@@ -1696,7 +1698,7 @@ def get_current_blind():
                 current_blind.blind_type = "big"
         elif round_num % 3 == 0:
             if boss_blinds:
-                current_blind = random.choice(boss_blinds)
+                current_blind = boss_blind
                 blind_reward = 5
                 current_blind_type = "boss"
         if current_blind:
@@ -1739,6 +1741,7 @@ def advance_to_next_blind():
     rerollCost = 3
     hand.clear()
     deck.clear()
+    boss_blind = random.choice(boss_blinds)
     for card in perm_deck:
         new_card = Card(card.rank, card.suit, card.image)
         deck.append(new_card)
@@ -2755,6 +2758,8 @@ while running:
                     victory = False
                     BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
                     get_current_blind()
+                    if round_num % 3 == 0:
+                        boss_debuff()
                     for i in range(handsize):
                         if deck:
                             card = deck.pop()
@@ -2886,10 +2891,10 @@ while running:
                         card.dragging = False
                         if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                             if card.state == "selected":
-                                ActiveJokerSelected = False
+                                shopJokerSelected = False
                                 card.state = "normal"
-                            elif not ActiveJokerSelected:
-                                ActiveJokerSelected = True
+                            elif not shopJokerSelected:
+                                shopJokerSelected = True
                                 card.state = "selected"
                         n = len(ShopPacks)
                         spread_local = card.spread
@@ -3050,11 +3055,19 @@ while running:
             screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.18))
             SelectBlind_rect.topleft = (WIDTH/3.4, HEIGHT/1.93)
             SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
+            text = PixelFontS.render(small_blind.name, True, black)
+            text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
+            screen.blit(text, text_rect)
+            screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.65))
         else:
             screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
             screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
             screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.8))
             screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.12))
+            text = PixelFontS.render(small_blind.name, True, black)
+            text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
+            screen.blit(text, text_rect)
+            screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.53))
         if round_num % 3 == 2:
             screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
             screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
@@ -3062,20 +3075,36 @@ while running:
             screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.18))
             SelectBlind_rect.topleft = (WIDTH/1.97, HEIGHT/1.93)
             SkipBlind_rect.topleft = (WIDTH/1.75, HEIGHT/1.18)
+            text = PixelFontS.render(big_blind.name, True, black)
+            text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
+            screen.blit(text, text_rect)
+            screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.65))
         else:
             screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
             screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
             screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.8))
             screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.12))
+            text = PixelFontS.render(big_blind.name, True, black)
+            text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
+            screen.blit(text, text_rect)
+            screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.53))
         if round_num % 3 == 0:
             screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/2))
             screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
             screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
             SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
+            text = PixelFontS.render(boss_blind.name, True, black)
+            text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
+            screen.blit(text, text_rect)
+            screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.65))
         else:
             screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
             screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
             screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
+            text = PixelFontS.render(boss_blind.name, True, black)
+            text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
+            screen.blit(text, text_rect)
+            screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.53))
     
         
     if not calculating:
@@ -3199,15 +3228,15 @@ while running:
             text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
             text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
             screen.blit(text, text_rect)
-        for joker in ShopPacks:
-            buyX, buyY = get_selected_Shop_Cards(joker)
-            if buyX > 0:
-                screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
-                ShopBuy_rect = ShopBuy_img.get_rect()
-                ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-                text = PixelFontS.render(f"{joker.price}", True, white)
-                text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
-                screen.blit(text, text_rect)
+    for joker in ShopPacks:
+        buyX, buyY = get_selected_Shop_Cards(joker)
+        if buyX > 0:
+            screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+            ShopBuy_rect = ShopBuy_img.get_rect()
+            ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+            text = PixelFontS.render(f"{joker.price}", True, white)
+            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            screen.blit(text, text_rect)
     
 
     boss_debuff()
