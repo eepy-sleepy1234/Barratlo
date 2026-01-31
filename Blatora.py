@@ -2751,6 +2751,8 @@ while running:
                 if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
                     GameState = "Blinds"
                     Shop_Cards.clear()
+                    ShopPacks.clear()
+                    shopJokerSelected = False
                     break
                 if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                     GameState = "Playing"
