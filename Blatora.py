@@ -42,6 +42,9 @@ scroll_speed = 30
 
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
 
+
+
+
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     """Load image with fallback to placeholder if file not found"""
     try:
@@ -57,6 +60,11 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
             surf = pygame.Surface((80, 110))
             surf.fill((200, 200, 200))  
             return surf
+
+Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Loading.png")), (WIDTH, HEIGHT))
+
+screen.blit(Loading_img,(0,0))
+pygame.display.flip()
 OSDmono =  pygame.font.Font((os.path.join(FONTS_DIR, 'OSD mono.ttf')), int(HEIGHT/30))        
 PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
 PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
@@ -328,6 +336,7 @@ SelectBlind_rect = SelectBlind_img.get_rect()
 SelectBlind_rect.topleft =(-100, -100)
 
 # ==================== LETTER IMAGES ====================
+
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -3201,7 +3210,6 @@ while running:
 
 close_video()
 pygame.quit()
-
 
 
 
