@@ -249,8 +249,8 @@ ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Shop
 SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
 RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Reroll.png")), (WIDTH/9.1, HEIGHT/12.5))
 NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
-SelectBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/17.5, HEIGHT/43.5))
-SkipBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/23.4, HEIGHT/38.5))
+SelectBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/6.8, HEIGHT/20))
+SkipBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SkipBlind.png")), (WIDTH/12, HEIGHT/18))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -267,8 +267,8 @@ ShopBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "bg.png")), (WIDTH, HEIGHT))
 JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "JokerBG.png")), (HEIGHT/1.5, HEIGHT/4.5))
 ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
-BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (HEIGHT/8.3, HEIGHT))
-BlindName_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindName.png")), (WIDTH/17.5, HEIGHT/43.5))
+BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (WIDTH/6, HEIGHT*2))
+BlindName_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindName.png")), (WIDTH/6.8, HEIGHT/20))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -320,6 +320,12 @@ ShopBuy_rect.topleft =(-100, -100)
 
 SellButton_rect = SellButton_img.get_rect()
 SellButton_rect.topleft =(-100, -100)
+
+SkipBlind_rect = SellButton_img.get_rect()
+SkipBlind_rect.topleft =(-100, -100)
+
+SelectBlind_rect = SellButton_img.get_rect()
+SelectBlind_rect.topleft =(-100, -100)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -1029,18 +1035,19 @@ calculating = False
 discarding = False
 round_num = 1
 ante = 1
-money = 10000
+money = 0
 blind_defeated = False
 victory = False
 target_score = 300
 contributing = []
-BLIND_X = WIDTH/100
-BLIND_Y = HEIGHT/22.86
+BLIND_X = -500
+BLIND_Y = -500
 total_score = 0
 saved_total_score = 0
 is_straight = False
 is_flush = False
 ShopCount = 2
+totalReward = 0
 
 SCORED_POSITIONS = [
     (WIDTH//2.86, HEIGHT//2.29),
@@ -1285,13 +1292,7 @@ deck = perm_deck.copy()
 random.shuffle(deck)
 
 hand = []
-for i in range(handsize):
-    if deck:
-        card = deck.pop()
-        card.slot = i
-        card.x, card.y = WIDTH + 100, HEIGHT - 170
-        card.state = "hand"
-        hand.append(card)
+
 
 currentFrame = 0
 spacing = 600 / handsize * WIDTH/1500
@@ -1718,12 +1719,12 @@ def set_boss_blind(boss_name):
             return True
     return False
 def advance_to_next_blind():
-    global round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState
+    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState
     if round_num % 3 == 0:
         ante += 1
     round_num += 1
     current_score = 0
-    money += hands + blind_reward
+    totalReward += hands + blind_reward
     hands = max_hand
     discards = max_discard
     rerollCost = 3
@@ -2144,6 +2145,7 @@ init_video()
 
 while startGame == False:
     cursor_pos = pygame.mouse.get_pos()
+    pygame.mouse.set_visible(False)
     hovering = False
     for toggle in guiToggleList:
         if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
@@ -2166,8 +2168,7 @@ while startGame == False:
             if event.button == 1:
                 if start_button_rect.collidepoint(event.pos):
                     card_animating = True
-                    GameState = "Playing"
-                    get_current_blind()
+                    GameState = "Blinds"
                 elif settings:  
                     for setting in settingsList:
                         if setting.rect.collidepoint(event.pos):
@@ -2363,6 +2364,8 @@ while running:
                     
                 if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                     GameState = "Shop"
+                    money += totalReward
+                    totalReward = 0
                     for i in range(ShopCount):
                         rarity_choice = random.randint(1, 100)
                         while True:
@@ -2576,6 +2579,21 @@ while running:
                 if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
                     GameState = "Blinds"
                     Shop_Cards.clear()
+                    break
+                if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
+                    GameState = "Playing"
+                    get_current_blind()
+                    for i in range(handsize):
+                        if deck:
+                            card = deck.pop()
+                            card.slot = i
+                            card.x, card.y = WIDTH + 100, HEIGHT - 170
+                            card.state = "hand"
+                            hand.append(card)
+                    break
+                if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
+                    round_num += 1
+                    break
             if event.button == 3:
                 if not scoring_in_progress:
                     for card in hand:
@@ -2812,6 +2830,40 @@ while running:
         text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
         screen.blit(text, text_rect)
         screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
+    if GameState == "Blinds":
+        if round_num % 3 == 1:
+            screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/2))
+            screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.73))
+            screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.93))
+            screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.18))
+            SelectBlind_rect.topleft = (WIDTH/3.4, HEIGHT/1.93)
+            SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
+        else:
+            screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
+            screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
+            screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.8))
+            screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.12))
+        if round_num % 3 == 2:
+            screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
+            screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
+            screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.93))
+            screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.18))
+            SelectBlind_rect.topleft = (WIDTH/1.97, HEIGHT/1.93)
+            SkipBlind_rect.topleft = (WIDTH/1.75, HEIGHT/1.18)
+        else:
+            screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
+            screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
+            screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.8))
+            screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.12))
+        if round_num % 3 == 0:
+            screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/2))
+            screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
+            screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
+            SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
+        else:
+            screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
+            screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
+            screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
     
         
     if not calculating:
