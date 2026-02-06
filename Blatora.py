@@ -11,6 +11,7 @@ import time
 import pygame
 import numpy
 import cv2
+import pyperclip
 pygame.init()
 pygame.font.init()
 
@@ -88,6 +89,7 @@ help_menu = False
 green = (0, 120, 0)
 white = (255, 255, 255)
 red = (230, 50, 50)
+blue = (50, 50, 230)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
 black = (0, 0, 0)
@@ -276,6 +278,10 @@ JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Joke
 ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
 BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (WIDTH/6, HEIGHT*2))
 BlindName_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindName.png")), (WIDTH/6.8, HEIGHT/20))
+DeadBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DeadBG.png")), (WIDTH/2.1, HEIGHT/1.1))
+NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRunButton.png")), (WIDTH/6.8, HEIGHT/20))
+MainMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MainMenuButton.png")), (WIDTH/6.8, HEIGHT/20))
+Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyButton.png")), (WIDTH/6.8, HEIGHT/20))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -333,6 +339,15 @@ SkipBlind_rect.topleft =(-100, -100)
 
 SelectBlind_rect = SelectBlind_img.get_rect()
 SelectBlind_rect.topleft =(-100, -100)
+
+CopyButton_rect = Copy_img.get_rect()
+CopyButton_rect.topleft = (WIDTH/1.7 , HEIGHT/1.365)
+
+NewRunButton_rect = NewRun_img.get_rect()
+NewRunButton_rect.topleft = (WIDTH/1.34 , HEIGHT/1.25)
+
+MainMenuButton_rect = MainMenu_img.get_rect()
+MainMenuButton_rect.topleft = (WIDTH/1.74 , HEIGHT/1.25)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -995,6 +1010,13 @@ mouth_triggered = False
 GameState = None
 maxJokerCount = 5
 rerollCost = 3
+highest_hand = 0
+most_played = 0
+cards_played = 0
+cards_discarded = 0
+purchases = 0
+rerolls = 0
+cards_found = 0
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1133,6 +1155,21 @@ BOSS_DESC = {
     "The ": "",
     }
 
+hand_plays = {
+    "High Card": 0,
+    "Pair": 0,
+    "Two Pair": 0,
+    "Three of a Kind": 0,
+    "Straight": 0,
+    "Flush": 0,
+    "Full House": 0,
+    "Four of a Kind": 0,
+    "Straight Flush": 0,
+    "Five of a Kind": 0,
+    "Flush House": 0,
+    "Flush Five": 0
+}
+
 class Card:
     card_id_counter = 0
     def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -1210,16 +1247,16 @@ class Card:
                 self.x = self.target_x
                 self.y = self.target_y
         if self.scaling:
-            if self.scaling_delay < 30:
+            if self.scaling_delay < 10:
                 self.scaling_delay += 1
             else:
                 if not self.growing:
                     if self.scale > 0.51:
                         self.scale -= 0.1
-                        self.rotation_speed = 3
+                        self.rotation_speed = 5
                     else:
                         self.scale = 0.5
-                        self.rotation_speed = -3
+                        self.rotation_speed = -5
                         self.growing = True
                 else:
                     if self.scale < 1.0:
@@ -1839,10 +1876,10 @@ class Joker:
                 if not self.growing:
                     if self.scale > 0.51:
                         self.scale -= 0.1
-                        self.rotation_speed = 3
+                        self.rotation_speed = 5
                     else:
                         self.scale = 0.5
-                        self.rotation_speed = -3
+                        self.rotation_speed = -5
                         self.growing = True
                 else:
                     if self.scale < 1.0:
@@ -1979,10 +2016,10 @@ class Consumable:
                 if not self.growing:
                     if self.scale > 0.51:
                         self.scale -= 0.1
-                        self.rotation_speed = 3
+                        self.rotation_speed = 5
                     else:
                         self.scale = 0.5
-                        self.rotation_speed = -3
+                        self.rotation_speed = -5
                         self.growing = True
                 else:
                     if self.scale < 1.0:
@@ -2105,10 +2142,10 @@ class Cardpack:
                 if not self.growing:
                     if self.scale > 0.51:
                         self.scale -= 0.1
-                        self.rotation_speed = 3
+                        self.rotation_speed = 5
                     else:
                         self.scale = 0.5
-                        self.rotation_speed = -3
+                        self.rotation_speed = -5
                         self.growing = True
                 else:
                     if self.scale < 1.0:
@@ -2280,128 +2317,6 @@ letter_string = ''.join([letter.letter for letter in current_order])
 devkey = 'holyguac' + letter_string
 startGame = False
 
-
-init_video()
-
-while startGame == False:
-    cursor_pos = pygame.mouse.get_pos()
-    pygame.mouse.set_visible(False)
-    hovering = False
-    for toggle in guiToggleList:
-        if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
-            hovering = True
-            break
-    current_blind = get_current_blind()
-    if current_blind and current_blind.rect.collidepoint(cursor_pos):
-        hovering = True
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-
-        
-        if event.type == pygame.KEYDOWN:
-            if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
-                dev_toggle = True
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            
-            if event.button == 1:
-                if start_button_rect.collidepoint(event.pos):
-                    card_animating = True
-                    GameState = "Blinds"
-                elif settings:  
-                    for setting in settingsList:
-                        if setting.rect.collidepoint(event.pos):
-                            setting.toggle = not setting.toggle
-                            setting.check_dev()
-                            setting.update_img()
-                elif setting_rect.collidepoint(event.pos): 
-                    settings = True
-                if xbutton_rect.collidepoint(event.pos):
-                    settings = False
-    screen.fill((0, 0, 0))  
-    spinningBG.animate()
-    settingsButton.animate()
-
-    if Atttention_helper.toggle and not prev_attention_state:
-        init_video()
-    elif not Atttention_helper.toggle and prev_attention_state:
-        close_video()
-    prev_attention_state = Atttention_helper.toggle
-    
-
-    if Atttention_helper.toggle:
-        frame = get_video_frame()
-        if frame:
-            screen.blit(frame, (VIDEO_X, VIDEO_Y))
-    
-    if SO_SERIOUS.toggle:
-        soserious.animate()
-        if not soseriousmusic.get_num_channels(): 
-            soseriousmusic.play(-1) 
-    else:
-        soseriousmusic.stop()
-    if fade_alpha > 0:
-        fade_alpha -= 2 
-        fade_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-        fade_surface.fill((255, 255, 255))  
-        fade_surface.set_alpha(fade_alpha) 
-        screen.blit(fade_surface, (0, 0))
-
-    pygame.draw.circle(screen, (255, 255, 255), (WIDTH//2, HEIGHT//2), WIDTH//37)
-    for letter in Letters:
-        letter.animate()
-        letter.draw()
-    screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
-    
-    if settings:
-        screen.fill((255,255,255))
-        draw_settings()
-        screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
-        
-
-        
-    update_card_animation()
-    if card_x > -WIDTH:  
-        screen.blit(STARTCARD, (card_x, 0))
-        
-    if endBG == True:
-        startGame = True
-
-    dev_commands()
-    blit_img()
-
-    
-        
-    if hovering:
-        screen.blit(cursor_hover, cursor_pos)
-    else:
-        screen.blit(cursor_normal, cursor_pos)   
-
-    if Focy.toggle:
-    
-        
-        if random.randint(1, 20000)  == 1:
-            
-            subprocess.run(['powershell', '-Command', 
-            '$obj = New-Object -ComObject WScript.Shell;'
-            '$obj.SendKeys([char]173);'
-            'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
-            shell=True)
-            
-            foxsound.play()
-                
-                
-            draw_fox = True
-    if draw_fox:
-    
-        focy_scare.animate()
-    pygame.display.flip()
-    clock.tick(60)
-    currentFrame += 1
-    
-
-    
 def sort_hand():
     global hand, sort_mode
     if sort_mode == "rank":
@@ -2423,303 +2338,221 @@ def get_hand_slot_from_x(x_pos, hand_len, spread=spacing, center_x=WIDTH/2):
     return idx
 
 def get_selected_Shop_Cards(joker):
-     if joker.state == "selected":
+    if joker.state == "selected":
         return (joker.x, joker.y)
-     else:
+    else:
         return (-100, -100)
-
-overlay = pygame.Surface((WIDTH, HEIGHT))
-overlay.fill((0, 0, 0))  
-overlay.set_alpha(128)
-
-
-while running:
-    global discard_queue
-    global scoring_queue
-    question.should_draw = True
-    mouse_pos = pygame.mouse.get_pos()
-    
-    cursor_pos = pygame.mouse.get_pos()
-    
-    hovering = False
-    for toggle in guiToggleList:
-        if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
-            hovering = True
-            break
-    for card in hand:
-        if card.rect.collidepoint(cursor_pos):
-            hovering = True
-            break
         
-    update_gui_buttons()
 
+init_video()
+game = True
+while game:
+    while startGame == False:
+        cursor_pos = pygame.mouse.get_pos()
+        pygame.mouse.set_visible(False)
+        hovering = False
+        for toggle in guiToggleList:
+            if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
+                hovering = True
+                break
+        current_blind = get_current_blind()
+        if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
+            hovering = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
-    if Atttention_helper.toggle and not prev_attention_state:
-        init_video()
-    elif not Atttention_helper.toggle and prev_attention_state:
-        close_video()
-    prev_attention_state = Atttention_helper.toggle
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-        if event.type == pygame.KEYDOWN:
-            if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
-                dev_toggle = True
-            if event.key == pygame.K_ESCAPE:
-                question.toggle = not question.toggle
-                
-        if event.type == pygame.MOUSEWHEEL and help_menu:
-            scroll_offset += event.y * scroll_speed
-            # Prevent over-scrolling
-            max_scroll = -max(0, len(helpMenu_surfaces) * line_height - HEIGHT + 200)
-            scroll_offset = max(max_scroll, min(0, scroll_offset))
             
-       
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                mouse_x, mouse_y = mouse_pos
-                if current_blind and current_blind.rect.collidepoint(mouse_pos):
-                    current_blind.dragging = True
-                    current_blind.drag_offset_x = current_blind.x - mouse_x
-                    current_blind.drag_offset_y = current_blind.y - mouse_y
-                    current_blind.drag_start = (mouse_x, mouse_y)
-                    current_blind.was_dragged = False
-
-                if help_menu and xbutton_rect.collidepoint(event.pos):
-                    help_menu = False
-                    helpButton.toggle = False
-
-                if settings:  
-                    for setting in settingsList:
-                        if setting.rect.collidepoint(event.pos):
-                            setting.toggle = not setting.toggle
-                            setting.check_dev()
-                            setting.update_img()
-                    
+            if event.type == pygame.KEYDOWN:
+                if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
+                    dev_toggle = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 
-                if xbutton_rect.collidepoint(event.pos):
-                    settings = False
-                    settings2.toggle = False
-                    
-                if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
-                    GameState = "Shop"
-                    money += totalReward
-                    totalReward = 0
-                    rerollCost = 3
-                    for i in range(ShopCount):
-                        rarity_choice = random.randint(1, 100)
-                        while True:
-                            if rarity_choice <= 5:
-                                card = random.choice(SplatoonCards)
-                                if card not in Shop_Cards and card not in Held_Consumables:
-                                    break
-                            if rarity_choice <= 28:
-                                card = random.choice(DragonCards)
-                                if card not in Shop_Cards and card not in Held_Consumables:
-                                    break
-                            if rarity_choice <= 50:
-                                card = random.choice(SharkCards)
-                                if card not in Shop_Cards and card not in Held_Consumables:
-                                    break
-                            if rarity_choice <= 75:
-                                card = random.choice(Common_Jokers)
-                                if card not in Shop_Cards and card not in Active_Jokers:
-                                    break
-                            elif rarity_choice <= 95:
-                                card = random.choice(Uncommon_Jokers)
-                                if card not in Shop_Cards and card not in Active_Jokers:
-                                    break
-                            else:
-                                card = random.choice(Rare_Jokers)
-                                if card not in Shop_Cards and card not in Active_Jokers:
-                                    break
-                        Shop_Cards.append(card)
-                    for i in range(2):
-                        rarity_choice = random.randint(1, 100)
-                        while True:
-                            if rarity_choice <= 5:
-                                pack = random.choice(SplatoonPacks)
-                                if pack not in ShopPacks:
-                                    break
-                            if rarity_choice <= 37:
-                                pack = random.choice(StandardPacks)
-                                if pack not in ShopPacks:
-                                    break
-                            if rarity_choice <= 68:
-                                pack = random.choice(SharkPacks)
-                                if pack not in ShopPacks:
-                                    break
-                            else:
-                                pack = random.choice(DragonPacks)
-                                if pack not in ShopPacks:
-                                    break
-                        ShopPacks.append(pack)
-                    break
-                    ###Gui toggles###
-                if settings == False:
-                    for toggle in guiToggleList:
-                        if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
-                            toggle.toggle = not question.toggle
-                            if toggle == settings2:
-                                settings = True
-                            if toggle == githubButton:
-                                webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
-                                toggle.toggle = False
-                            if toggle == helpButton:
-                                help_menu = True
+                if event.button == 1:
+                    if start_button_rect.collidepoint(event.pos):
+                        card_animating = True
+                        GameState = "Blinds"
+                        seed = ''
+                        for i in range(8):
+                            num = random.randint(0, 36)
+                            if num > 9:
+                                num -= 9
+                                num = chr(ord('`')+num)
+                            num = str(num)
+                            seed += num
+                        random.seed(seed)
+                    elif settings:  
+                        for setting in settingsList:
+                            if setting.rect.collidepoint(event.pos):
+                                setting.toggle = not setting.toggle
+                                setting.check_dev()
+                                setting.update_img()
+                    elif setting_rect.collidepoint(event.pos): 
+                        settings = True
+                    if xbutton_rect.collidepoint(event.pos):
+                        settings = False
+        screen.fill((0, 0, 0))  
+        spinningBG.animate()
+        settingsButton.animate()
 
-                            if toggle == quitButton:
-                                
-                                running = False
+        if Atttention_helper.toggle and not prev_attention_state:
+            init_video()
+        elif not Atttention_helper.toggle and prev_attention_state:
+            close_video()
+        prev_attention_state = Atttention_helper.toggle
+        
+
+        if Atttention_helper.toggle:
+            frame = get_video_frame()
+            if frame:
+                screen.blit(frame, (VIDEO_X, VIDEO_Y))
+        
+        if SO_SERIOUS.toggle:
+            soserious.animate()
+            if not soseriousmusic.get_num_channels(): 
+                soseriousmusic.play(-1) 
+        else:
+            soseriousmusic.stop()
+        if fade_alpha > 0:
+            fade_alpha -= 2 
+            fade_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            fade_surface.fill((255, 255, 255))  
+            fade_surface.set_alpha(fade_alpha) 
+            screen.blit(fade_surface, (0, 0))
+
+        pygame.draw.circle(screen, (255, 255, 255), (WIDTH//2, HEIGHT//2), WIDTH//37)
+        for letter in Letters:
+            letter.animate()
+            letter.draw()
+        screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
+        
+        if settings:
+            screen.fill((255,255,255))
+            draw_settings()
+            screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
+            
+
+            
+        update_card_animation()
+        if card_x > -WIDTH:  
+            screen.blit(STARTCARD, (card_x, 0))
+            
+        if endBG == True:
+            startGame = True
+
+        dev_commands()
+        blit_img()
+
+        
+            
+        if hovering:
+            screen.blit(cursor_hover, cursor_pos)
+        else:
+            screen.blit(cursor_normal, cursor_pos)   
+
+        if Focy.toggle:
+        
+            
+            if random.randint(1, 20000)  == 1:
+                
+                subprocess.run(['powershell', '-Command', 
+                '$obj = New-Object -ComObject WScript.Shell;'
+                '$obj.SendKeys([char]173);'
+                'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
+                shell=True)
+                
+                foxsound.play()
                     
-                if SO_SERIOUS.toggle and soserious.rect.collidepoint(mouse_pos):
-                    soserious.dragging = True
-                    soserious.drag_offset_x = soserious.xpos - mouse_x
-                    soserious.drag_offset_y = soserious.ypos - mouse_y
-                    soserious.drag_start = (mouse_x, mouse_y)
-                    soserious.was_dragged = False
-                else:
-                    selected_count = sum(1 for card in hand if card.state == "selected")
-                if not scoring_in_progress and not GameState == "Dead":
-                    for card in reversed(hand):
-                        if card.rect.collidepoint(mouse_pos) and not calculating:
-                            card.dragging = True
-                            card.drag_offset_x = card.x - mouse_x
-                            card.drag_offset_y = card.y - mouse_y
-                            card.drag_start = (mouse_x, mouse_y)
-                            card.was_dragged = False
-                            break
-                for card in reversed(Shop_Cards):
-                    if card.rect.collidepoint(mouse_pos):
-                        card.dragging = True
-                        card.drag_offset_x = card.x - mouse_x
-                        card.drag_offset_y = card.y - mouse_y
-                        card.drag_start = (mouse_x, mouse_y)
-                        card.was_dragged = False
-                        break
-                for card in reversed(Active_Jokers):
-                    if card.rect.collidepoint(mouse_pos):
-                        card.dragging = True
-                        card.drag_offset_x = card.x - mouse_x
-                        card.drag_offset_y = card.y - mouse_y
-                        card.drag_start = (mouse_x, mouse_y)
-                        card.was_dragged = False
-                        break
-                for card in reversed(Held_Consumables):
-                    if card.rect.collidepoint(mouse_pos):
-                        card.dragging = True
-                        card.drag_offset_x = card.x - mouse_x
-                        card.drag_offset_y = card.y - mouse_y
-                        card.drag_start = (mouse_x, mouse_y)
-                        card.was_dragged = False
-                        break
-                for card in reversed(ShopPacks):
-                    if card.rect.collidepoint(mouse_pos):
-                        card.dragging = True
-                        card.drag_offset_x = card.x - mouse_x
-                        card.drag_offset_y = card.y - mouse_y
-                        card.drag_start = (mouse_x, mouse_y)
-                        card.was_dragged = False
-                        break
-                if Playhand_rect.collidepoint(mouse_pos):
-                    if hands > 0 and not scoring_in_progress:
-                        mouth_triggered = False
-                        for card in hand:
-                            if card.freeze_timer >= 0:
-                                card.freeze_timer -= 1
-                        selected_cards = [card for card in hand if card.state == "selected"]
-                        if len(selected_cards) > 0:
-                            hand_type, contributing = detect_hand(selected_cards)
-                            saved_base_chips = (Hand_Chips.get(hand_type, 0) * Hand_levels.get(hand_type, 1))
-                            saved_base_mult = Hand_Mult.get(hand_type, 1)
-                            saved_level = Hand_levels.get(hand_type, 1)
-                            saved_hand = hand_type
-                            if hand_type == "Royal Flush":
-                                saved_base_chips = (Hand_Chips.get("Straight Flush", 0) * Hand_levels.get("Straight Flush", 1))
-                                saved_base_mult = Hand_Mult.get("Straight Flush", 1)
-                                saved_level = Hand_levels.get("Straight Flush", 1)
-                            dev_selection = False
-                            scoring_queue = contributing.copy()
-                            for card in selected_cards:
-                                card.state = "played"
-                                card.play_timer = 0
-                                card.scaling_delay = 0
-                                card.is_contributing = card in contributing
-                                card.scaling_done = False
-                                card.scoring_animating = False
-                                card.scoring_complete = False
-                                card.scaling = False
-                            for card in contributing:
-                                card.is_contributing = True
-                            hands -= 1
-                            total_scoring_count = 0
-                            if contributing:
-                                scoring_in_progress = True
-                                if scoring_queue:
-                                    scoring_queue[0].scaling = True
-                            scoring_sequence_index = 0
-                            
-                if Discardhand_rect.collidepoint(mouse_pos):
-                    if discards > 0 and not scoring_in_progress:
-                        for card in hand:
-                            if card.freeze_timer >= 0:
-                                card.freeze_timer -= 1
-                        dev_selection = False
-                        lerp_factor = 0.3
-                        discard_timer = 0
-                        to_discard = [card for card in hand if card.state == "selected"]
-                        discard_queue = to_discard
-                        discarding = True
-                        discards -= 1
-                if SortbuttonRank_rect.collidepoint(mouse_pos):
-                    sort_mode = "rank"
-                    sort_hand()
-                if SortbuttonSuit_rect.collidepoint(mouse_pos):
-                    sort_mode = "suit"
-                    sort_hand()
-                if ShopBuy_rect.collidepoint(mouse_pos):
-                        for card in Shop_Cards:
-                            if card.state == "selected" and money >= card.price:
-                                if len(Active_Jokers) < maxJokerCount:
-                                    if isinstance(card, Joker):
-                                        shopJokerSelected = False
-                                        card.state = "normal"
-                                        Active_Jokers.append(card)
-                                        Shop_Cards.remove(card)
-                                        money -= card.price
-                                if isinstance(card, Consumable):
-                                    if len(Held_Consumables) < maxConsCount:
-                                        shopJokerSelected = False
-                                        card.state = "normal"
-                                        Held_Consumables.append(card)
-                                        Shop_Cards.remove(card)
-                                        money -= card.price
-                        for pack in ShopPacks:
-                            if pack.state == "selected" and money >= pack.price:
-                                print("pack open")
-                                money -= pack.price
-                if SellButton_rect.collidepoint(mouse_pos):
-                    for card in Active_Jokers:
-                        if card.state == "selected":
-                            ActiveJokerSelected = False
-                            card.state = "normal"
-                            Active_Jokers.remove(card)
-                            money += int(card.price / 2)
-                    for card in Held_Consumables:
-                        if card.state == "selected":
-                            ActiveJokerSelected = False
-                            card.state = "normal"
-                            Held_Consumables.remove(card)
-                            money += int(card.price / 2)
-                if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
-                    if rerollCost <= money:
-                        for joker in Shop_Cards:
-                            joker.x = -100
-                            joker.y = -100
-                        Shop_Cards.clear()
-                        money -= rerollCost
-                        rerollCost += 3
+                    
+                draw_fox = True
+        if draw_fox:
+        
+            focy_scare.animate()
+        pygame.display.flip()
+        clock.tick(60)
+        currentFrame += 1
+        
+
+    overlay = pygame.Surface((WIDTH, HEIGHT))
+    overlay.fill((0, 0, 0))  
+    overlay.set_alpha(128)
+
+
+    while running:
+        global discard_queue
+        global scoring_queue
+        question.should_draw = True
+        mouse_pos = pygame.mouse.get_pos()
+        
+        cursor_pos = pygame.mouse.get_pos()
+        
+        hovering = False
+        for toggle in guiToggleList:
+            if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
+                hovering = True
+                break
+        for card in hand:
+            if card.rect.collidepoint(cursor_pos) and GameState != "Dead":
+                hovering = True
+                break
+            
+        update_gui_buttons()
+
+
+        if Atttention_helper.toggle and not prev_attention_state:
+            init_video()
+        elif not Atttention_helper.toggle and prev_attention_state:
+            close_video()
+        prev_attention_state = Atttention_helper.toggle
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.KEYDOWN:
+                if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
+                    dev_toggle = True
+                if event.key == pygame.K_ESCAPE:
+                    question.toggle = not question.toggle
+                    
+            if event.type == pygame.MOUSEWHEEL and help_menu:
+                scroll_offset += event.y * scroll_speed
+                # Prevent over-scrolling
+                max_scroll = -max(0, len(helpMenu_surfaces) * line_height - HEIGHT + 200)
+                scroll_offset = max(max_scroll, min(0, scroll_offset))
+                
+        
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    mouse_x, mouse_y = mouse_pos
+                    if current_blind and current_blind.rect.collidepoint(mouse_pos):
+                        current_blind.dragging = True
+                        current_blind.drag_offset_x = current_blind.x - mouse_x
+                        current_blind.drag_offset_y = current_blind.y - mouse_y
+                        current_blind.drag_start = (mouse_x, mouse_y)
+                        current_blind.was_dragged = False
+
+                    if help_menu and xbutton_rect.collidepoint(event.pos):
+                        help_menu = False
+                        helpButton.toggle = False
+
+                    if settings:  
+                        for setting in settingsList:
+                            if setting.rect.collidepoint(event.pos):
+                                setting.toggle = not setting.toggle
+                                setting.check_dev()
+                                setting.update_img()
+                        
+                    
+                    if xbutton_rect.collidepoint(event.pos):
+                        settings = False
+                        settings2.toggle = False
+                        
+                    if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
+                        GameState = "Shop"
+                        money += totalReward
+                        totalReward = 0
+                        rerollCost = 3
                         for i in range(ShopCount):
                             rarity_choice = random.randint(1, 100)
                             while True:
@@ -2748,188 +2581,435 @@ while running:
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         break
                             Shop_Cards.append(card)
-                if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
-                    GameState = "Blinds"
-                    Shop_Cards.clear()
-                    ShopPacks.clear()
-                    shopJokerSelected = False
-                    break
-                if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
-                    GameState = "Playing"
-                    current_blind = None
-                    victory = False
-                    BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
-                    get_current_blind()
-                    if round_num % 3 == 0:
-                        boss_debuff()
-                    for i in range(handsize):
-                        if deck:
-                            card = deck.pop()
-                            card.slot = i
-                            card.x, card.y = WIDTH + 100, HEIGHT - 170
-                            card.state = "hand"
-                            hand.append(card)
-                    break
-                if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
-                    round_num += 1
-                    current_blind = None
-                    victory = False
-                    get_current_blind()
-                    break
-            if event.button == 3:
-                if not scoring_in_progress:
-                    for card in hand:
-                        card.state = "hand"
-        if event.type == pygame.MOUSEBUTTONUP:
-            if soserious.dragging:
-                soserious.dragging = False
-            if event.button == 1:
-                current_blind = get_current_blind()
-                if current_blind and current_blind.dragging:
-                    current_blind.dragging = False
-                    current_blind.target_x = BLIND_X
-                    current_blind.target_y = BLIND_Y
-                    current_blind.vx = 0
-                    current_blind.vy = 0
-                mouse_pos = event.pos
-                for card in hand:
-                    if getattr(card, "dragging", False) and not scoring_in_progress:
-                        card.dragging = False
-                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
-                            if card.state == "hand":
-                                if sum(1 for c in hand if c.state == "selected") < 5 and not card.is_frozen:
-                                    card.state = "selected"
-                            else:
+                        for i in range(2):
+                            rarity_choice = random.randint(1, 100)
+                            while True:
+                                if rarity_choice <= 5:
+                                    pack = random.choice(SplatoonPacks)
+                                    if pack not in ShopPacks:
+                                        break
+                                if rarity_choice <= 37:
+                                    pack = random.choice(StandardPacks)
+                                    if pack not in ShopPacks:
+                                        break
+                                if rarity_choice <= 68:
+                                    pack = random.choice(SharkPacks)
+                                    if pack not in ShopPacks:
+                                        break
+                                else:
+                                    pack = random.choice(DragonPacks)
+                                    if pack not in ShopPacks:
+                                        break
+                            ShopPacks.append(pack)
+                        break
+                        ###Gui toggles###
+                    if settings == False:
+                        for toggle in guiToggleList:
+                            if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
+                                toggle.toggle = not question.toggle
+                                if toggle == settings2:
+                                    settings = True
+                                if toggle == githubButton:
+                                    webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
+                                    toggle.toggle = False
+                                if toggle == helpButton:
+                                    help_menu = True
+
+                                if toggle == quitButton:
+                                    game = False
+                                    running = False
+                        
+                    if SO_SERIOUS.toggle and soserious.rect.collidepoint(mouse_pos):
+                        soserious.dragging = True
+                        soserious.drag_offset_x = soserious.xpos - mouse_x
+                        soserious.drag_offset_y = soserious.ypos - mouse_y
+                        soserious.drag_start = (mouse_x, mouse_y)
+                        soserious.was_dragged = False
+                    else:
+                        selected_count = sum(1 for card in hand if card.state == "selected")
+                    if not scoring_in_progress and not GameState == "Dead":
+                        for card in reversed(hand):
+                            if card.rect.collidepoint(mouse_pos) and not calculating:
+                                card.dragging = True
+                                card.drag_offset_x = card.x - mouse_x
+                                card.drag_offset_y = card.y - mouse_y
+                                card.drag_start = (mouse_x, mouse_y)
+                                card.was_dragged = False
+                                break
+                    for card in reversed(Shop_Cards):
+                        if card.rect.collidepoint(mouse_pos):
+                            card.dragging = True
+                            card.drag_offset_x = card.x - mouse_x
+                            card.drag_offset_y = card.y - mouse_y
+                            card.drag_start = (mouse_x, mouse_y)
+                            card.was_dragged = False
+                            break
+                    for card in reversed(Active_Jokers):
+                        if card.rect.collidepoint(mouse_pos):
+                            card.dragging = True
+                            card.drag_offset_x = card.x - mouse_x
+                            card.drag_offset_y = card.y - mouse_y
+                            card.drag_start = (mouse_x, mouse_y)
+                            card.was_dragged = False
+                            break
+                    for card in reversed(Held_Consumables):
+                        if card.rect.collidepoint(mouse_pos):
+                            card.dragging = True
+                            card.drag_offset_x = card.x - mouse_x
+                            card.drag_offset_y = card.y - mouse_y
+                            card.drag_start = (mouse_x, mouse_y)
+                            card.was_dragged = False
+                            break
+                    for card in reversed(ShopPacks):
+                        if card.rect.collidepoint(mouse_pos):
+                            card.dragging = True
+                            card.drag_offset_x = card.x - mouse_x
+                            card.drag_offset_y = card.y - mouse_y
+                            card.drag_start = (mouse_x, mouse_y)
+                            card.was_dragged = False
+                            break
+                    if Playhand_rect.collidepoint(mouse_pos):
+                        if hands > 0 and not scoring_in_progress:
+                            mouth_triggered = False
+                            for card in hand:
+                                if card.freeze_timer >= 0:
+                                    card.freeze_timer -= 1
+                            selected_cards = [card for card in hand if card.state == "selected"]
+                            if len(selected_cards) > 0:
+                                hand_type, contributing = detect_hand(selected_cards)
+                                saved_base_chips = (Hand_Chips.get(hand_type, 0) * Hand_levels.get(hand_type, 1))
+                                saved_base_mult = Hand_Mult.get(hand_type, 1)
+                                saved_level = Hand_levels.get(hand_type, 1)
+                                saved_hand = hand_type
+                                if hand_type == "Royal Flush":
+                                    saved_base_chips = (Hand_Chips.get("Straight Flush", 0) * Hand_levels.get("Straight Flush", 1))
+                                    saved_base_mult = Hand_Mult.get("Straight Flush", 1)
+                                    saved_level = Hand_levels.get("Straight Flush", 1)
+                                dev_selection = False
+                                scoring_queue = contributing.copy()
+                                for card in selected_cards:
+                                    card.state = "played"
+                                    card.play_timer = 0
+                                    card.scaling_delay = 0
+                                    card.is_contributing = card in contributing
+                                    card.scaling_done = False
+                                    card.scoring_animating = False
+                                    card.scoring_complete = False
+                                    card.scaling = False
+                                    cards_played += 1
+                                for card in contributing:
+                                    card.is_contributing = True
+                                hands -= 1
+                                total_scoring_count = 0
+                                if contributing:
+                                    scoring_in_progress = True
+                                    if scoring_queue:
+                                        scoring_queue[0].scaling = True
+                                scoring_sequence_index = 0
+                                
+                    if Discardhand_rect.collidepoint(mouse_pos):
+                        if discards > 0 and not scoring_in_progress:
+                            for card in hand:
+                                if card.freeze_timer >= 0:
+                                    card.freeze_timer -= 1
+                            dev_selection = False
+                            lerp_factor = 0.3
+                            discard_timer = 0
+                            to_discard = [card for card in hand if card.state == "selected"]
+                            discard_queue = to_discard
+                            for card in discard_queue:
+                                cards_discarded += 1
+                            discarding = True
+                            discards -= 1
+                    if SortbuttonRank_rect.collidepoint(mouse_pos):
+                        sort_mode = "rank"
+                        sort_hand()
+                    if SortbuttonSuit_rect.collidepoint(mouse_pos):
+                        sort_mode = "suit"
+                        sort_hand()
+                    if ShopBuy_rect.collidepoint(mouse_pos):
+                            for card in Shop_Cards:
+                                if card.state == "selected" and money >= card.price:
+                                    if len(Active_Jokers) < maxJokerCount:
+                                        if isinstance(card, Joker):
+                                            shopJokerSelected = False
+                                            card.state = "normal"
+                                            Active_Jokers.append(card)
+                                            Shop_Cards.remove(card)
+                                            money -= card.price
+                                            purchases += 1
+                                    if isinstance(card, Consumable):
+                                        if len(Held_Consumables) < maxConsCount:
+                                            shopJokerSelected = False
+                                            card.state = "normal"
+                                            Held_Consumables.append(card)
+                                            Shop_Cards.remove(card)
+                                            money -= card.price
+                                            purchases += 1
+                            for pack in ShopPacks:
+                                if pack.state == "selected" and money >= pack.price:
+                                    print("pack open")
+                                    money -= pack.price
+                    if SellButton_rect.collidepoint(mouse_pos):
+                        for card in Active_Jokers:
+                            if card.state == "selected":
+                                ActiveJokerSelected = False
+                                card.state = "normal"
+                                Active_Jokers.remove(card)
+                                money += int(card.price / 2)
+                        for card in Held_Consumables:
+                            if card.state == "selected":
+                                ActiveJokerSelected = False
+                                card.state = "normal"
+                                Held_Consumables.remove(card)
+                                money += int(card.price / 2)
+                    if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
+                        if rerollCost <= money:
+                            rerolls += 1
+                            for joker in Shop_Cards:
+                                joker.x = -100
+                                joker.y = -100
+                            Shop_Cards.clear()
+                            money -= rerollCost
+                            rerollCost += 1
+                            for i in range(ShopCount):
+                                rarity_choice = random.randint(1, 100)
+                                while True:
+                                    if rarity_choice <= 5:
+                                        card = random.choice(SplatoonCards)
+                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                            break
+                                    if rarity_choice <= 28:
+                                        card = random.choice(DragonCards)
+                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                            break
+                                    if rarity_choice <= 50:
+                                        card = random.choice(SharkCards)
+                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                            break
+                                    if rarity_choice <= 75:
+                                        card = random.choice(Common_Jokers)
+                                        if card not in Shop_Cards and card not in Active_Jokers:
+                                            break
+                                    elif rarity_choice <= 95:
+                                        card = random.choice(Uncommon_Jokers)
+                                        if card not in Shop_Cards and card not in Active_Jokers:
+                                            break
+                                    else:
+                                        card = random.choice(Rare_Jokers)
+                                        if card not in Shop_Cards and card not in Active_Jokers:
+                                            break
+                                Shop_Cards.append(card)
+                    if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
+                        GameState = "Blinds"
+                        Shop_Cards.clear()
+                        ShopPacks.clear()
+                        shopJokerSelected = False
+                        break
+                    if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
+                        GameState = "Playing"
+                        current_blind = None
+                        victory = False
+                        BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
+                        get_current_blind()
+                        if round_num % 3 == 0:
+                            boss_debuff()
+                        for i in range(handsize):
+                            if deck:
+                                card = deck.pop()
+                                card.slot = i
+                                card.x, card.y = WIDTH + 100, HEIGHT - 170
                                 card.state = "hand"
-                        n = len(hand)
-                        spread_local = spacing
-                        total_width = (n - 1) * spread_local + 80
-                        start_x = (WIDTH / 2) - total_width / 2
-                        i = card.slot
-                        center_y = HEIGHT - 100
-                        max_v_offset = -30
-                        t = i / (n - 1) if n > 1 else 0.5
-                        slot_target_x = start_x + i * spread_local * WIDTH/1000
-                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
-                        if not card.state == "played":
+                                hand.append(card)
+                        break
+                    if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
+                        round_num += 1
+                        current_blind = None
+                        victory = False
+                        get_current_blind()
+                        break
+                    if NewRunButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
+                        running = False
+                        startGame = False
+                        card_animating = True
+                    if MainMenuButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
+                        running = False
+                        startGame = False
+                        card_animating = False
+                    if CopyButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
+                        pyperclip.copy(seed)
+                if event.button == 3:
+                    if not scoring_in_progress:
+                        for card in hand:
+                            card.state = "hand"
+            if event.type == pygame.MOUSEBUTTONUP:
+                if soserious.dragging:
+                    soserious.dragging = False
+                if event.button == 1:
+                    current_blind = get_current_blind()
+                    if current_blind and current_blind.dragging:
+                        current_blind.dragging = False
+                        current_blind.target_x = BLIND_X
+                        current_blind.target_y = BLIND_Y
+                        current_blind.vx = 0
+                        current_blind.vy = 0
+                    mouse_pos = event.pos
+                    for card in hand:
+                        if getattr(card, "dragging", False) and not scoring_in_progress:
+                            card.dragging = False
+                            if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                                if card.state == "hand":
+                                    if sum(1 for c in hand if c.state == "selected") < 5 and not card.is_frozen:
+                                        card.state = "selected"
+                                else:
+                                    card.state = "hand"
+                            n = len(hand)
+                            spread_local = spacing
+                            total_width = (n - 1) * spread_local + 80
+                            start_x = (WIDTH / 2) - total_width / 2
+                            i = card.slot
+                            center_y = HEIGHT - 100
+                            max_v_offset = -30
+                            t = i / (n - 1) if n > 1 else 0.5
+                            slot_target_x = start_x + i * spread_local * WIDTH/1000
+                            slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                            if not card.state == "played":
+                                card.target_x = slot_target_x
+                                card.target_y = slot_target_y
+                            card.vx = 0
+                            card.vy = 0
+                    for card in Shop_Cards:
+                        if getattr(card, "dragging", False):
+                            card.dragging = False
+                            if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                                if card.state == "selected":
+                                    card.state = "normal"
+                                    shopJokerSelected = False
+                                elif not shopJokerSelected:
+                                    card.state = "selected"
+                                    shopJokerSelected = True
+                            n = len(Shop_Cards)
+                            spread_local = card.spread
+                            total_width = (n - 1) * spread_local + 80
+                            start_x = (WIDTH / 2) - total_width / 2
+                            i = card.slot if card.slot else 1
+                            center_y = HEIGHT - 100
+                            max_v_offset = -30
+                            t = i / (n - 1) if n > 1 else 0.5
+                            slot_target_x = start_x + i * spread_local * WIDTH/1000
+                            slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
                             card.target_x = slot_target_x
                             card.target_y = slot_target_y
-                        card.vx = 0
-                        card.vy = 0
+                            card.vx = 0
+                            card.vy = 0
+                    for card in Active_Jokers:
+                        if getattr(card, "dragging", False):
+                            card.dragging = False
+                            if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                                if card.state == "selected":
+                                    ActiveJokerSelected = False
+                                    card.state = "normal"
+                                elif not ActiveJokerSelected:
+                                    ActiveJokerSelected = True
+                                    card.state = "selected"
+                            n = len(Active_Jokers)
+                            spread_local = card.spread
+                            total_width = (n - 1) * spread_local + 80
+                            start_x = (WIDTH / 2) - total_width / 2
+                            i = card.slot if card.slot else 1
+                            center_y = HEIGHT - 100
+                            max_v_offset = -30
+                            t = i / (n - 1) if n > 1 else 0.5
+                            slot_target_x = start_x + i * spread_local * WIDTH/1000
+                            slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                            card.target_x = slot_target_x
+                            card.target_y = slot_target_y
+                            card.vx = 0
+                            card.vy = 0
+                    for card in Held_Consumables:
+                        if getattr(card, "dragging", False):
+                            card.dragging = False
+                            if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                                if card.state == "selected":
+                                    ActiveJokerSelected = False
+                                    card.state = "normal"
+                                elif not ActiveJokerSelected:
+                                    ActiveJokerSelected = True
+                                    card.state = "selected"
+                            n = len(Held_Consumables)
+                            spread_local = card.spread
+                            total_width = (n - 1) * spread_local + 80
+                            start_x = (WIDTH / 2) - total_width / 2
+                            i = card.slot if card.slot else 1
+                            center_y = HEIGHT - 100
+                            max_v_offset = -30
+                            t = i / (n - 1) if n > 1 else 0.5
+                            slot_target_x = start_x + i * spread_local * WIDTH/1000
+                            slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                            card.target_x = slot_target_x
+                            card.target_y = slot_target_y
+                            card.vx = 0
+                            card.vy = 0
+                    for card in ShopPacks:
+                        if getattr(card, "dragging", False):
+                            card.dragging = False
+                            if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                                if card.state == "selected":
+                                    shopJokerSelected = False
+                                    card.state = "normal"
+                                elif not shopJokerSelected:
+                                    shopJokerSelected = True
+                                    card.state = "selected"
+                            n = len(ShopPacks)
+                            spread_local = card.spread
+                            total_width = (n - 1) * spread_local + 80
+                            start_x = (WIDTH / 2) - total_width / 2
+                            i = card.slot if card.slot else 1
+                            center_y = HEIGHT - 100
+                            max_v_offset = -30
+                            t = i / (n - 1) if n > 1 else 0.5
+                            slot_target_x = start_x + i * spread_local * WIDTH/1000
+                            slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                            card.target_x = slot_target_x
+                            card.target_y = slot_target_y
+                            card.vx = 0
+                            card.vy = 0
+            if event.type == pygame.MOUSEMOTION:
+                mouse_x, mouse_y = event.pos
+                current_blind = get_current_blind()
+                if current_blind and current_blind.dragging:
+                    dx = mouse_x - current_blind.drag_start[0]
+                    dy = mouse_y - current_blind.drag_start[1]
+                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                        current_blind.was_dragged = True
+                        current_blind.x = mouse_x + current_blind.drag_offset_x
+                        current_blind.y = mouse_y + current_blind.drag_offset_y
+                        current_blind.target_x = current_blind.x
+                        current_blind.target_y = current_blind.y
+                if SO_SERIOUS.toggle and soserious.dragging:
+                    soserious.xpos = mouse_x + soserious.drag_offset_x
+                    soserious.ypos = mouse_y + soserious.drag_offset_y
+                if not scoring_in_progress:
+                    for card in hand:
+                        if getattr(card, "dragging", False) and not card.state == "played" and not calculating:
+                            dx = mouse_x - card.drag_start[0]
+                            dy = mouse_y - card.drag_start[1]
+                            if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                                card.was_dragged = True
+                                card.x = mouse_x + card.drag_offset_x
+                                card.y = mouse_y + card.drag_offset_y
+                                card.target_x = card.x
+                                card.target_y = card.y
+                                n = len(hand)
+                                new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
+                                current_index = hand.index(card)
+                                if new_index != current_index:
+                                    hand.pop(current_index)
+                                    hand.insert(new_index, card)
+                                    for idx, c in enumerate(hand):
+                                        c.slot = idx
                 for card in Shop_Cards:
                     if getattr(card, "dragging", False):
-                        card.dragging = False
-                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
-                            if card.state == "selected":
-                                card.state = "normal"
-                                shopJokerSelected = False
-                            elif not shopJokerSelected:
-                                card.state = "selected"
-                                shopJokerSelected = True
-                        n = len(Shop_Cards)
-                        spread_local = card.spread
-                        total_width = (n - 1) * spread_local + 80
-                        start_x = (WIDTH / 2) - total_width / 2
-                        i = card.slot if card.slot else 1
-                        center_y = HEIGHT - 100
-                        max_v_offset = -30
-                        t = i / (n - 1) if n > 1 else 0.5
-                        slot_target_x = start_x + i * spread_local * WIDTH/1000
-                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
-                        card.target_x = slot_target_x
-                        card.target_y = slot_target_y
-                        card.vx = 0
-                        card.vy = 0
-                for card in Active_Jokers:
-                    if getattr(card, "dragging", False):
-                        card.dragging = False
-                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
-                            if card.state == "selected":
-                                ActiveJokerSelected = False
-                                card.state = "normal"
-                            elif not ActiveJokerSelected:
-                                ActiveJokerSelected = True
-                                card.state = "selected"
-                        n = len(Active_Jokers)
-                        spread_local = card.spread
-                        total_width = (n - 1) * spread_local + 80
-                        start_x = (WIDTH / 2) - total_width / 2
-                        i = card.slot if card.slot else 1
-                        center_y = HEIGHT - 100
-                        max_v_offset = -30
-                        t = i / (n - 1) if n > 1 else 0.5
-                        slot_target_x = start_x + i * spread_local * WIDTH/1000
-                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
-                        card.target_x = slot_target_x
-                        card.target_y = slot_target_y
-                        card.vx = 0
-                        card.vy = 0
-                for card in Held_Consumables:
-                    if getattr(card, "dragging", False):
-                        card.dragging = False
-                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
-                            if card.state == "selected":
-                                ActiveJokerSelected = False
-                                card.state = "normal"
-                            elif not ActiveJokerSelected:
-                                ActiveJokerSelected = True
-                                card.state = "selected"
-                        n = len(Held_Consumables)
-                        spread_local = card.spread
-                        total_width = (n - 1) * spread_local + 80
-                        start_x = (WIDTH / 2) - total_width / 2
-                        i = card.slot if card.slot else 1
-                        center_y = HEIGHT - 100
-                        max_v_offset = -30
-                        t = i / (n - 1) if n > 1 else 0.5
-                        slot_target_x = start_x + i * spread_local * WIDTH/1000
-                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
-                        card.target_x = slot_target_x
-                        card.target_y = slot_target_y
-                        card.vx = 0
-                        card.vy = 0
-                for card in ShopPacks:
-                    if getattr(card, "dragging", False):
-                        card.dragging = False
-                        if not card.was_dragged and card.rect.collidepoint(mouse_pos):
-                            if card.state == "selected":
-                                shopJokerSelected = False
-                                card.state = "normal"
-                            elif not shopJokerSelected:
-                                shopJokerSelected = True
-                                card.state = "selected"
-                        n = len(ShopPacks)
-                        spread_local = card.spread
-                        total_width = (n - 1) * spread_local + 80
-                        start_x = (WIDTH / 2) - total_width / 2
-                        i = card.slot if card.slot else 1
-                        center_y = HEIGHT - 100
-                        max_v_offset = -30
-                        t = i / (n - 1) if n > 1 else 0.5
-                        slot_target_x = start_x + i * spread_local * WIDTH/1000
-                        slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
-                        card.target_x = slot_target_x
-                        card.target_y = slot_target_y
-                        card.vx = 0
-                        card.vy = 0
-        if event.type == pygame.MOUSEMOTION:
-            mouse_x, mouse_y = event.pos
-            current_blind = get_current_blind()
-            if current_blind and current_blind.dragging:
-                dx = mouse_x - current_blind.drag_start[0]
-                dy = mouse_y - current_blind.drag_start[1]
-                if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                    current_blind.was_dragged = True
-                    current_blind.x = mouse_x + current_blind.drag_offset_x
-                    current_blind.y = mouse_y + current_blind.drag_offset_y
-                    current_blind.target_x = current_blind.x
-                    current_blind.target_y = current_blind.y
-            if SO_SERIOUS.toggle and soserious.dragging:
-                soserious.xpos = mouse_x + soserious.drag_offset_x
-                soserious.ypos = mouse_y + soserious.drag_offset_y
-            if not scoring_in_progress:
-                for card in hand:
-                    if getattr(card, "dragging", False) and not card.state == "played" and not calculating:
                         dx = mouse_x - card.drag_start[0]
                         dy = mouse_y - card.drag_start[1]
                         if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
@@ -2938,451 +3018,475 @@ while running:
                             card.y = mouse_y + card.drag_offset_y
                             card.target_x = card.x
                             card.target_y = card.y
-                            n = len(hand)
-                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/2)
-                            current_index = hand.index(card)
+                            n = len(Shop_Cards)
+                            for idx, c in enumerate(Shop_Cards):
+                                c.slot = idx
+                for card in Active_Jokers:
+                    if getattr(card, "dragging", False):
+                        dx = mouse_x - card.drag_start[0]
+                        dy = mouse_y - card.drag_start[1]
+                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                            card.was_dragged = True
+                            card.x = mouse_x + card.drag_offset_x
+                            card.y = mouse_y + card.drag_offset_y
+                            card.target_x = card.x
+                            card.target_y = card.y
+                            n = len(Active_Jokers)
+                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.8)
+                            current_index = Active_Jokers.index(card)
                             if new_index != current_index:
-                                hand.pop(current_index)
-                                hand.insert(new_index, card)
-                                for idx, c in enumerate(hand):
+                                Active_Jokers.pop(current_index)
+                                Active_Jokers.insert(new_index, card)
+                                for idx, c in enumerate(Active_Jokers):
                                     c.slot = idx
-            for card in Shop_Cards:
-                if getattr(card, "dragging", False):
-                    dx = mouse_x - card.drag_start[0]
-                    dy = mouse_y - card.drag_start[1]
-                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                        card.was_dragged = True
-                        card.x = mouse_x + card.drag_offset_x
-                        card.y = mouse_y + card.drag_offset_y
-                        card.target_x = card.x
-                        card.target_y = card.y
-                        n = len(Shop_Cards)
-                        for idx, c in enumerate(Shop_Cards):
-                            c.slot = idx
-            for card in Active_Jokers:
-                if getattr(card, "dragging", False):
-                    dx = mouse_x - card.drag_start[0]
-                    dy = mouse_y - card.drag_start[1]
-                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                        card.was_dragged = True
-                        card.x = mouse_x + card.drag_offset_x
-                        card.y = mouse_y + card.drag_offset_y
-                        card.target_x = card.x
-                        card.target_y = card.y
-                        n = len(Active_Jokers)
-                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.8)
-                        current_index = Active_Jokers.index(card)
-                        if new_index != current_index:
-                            Active_Jokers.pop(current_index)
-                            Active_Jokers.insert(new_index, card)
-                            for idx, c in enumerate(Active_Jokers):
+                for card in Held_Consumables:
+                    if getattr(card, "dragging", False):
+                        dx = mouse_x - card.drag_start[0]
+                        dy = mouse_y - card.drag_start[1]
+                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                            card.was_dragged = True
+                            card.x = mouse_x + card.drag_offset_x
+                            card.y = mouse_y + card.drag_offset_y
+                            card.target_x = card.x
+                            card.target_y = card.y
+                            n = len(Held_Consumables)
+                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.8)
+                            current_index = Held_Consumables.index(card)
+                            if new_index != current_index:
+                                Held_Consumables.pop(current_index)
+                                Held_Consumables.insert(new_index, card)
+                                for idx, c in enumerate(Held_Consumables):
+                                    c.slot = idx
+                for card in ShopPacks:
+                    if getattr(card, "dragging", False):
+                        dx = mouse_x - card.drag_start[0]
+                        dy = mouse_y - card.drag_start[1]
+                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                            card.was_dragged = True
+                            card.x = mouse_x + card.drag_offset_x
+                            card.y = mouse_y + card.drag_offset_y
+                            card.target_x = card.x
+                            card.target_y = card.y
+                            n = len(ShopPacks)
+                            for idx, c in enumerate(ShopPacks):
                                 c.slot = idx
-            for card in Held_Consumables:
-                if getattr(card, "dragging", False):
-                    dx = mouse_x - card.drag_start[0]
-                    dy = mouse_y - card.drag_start[1]
-                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                        card.was_dragged = True
-                        card.x = mouse_x + card.drag_offset_x
-                        card.y = mouse_y + card.drag_offset_y
-                        card.target_x = card.x
-                        card.target_y = card.y
-                        n = len(Held_Consumables)
-                        new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.8)
-                        current_index = Held_Consumables.index(card)
-                        if new_index != current_index:
-                            Held_Consumables.pop(current_index)
-                            Held_Consumables.insert(new_index, card)
-                            for idx, c in enumerate(Held_Consumables):
-                                c.slot = idx
-            for card in ShopPacks:
-                if getattr(card, "dragging", False):
-                    dx = mouse_x - card.drag_start[0]
-                    dy = mouse_y - card.drag_start[1]
-                    if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
-                        card.was_dragged = True
-                        card.x = mouse_x + card.drag_offset_x
-                        card.y = mouse_y + card.drag_offset_y
-                        card.target_x = card.x
-                        card.target_y = card.y
-                        n = len(ShopPacks)
-                        for idx, c in enumerate(ShopPacks):
-                            c.slot = idx
-    screen.blit(GameBackground_img, (0, 0))
-    screen.blit(SideBar_img, (0, 0))
-    
-
-    if not calculating:
-        selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
-        if len(selected_cards) > 0:
-            hand_type, contributing = detect_hand(selected_cards)
-        else:
-            hand_type, contributing = None, None
-        if hand_type:
-            level = Hand_levels.get(hand_type, 1)
-            base_chips = Hand_Chips.get(hand_type, 0)
-            base_mult = Hand_Mult.get(hand_type, 1)
-        else:
-            level = 0
-            base_chips = 0
-            base_mult = 0
-        if hand_type == "Royal Flush":
-            level = Hand_levels.get("Straight Flush", 1)
-            base_chips = Hand_Chips.get("Straight Flush", 0)
-            base_mult = Hand_Mult.get("Straight Flush", 1)
-        chips = base_chips * level
-        mult = base_mult * level
-        final_score = saved_base_chips * saved_base_mult
-    screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
-    if GameState == "Playing":
-        screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
-        screen.blit(GoalBackground_img, (WIDTH/12, HEIGHT / 7.2))
-    screen.blit(MoneyBackground_img, (WIDTH/14, HEIGHT / 1.7))
-    screen.blit(RoundBackground_img, (WIDTH/14, HEIGHT / 1.5))
-    if GameState == "Cashing":
-        screen.blit(CashOutBackground_img, (WIDTH/3.5, HEIGHT / 2))
-        screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
-    if GameState == "Shop":
-        screen.blit(ShopBackground_img, (WIDTH/3, HEIGHT/2))
-        screen.blit(RerollButton_img, (WIDTH/2.95, HEIGHT/1.53))
-        text = PixelFontS.render(f"${rerollCost}", True, white)
-        text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
-        screen.blit(text, text_rect)
-        screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
-    if GameState == "Blinds":
-        if round_num % 3 == 1:
-            screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/2))
-            screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.73))
-            screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.93))
-            screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.18))
-            SelectBlind_rect.topleft = (WIDTH/3.4, HEIGHT/1.93)
-            SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
-            text = PixelFontS.render(small_blind.name, True, black)
-            text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
-            screen.blit(text, text_rect)
-            screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.65))
-        else:
-            screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
-            screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
-            screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.8))
-            screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.12))
-            text = PixelFontS.render(small_blind.name, True, black)
-            text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
-            screen.blit(text, text_rect)
-            screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.53))
-        if round_num % 3 == 2:
-            screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
-            screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
-            screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.93))
-            screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.18))
-            SelectBlind_rect.topleft = (WIDTH/1.97, HEIGHT/1.93)
-            SkipBlind_rect.topleft = (WIDTH/1.75, HEIGHT/1.18)
-            text = PixelFontS.render(big_blind.name, True, black)
-            text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
-            screen.blit(text, text_rect)
-            screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.65))
-        else:
-            screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
-            screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
-            screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.8))
-            screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.12))
-            text = PixelFontS.render(big_blind.name, True, black)
-            text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
-            screen.blit(text, text_rect)
-            screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.53))
-        if round_num % 3 == 0:
-            screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/2))
-            screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
-            screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
-            SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
-            text = PixelFontS.render(boss_blind.name, True, black)
-            text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
-            screen.blit(text, text_rect)
-            screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.65))
-        else:
-            screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
-            screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
-            screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
-            text = PixelFontS.render(boss_blind.name, True, black)
-            text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
-            screen.blit(text, text_rect)
-            screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.53))
-    
+        screen.blit(GameBackground_img, (0, 0))
+        screen.blit(SideBar_img, (0, 0))
         
-    if not calculating:
-        if scoring_in_progress:
-            text = PixelFontS.render(saved_hand, True, white)
+
+        if not calculating:
+            selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
+            if len(selected_cards) > 0:
+                hand_type, contributing = detect_hand(selected_cards)
+            else:
+                hand_type, contributing = None, None
+            if hand_type:
+                level = Hand_levels.get(hand_type, 1)
+                base_chips = Hand_Chips.get(hand_type, 0)
+                base_mult = Hand_Mult.get(hand_type, 1)
+            else:
+                level = 0
+                base_chips = 0
+                base_mult = 0
+            if hand_type == "Royal Flush":
+                level = Hand_levels.get("Straight Flush", 1)
+                base_chips = Hand_Chips.get("Straight Flush", 0)
+                base_mult = Hand_Mult.get("Straight Flush", 1)
+            chips = base_chips * level
+            mult = base_mult * level
+            final_score = saved_base_chips * saved_base_mult
+        screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
+        if GameState == "Playing":
+            screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
+            screen.blit(GoalBackground_img, (WIDTH/12, HEIGHT / 7.2))
+        screen.blit(MoneyBackground_img, (WIDTH/14, HEIGHT / 1.7))
+        screen.blit(RoundBackground_img, (WIDTH/14, HEIGHT / 1.5))
+        if GameState == "Cashing":
+            screen.blit(CashOutBackground_img, (WIDTH/3.5, HEIGHT / 2))
+            screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
+        if GameState == "Shop":
+            screen.blit(ShopBackground_img, (WIDTH/3, HEIGHT/2))
+            screen.blit(RerollButton_img, (WIDTH/2.95, HEIGHT/1.53))
+            text = PixelFontS.render(f"${rerollCost}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
+            screen.blit(text, text_rect)
+            screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
+        if GameState == "Blinds":
+            if round_num % 3 == 1:
+                screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/2))
+                screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.73))
+                screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.93))
+                screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.18))
+                SelectBlind_rect.topleft = (WIDTH/3.4, HEIGHT/1.93)
+                SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
+                text = PixelFontS.render(small_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
+                screen.blit(text, text_rect)
+                screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.65))
+            else:
+                screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
+                screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
+                screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.8))
+                screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.12))
+                text = PixelFontS.render(small_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
+                screen.blit(text, text_rect)
+                screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.53))
+            if round_num % 3 == 2:
+                screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
+                screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
+                screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.93))
+                screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.18))
+                SelectBlind_rect.topleft = (WIDTH/1.97, HEIGHT/1.93)
+                SkipBlind_rect.topleft = (WIDTH/1.75, HEIGHT/1.18)
+                text = PixelFontS.render(big_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
+                screen.blit(text, text_rect)
+                screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.65))
+            else:
+                screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
+                screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
+                screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.8))
+                screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.12))
+                text = PixelFontS.render(big_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
+                screen.blit(text, text_rect)
+                screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.53))
+            if round_num % 3 == 0:
+                screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/2))
+                screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
+                screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
+                SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
+                text = PixelFontS.render(boss_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
+                screen.blit(text, text_rect)
+                screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.65))
+            else:
+                screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
+                screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
+                screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
+                text = PixelFontS.render(boss_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
+                screen.blit(text, text_rect)
+                screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.53))
+        
+            
+        if not calculating:
+            if scoring_in_progress:
+                text = PixelFontS.render(saved_hand, True, white)
+            else:
+                text = PixelFontS.render(hand_type, True, white)
         else:
-            text = PixelFontS.render(hand_type, True, white)
-    else:
-        current_score_text = change_notation(current_score)
-        text = PixelFontS.render(f"{current_score_text}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/9.4, HEIGHT / 2.5))
-    screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{hands}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/20, HEIGHT / 1.79))
-    screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{discards}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT / 1.79))
-    screen.blit(text, text_rect)
-    if scoring_in_progress or calculating:
-        saved_base_chips_text = change_notation(saved_base_chips)
-        text = PixelFontS.render(f"{saved_base_chips_text}", True, white)
-    else:
-        chips_text = change_notation(chips)
-        text = PixelFontS.render(f"{chips_text}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/15, HEIGHT / 2.2))
-    screen.blit(text, text_rect)
-    if scoring_in_progress or calculating:
-        saved_base_mult_text = change_notation(saved_base_mult)
-        text = PixelFontS.render(f"{saved_base_mult_text}", True, white)
-    else:
-        mult_text = change_notation(mult)
-        text = PixelFontS.render(f"{mult_text}", True, white)
-    text_rect = text.get_rect(center=(WIDTH/7, HEIGHT / 2.2))
-    screen.blit(text, text_rect)
-    if GameState == "Playing":
-        text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
-        text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
+            current_score_text = change_notation(current_score)
+            text = PixelFontS.render(f"{current_score_text}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/9.4, HEIGHT / 2.5))
         screen.blit(text, text_rect)
-        total_score_text = change_notation(total_score)
-        text = PixelFontS.render(f"{total_score_text}", True, white)
-        text_rect = text.get_rect(center=(WIDTH/7.5, HEIGHT / 3.17))
+        text = PixelFontS.render(f"{hands}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/20, HEIGHT / 1.79))
         screen.blit(text, text_rect)
-        target_score_text = change_notation(target_score)
-        text = PixelFontS.render(f"{target_score_text}", True, red)
-        text_rect = text.get_rect(center=(WIDTH/7.4, HEIGHT / 5))
+        text = PixelFontS.render(f"{discards}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT / 1.79))
         screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{round_num}", True, orange)
-    text_rect = text.get_rect(center=(WIDTH/6.3, HEIGHT / 1.415))
-    screen.blit(text, text_rect)
-    text = PixelFontS.render(f"{ante}", True, orange)
-    text_rect = text.get_rect(center=(WIDTH/11, HEIGHT / 1.419))
-    screen.blit(text, text_rect)
-    text = PixelFontS.render(f"${money}", True, yellow)
-    text_rect = text.get_rect(center=(WIDTH/7.7, HEIGHT / 1.595))
-    screen.blit(text, text_rect)
-    if GameState == "Playing":
-        text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
-        text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
+        if scoring_in_progress or calculating:
+            saved_base_chips_text = change_notation(saved_base_chips)
+            text = PixelFontS.render(f"{saved_base_chips_text}", True, white)
+        else:
+            chips_text = change_notation(chips)
+            text = PixelFontS.render(f"{chips_text}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/15, HEIGHT / 2.2))
         screen.blit(text, text_rect)
-        text = PixelFontS.render(f"{current_blind.name}", True, white)
-        text_rect = text.get_rect(center=(WIDTH/8, HEIGHT / 30))
+        if scoring_in_progress or calculating:
+            saved_base_mult_text = change_notation(saved_base_mult)
+            text = PixelFontS.render(f"{saved_base_mult_text}", True, white)
+        else:
+            mult_text = change_notation(mult)
+            text = PixelFontS.render(f"{mult_text}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/7, HEIGHT / 2.2))
         screen.blit(text, text_rect)
-    if current_blind.name not in ("Small Blind", "Big Blind") and GameState == "Playing":
-        max_width = WIDTH/8
-        lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
-        line_height = PixelFontXXS.get_height() + 0.1
-        total_height = len(lines) * line_height
-        start_y = (HEIGHT / 10) - (total_height / 2)
-        for i, line in enumerate(lines):
-            text = PixelFontXXS.render(line, True, white)
-            text_rect = text.get_rect(center=(WIDTH/7.4, start_y + i * line_height))
+        if GameState == "Playing":
+            text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
             screen.blit(text, text_rect)
-    if GameState == "Playing":
-        screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
-        screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
-        screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
-        screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
-
-    screen.blit(JokerBG_img,(WIDTH/2.7, HEIGHT/30))
-    screen.blit(ConsBG_img,(WIDTH/1.3, HEIGHT/30))
-
-    if Atttention_helper.toggle:
-        frame = get_video_frame()
-        if VideoVelocityX == 0:
-            VideoVelocityX = random.randint(0, 10)
-        if VideoVelocityY == 0:
-            VideoVelocityY = random.randint(0, 10)
-        if VIDEO_X >= WIDTH - VIDEO_WIDTH or VIDEO_X <= 0:
-            VideoVelocityX *= -1
-        if VIDEO_Y >= HEIGHT - VIDEO_HEIGHT or VIDEO_Y <= 0:
-            VideoVelocityY *= -1
-        VIDEO_X += VideoVelocityX
-        VIDEO_Y += VideoVelocityY
-        if frame:
-            screen.blit(frame, (VIDEO_X, VIDEO_Y))
-
-    for joker in Shop_Cards:
-        buyX, buyY = get_selected_Shop_Cards(joker)
-        if buyX > 0:
-            screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
-            ShopBuy_rect = ShopBuy_img.get_rect()
-            ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-            text = PixelFontS.render(f"{joker.price}", True, white)
-            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            total_score_text = change_notation(total_score)
+            text = PixelFontS.render(f"{total_score_text}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/7.5, HEIGHT / 3.17))
             screen.blit(text, text_rect)
-    for joker in Active_Jokers:
-        buyX, buyY = get_selected_Shop_Cards(joker)
-        if buyX > 0:
-            screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
-            SellButton_rect = SellButton_img.get_rect()
-            SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-            text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
-            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            target_score_text = change_notation(target_score)
+            text = PixelFontS.render(f"{target_score_text}", True, red)
+            text_rect = text.get_rect(center=(WIDTH/7.4, HEIGHT / 5))
             screen.blit(text, text_rect)
-    for joker in Held_Consumables:
-        buyX, buyY = get_selected_Shop_Cards(joker)
-        if buyX > 0:
-            screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
-            SellButton_rect = SellButton_img.get_rect()
-            SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-            text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
-            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+        text = PixelFontS.render(f"{round_num}", True, orange)
+        text_rect = text.get_rect(center=(WIDTH/6.3, HEIGHT / 1.415))
+        screen.blit(text, text_rect)
+        text = PixelFontS.render(f"{ante}", True, orange)
+        text_rect = text.get_rect(center=(WIDTH/11, HEIGHT / 1.419))
+        screen.blit(text, text_rect)
+        text = PixelFontS.render(f"${money}", True, yellow)
+        text_rect = text.get_rect(center=(WIDTH/7.7, HEIGHT / 1.595))
+        screen.blit(text, text_rect)
+        if GameState == "Playing":
+            text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
+            text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
             screen.blit(text, text_rect)
-    for joker in ShopPacks:
-        buyX, buyY = get_selected_Shop_Cards(joker)
-        if buyX > 0:
-            screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
-            ShopBuy_rect = ShopBuy_img.get_rect()
-            ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-            text = PixelFontS.render(f"{joker.price}", True, white)
-            text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+            text = PixelFontS.render(f"{current_blind.name}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/8, HEIGHT / 30))
             screen.blit(text, text_rect)
-    
+        if current_blind.name not in ("Small Blind", "Big Blind") and GameState == "Playing":
+            max_width = WIDTH/8
+            lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
+            line_height = PixelFontXXS.get_height() + 0.1
+            total_height = len(lines) * line_height
+            start_y = (HEIGHT / 10) - (total_height / 2)
+            for i, line in enumerate(lines):
+                text = PixelFontXXS.render(line, True, white)
+                text_rect = text.get_rect(center=(WIDTH/7.4, start_y + i * line_height))
+                screen.blit(text, text_rect)
+        if GameState == "Playing":
+            screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
+            screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
+            screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
+            screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
-    boss_debuff()
-    draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
-    jokerSpacing = 600 / (len(Shop_Cards) + 1) * WIDTH/1500
-    draw_jokers(screen, Shop_Cards, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
-    jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
-    draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
-    consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
-    draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
-    consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
-    draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
+        screen.blit(JokerBG_img,(WIDTH/2.7, HEIGHT/30))
+        screen.blit(ConsBG_img,(WIDTH/1.3, HEIGHT/30))
 
-    update_card_animation()
+        if Atttention_helper.toggle:
+            frame = get_video_frame()
+            if VideoVelocityX == 0:
+                VideoVelocityX = random.randint(0, 10)
+            if VideoVelocityY == 0:
+                VideoVelocityY = random.randint(0, 10)
+            if VIDEO_X >= WIDTH - VIDEO_WIDTH or VIDEO_X <= 0:
+                VideoVelocityX *= -1
+            if VIDEO_Y >= HEIGHT - VIDEO_HEIGHT or VIDEO_Y <= 0:
+                VideoVelocityY *= -1
+            VIDEO_X += VideoVelocityX
+            VIDEO_Y += VideoVelocityY
+            if frame:
+                screen.blit(frame, (VIDEO_X, VIDEO_Y))
 
-    if SO_SERIOUS.toggle:
-        soserious.animate()
-        if not soseriousmusic.get_num_channels(): 
-            soseriousmusic.play(-1) 
-    else:
-        soseriousmusic.stop()
+        for joker in Shop_Cards:
+            buyX, buyY = get_selected_Shop_Cards(joker)
+            if buyX > 0:
+                screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+                ShopBuy_rect = ShopBuy_img.get_rect()
+                ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                text = PixelFontS.render(f"{joker.price}", True, white)
+                text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+                screen.blit(text, text_rect)
+        for joker in Active_Jokers:
+            buyX, buyY = get_selected_Shop_Cards(joker)
+            if buyX > 0:
+                screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+                SellButton_rect = SellButton_img.get_rect()
+                SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
+                text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+                screen.blit(text, text_rect)
+        for joker in Held_Consumables:
+            buyX, buyY = get_selected_Shop_Cards(joker)
+            if buyX > 0:
+                screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+                SellButton_rect = SellButton_img.get_rect()
+                SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
+                text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+                screen.blit(text, text_rect)
+        for joker in ShopPacks:
+            buyX, buyY = get_selected_Shop_Cards(joker)
+            if buyX > 0:
+                screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
+                ShopBuy_rect = ShopBuy_img.get_rect()
+                ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                text = PixelFontS.render(f"{joker.price}", True, white)
+                text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
+                screen.blit(text, text_rect)
+        
 
-    if current_blind:
-        current_blind.update()
-        current_blind.draw(screen)
+        boss_debuff()
+        draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
+        jokerSpacing = 600 / (len(Shop_Cards) + 1) * WIDTH/1500
+        draw_jokers(screen, Shop_Cards, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
+        jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
+        draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
+        consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
+        draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
+        consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
+        draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
-    for toggle in guiToggleList:
-        toggle.update_img(mouse_pos)
+        update_card_animation()
 
-    for toggle in guiToggleList:
-        toggle.draw()
-    
-    dev_commands()
-    blit_img()
-    if card_x > -WIDTH:
-        screen.blit(STARTCARD, (card_x, 0))
+        if SO_SERIOUS.toggle:
+            soserious.animate()
+            if not soseriousmusic.get_num_channels(): 
+                soseriousmusic.play(-1) 
+        else:
+            soseriousmusic.stop()
 
-    shopAnimaton()
-    if question.toggle:
-            screen.blit(overlay, (0, 0))
-            update_gui_buttons()
-            for button in guibutton:
-                button.draw()
-    if settings2.toggle:
-        settings = True
+        if current_blind:
+            current_blind.update()
+            current_blind.draw(screen)
 
-    if settings:
-        screen.fill((255,255,255))
-        draw_settings()
-        screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
+        for toggle in guiToggleList:
+            toggle.update_img(mouse_pos)
 
-    chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
-    for indicator in chip_indicators:
-        indicator.draw(screen)
-    if help_menu:
+        for toggle in guiToggleList:
+            toggle.draw()
+        
+        dev_commands()
+        blit_img()
+        if card_x > -WIDTH:
+            screen.blit(STARTCARD, (card_x, 0))
+
+        shopAnimaton()
+        if question.toggle:
+                screen.blit(overlay, (0, 0))
+                update_gui_buttons()
+                for button in guibutton:
+                    button.draw()
+        if settings2.toggle:
+            settings = True
+
+        if settings:
             screen.fill((255,255,255))
+            draw_settings()
+            screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
 
-            start_y = 100 + scroll_offset
-            visible_top = 0
-            visible_bottom = HEIGHT
+        chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
+        for indicator in chip_indicators:
+            indicator.draw(screen)
 
-            for surface in helpMenu_surfaces:
-                if surface:
-                    if visible_top - line_height < start_y < visible_bottom + line_height:
-                        screen.blit(surface, (100, start_y))
-                start_y += line_height
-            total_height = len(helpMenu_surfaces) * line_height
-            view_height = HEIGHT - 200
-            if total_height > view_height:
-                bar_height = max(20, int(view_height * (view_height / total_height)))
-                bar_y = int((-scroll_offset / total_height) * view_height + 100)
-                pygame.draw.rect(screen, (100, 100, 100), (WIDTH - 40, bar_y, 20, bar_height))
-            screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
-    if hovering:
-        screen.blit(cursor_hover, cursor_pos)
-    else:
-        screen.blit(cursor_normal, cursor_pos)
-    if current_blind.name == "The Eye" and GameState == "Playing":
-        blurred = boss_debuff()
-        screen.blit(blurred, (0, 0))
-    
-    if Focy.toggle:
+        if GameState == "Dead":
+            redScreen = pygame.Surface((WIDTH, HEIGHT))
+            redScreen.fill((255, 0, 0))
+            redScreen.set_alpha(50)
+            screen.blit(redScreen, (0, 0))
+            screen.blit(DeadBG_img, (WIDTH/2 , HEIGHT/20))
+            screen.blit(NewRun_img, (WIDTH/1.34 , HEIGHT/1.25))
+            screen.blit(MainMenu_img, (WIDTH/1.74 , HEIGHT/1.25))
+            screen.blit(Copy_img, (WIDTH/1.7 , HEIGHT/1.365))
+            text = PixelFontS.render(f"{seed}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.46, HEIGHT/1.42))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{highest_hand}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.185, HEIGHT/5))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{most_played}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.185, HEIGHT/3.67))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{cards_played}", True, blue)
+            text_rect = text.get_rect(center=(WIDTH/1.42, HEIGHT/2.83))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{cards_discarded}", True, red)
+            text_rect = text.get_rect(center=(WIDTH/1.385, HEIGHT/2.35))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{purchases}", True, orange)
+            text_rect = text.get_rect(center=(WIDTH/1.375, HEIGHT/2.02))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{rerolls}", True, green)
+            text_rect = text.get_rect(center=(WIDTH/1.4, HEIGHT/1.77))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{cards_found}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.435, HEIGHT/1.575))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{ante}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.115, HEIGHT/2.83))
+            screen.blit(text, text_rect)
+            text = PixelFontS.render(f"{round_num}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.115, HEIGHT/2.35))
+            screen.blit(text, text_rect)
+            screen.blit(current_blind.image,(WIDTH/1.23, HEIGHT/1.77))
+            text = PixelFontS.render(f"{current_blind.name}", True, white)
+            text_rect = text.get_rect(center=(WIDTH/1.18, HEIGHT/1.85))
+            screen.blit(text, text_rect)
         
-    
-    
-        
-        if random.randint(1, 15000)  == 1:
-          
-            
-            subprocess.run(['powershell', '-Command', 
-            '$obj = New-Object -ComObject WScript.Shell;'
-            '$obj.SendKeys([char]173);'
-            'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
-            shell=True)
-            
-            foxsound.play()
-                
-                
-            draw_fox = True
-    if draw_fox:
-    
-        focy_scare.animate()
-    if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score:
-        GameState = "Dead"
-    if GameState == "Dead":
-        redScreen = pygame.Surface((WIDTH, HEIGHT))
-        redScreen.fill((255, 0, 0))
-        redScreen.set_alpha(50)
-        screen.blit(redScreen, (0, 0))
-    pygame.display.flip()   ###########################################################
-    clock.tick(60)
-    currentFrame += 1
+        if help_menu:
+                screen.fill((255,255,255))
 
-    for card in hand:
-        card.update()
-        if card.state == "discarded":
-            if not calculating and not scoring_in_progress and card.x > WIDTH + 200:
-                index = card.slot
-                hand.remove(card)
-                for c in hand:
-                    if c.slot > index:
-                        c.slot -= 1
-                if deck and GameState == "Playing":
-                    new_card = deck.pop()
-                    new_card.slot = index
-                    new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
-                    hand.append(new_card)
-                    sort_hand()
-    for joker in Shop_Cards:
-        joker.update()
-    for joker in Active_Jokers:
-        joker.update()
-    for card in Held_Consumables:
-        card.update()
-    for pack in ShopPacks:
-        pack.update()
-    if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
-        index = card.slot
-        new_card = deck.pop()
-        new_card.slot = index
-        new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
-        hand.append(new_card)
-        sort_hand()
-    if scoring_in_progress:
+                start_y = 100 + scroll_offset
+                visible_top = 0
+                visible_bottom = HEIGHT
+
+                for surface in helpMenu_surfaces:
+                    if surface:
+                        if visible_top - line_height < start_y < visible_bottom + line_height:
+                            screen.blit(surface, (100, start_y))
+                    start_y += line_height
+                total_height = len(helpMenu_surfaces) * line_height
+                view_height = HEIGHT - 200
+                if total_height > view_height:
+                    bar_height = max(20, int(view_height * (view_height / total_height)))
+                    bar_y = int((-scroll_offset / total_height) * view_height + 100)
+                    pygame.draw.rect(screen, (100, 100, 100), (WIDTH - 40, bar_y, 20, bar_height))
+                screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
+        if hovering:
+            screen.blit(cursor_hover, cursor_pos)
+        else:
+            screen.blit(cursor_normal, cursor_pos)
+        if current_blind.name == "The Eye" and GameState == "Playing":
+            blurred = boss_debuff()
+            screen.blit(blurred, (0, 0))
+        
+        if Focy.toggle:
+            
+        
+        
+            
+            if random.randint(1, 15000)  == 1:
+            
+                
+                subprocess.run(['powershell', '-Command', 
+                '$obj = New-Object -ComObject WScript.Shell;'
+                '$obj.SendKeys([char]173);'
+                'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
+                shell=True)
+                
+                foxsound.play()
+                    
+                    
+                draw_fox = True
+        if draw_fox:
+        
+            focy_scare.animate()
+        if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score:
+            GameState = "Dead"
+            most_played = max(hand_plays.items(), key=lambda item: item[1])
+            most_played = most_played[0]
+
+        pygame.display.flip()   ###########################################################
+        clock.tick(60)
+        currentFrame += 1
+
+        for card in hand:
+            card.update()
+            if card.state == "discarded":
+                if not calculating and not scoring_in_progress and card.x > WIDTH + 200:
+                    index = card.slot
+                    hand.remove(card)
+                    for c in hand:
+                        if c.slot > index:
+                            c.slot -= 1
+                    if deck and GameState == "Playing":
+                        new_card = deck.pop()
+                        new_card.slot = index
+                        new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+                        hand.append(new_card)
+                        sort_hand()
+        for joker in Shop_Cards:
+            joker.update()
+        for joker in Active_Jokers:
+            joker.update()
+        for card in Held_Consumables:
+            card.update()
+        for pack in ShopPacks:
+            pack.update()
+        if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
+            index = card.slot
+            new_card = deck.pop()
+            new_card.slot = index
+            new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+            hand.append(new_card)
+            sort_hand()
         if scoring_in_progress:
             if len(scoring_queue) == 0:
                 for c in hand:
@@ -3395,68 +3499,71 @@ while running:
                 scoring_in_progress = False
                 scored = True
 
-    if scoring_in_progress and scoring_queue:
-        current_card = scoring_queue[0]
-        if current_card.scoring_complete:
-            scoring_queue.pop(0)
-            if len(scoring_queue) > 0:
-                scoring_queue[0].scaling = True
+        if scoring_in_progress and scoring_queue:
+            current_card = scoring_queue[0]
+            if current_card.scoring_complete:
+                scoring_queue.pop(0)
+                if len(scoring_queue) > 0:
+                    scoring_queue[0].scaling = True
 
-    if scored:
-        calculating = True
-        scored = False
-        calc_progress = 0.0
-        add_progress = 0.0
-        saved_total_score = total_score
-    if calculating:
-        if calc_progress < 1.0:
-            calc_progress += 1.0 / 100
-            ease_progress = 1.0 - (1.0 - calc_progress) ** 2
-            current_score = round(final_score * ease_progress)
-            saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
-            saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
-            if calc_progress >= 1.0:
-                calc_progress = 1.0
-                current_score = final_score
-                chips = 0
-                mult = 0
-        if add_progress < 1.0 and calc_progress >= 1.0:
-            add_progress += 1.0 / 100
-            ease_progress = 1.0 - (1.0 - add_progress) ** 2
-            current_score = round(final_score * (1.0 - ease_progress))
-            total_score = saved_total_score + round(final_score * (ease_progress))
-            if add_progress >= 1.0:
-                add_progress = 1.0
-                total_score = saved_total_score + final_score
-                calculating = False
-                discard_queue = []
-                discard_timer = 0
-                for c in hand:
-                    if c.state == "scored":
-                        c.scoring_x, c.scoring_y = 0, 0
-                        c.scoring_complete = False
-                        c.is_contributing = False
-                        discard_queue.append(c)
-                discarding = True
-                victory = check_blind_defeated()
-                if victory:
-                    GameState = "Cashing"
-                    advance_to_next_blind()
-                    get_current_blind()
-                    for card in hand:
-                        discard_queue.append(card)
+        if scored:
+            calculating = True
+            scored = False
+            calc_progress = 0.0
+            add_progress = 0.0
+            saved_total_score = total_score
+        if calculating:
+            if calc_progress < 1.0:
+                calc_progress += 1.0 / 50
+                ease_progress = 1.0 - (1.0 - calc_progress) ** 2
+                current_score = round(final_score * ease_progress)
+                saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
+                saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
+                hand_plays[saved_hand] += 1
+                if saved_base_mult * saved_base_chips > highest_hand:
+                    highest_hand = saved_base_mult * saved_base_chips
+                if calc_progress >= 1.0:
+                    calc_progress = 1.0
+                    current_score = final_score
+                    chips = 0
+                    mult = 0
+            if add_progress < 1.0 and calc_progress >= 1.0:
+                add_progress += 1.0 / 50
+                ease_progress = 1.0 - (1.0 - add_progress) ** 2
+                current_score = round(final_score * (1.0 - ease_progress))
+                total_score = saved_total_score + round(final_score * (ease_progress))
+                if add_progress >= 1.0:
+                    add_progress = 1.0
+                    total_score = saved_total_score + final_score
+                    calculating = False
+                    discard_queue = []
+                    discard_timer = 0
+                    for c in hand:
+                        if c.state == "scored":
+                            c.scoring_x, c.scoring_y = 0, 0
+                            c.scoring_complete = False
+                            c.is_contributing = False
+                            discard_queue.append(c)
                     discarding = True
+                    victory = check_blind_defeated()
+                    if victory:
+                        GameState = "Cashing"
+                        advance_to_next_blind()
+                        get_current_blind()
+                        for card in hand:
+                            discard_queue.append(card)
+                        discarding = True
 
-    if discarding:
-        if discard_queue:
-            if discard_timer >= 2:
-                discard_queue[0].state = "discarded"
-                discard_queue.pop(0)
-                discard_timer = 0
+        if discarding:
+            if discard_queue:
+                if discard_timer >= 2:
+                    discard_queue[0].state = "discarded"
+                    discard_queue.pop(0)
+                    discard_timer = 0
+                else:
+                    discard_timer += 1
             else:
-                discard_timer += 1
-        else:
-            discarding = False
+                discarding = False
 
 close_video()
 pygame.quit()

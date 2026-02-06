@@ -23,7 +23,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install pygame==2.5.2 numpy opencv-python pyinstaller
+        pip install pygame==2.5.2 numpy pyperclip opencv-python pyinstaller
     
     - name: Build EXE with PyInstaller
       run: |
