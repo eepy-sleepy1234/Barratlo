@@ -2035,8 +2035,8 @@ class Consumable:
                         self.angle = 0
         self.angle += self.rotation_speed
 
-DragonCards = []
-SharkCards = []
+TarotCards = []
+ShadowCards = []
 SplatoonCards = []
 Held_Consumables = []
 maxConsCount = 2
@@ -2049,10 +2049,10 @@ for root, dirs, files in os.walk(CONS_DIR):
             Cons_name = Cons_name.title()
             image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
             consumable = Consumable(image, Cons_name)
-            if "DragonCards" in filepath:
-                DragonCards.append(consumable)
-            elif "SharkCards" in filepath:
-                SharkCards.append(consumable)
+            if "TarotCards" in filepath:
+                TarotCards.append(consumable)
+            elif "ShadowCards" in filepath:
+                ShadowCards.append(consumable)
             elif "SplatoonCards" in filepath:
                 SplatoonCards.append(consumable)
 
@@ -2186,9 +2186,9 @@ def draw_cardpacks(surface, cards, center_x, center_y, spread=20):
         pack.rect = rect
 
 StandardPacks = []
-DragonPacks = []
+TarotPacks = []
 SplatoonPacks = []
-SharkPacks = []
+ShadowPacks = []
 ShopPacks = []
 for root, dirs, files in os.walk(PACKS_DIR):
     for filename in files:
@@ -2201,12 +2201,12 @@ for root, dirs, files in os.walk(PACKS_DIR):
             cardpack = Cardpack(image, Pack_name)
             if "Standard" in Pack_name:
                 StandardPacks.append(cardpack)
-            elif "Shark" in Pack_name:
-                SharkPacks.append(cardpack)
+            elif "Shadow" in Pack_name:
+                ShadowPacks.append(cardpack)
             elif "Splatoon" in Pack_name:
                 SplatoonPacks.append(cardpack)
-            elif "Dragon" in Pack_name:
-                DragonPacks.append(cardpack)
+            elif "Tarot" in Pack_name:
+                TarotPacks.append(cardpack)
 
 def change_notation(number):
     if number > 999999999999:
@@ -2561,11 +2561,11 @@ while game:
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
                                 if rarity_choice <= 28:
-                                    card = random.choice(DragonCards)
+                                    card = random.choice(TarotCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
                                 if rarity_choice <= 50:
-                                    card = random.choice(SharkCards)
+                                    card = random.choice(ShadowCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
                                 if rarity_choice <= 75:
@@ -2593,11 +2593,11 @@ while game:
                                     if pack not in ShopPacks:
                                         break
                                 if rarity_choice <= 68:
-                                    pack = random.choice(SharkPacks)
+                                    pack = random.choice(ShadowPacks)
                                     if pack not in ShopPacks:
                                         break
                                 else:
-                                    pack = random.choice(DragonPacks)
+                                    pack = random.choice(TarotPacks)
                                     if pack not in ShopPacks:
                                         break
                             ShopPacks.append(pack)
@@ -2780,11 +2780,11 @@ while game:
                                         if card not in Shop_Cards and card not in Held_Consumables:
                                             break
                                     if rarity_choice <= 28:
-                                        card = random.choice(DragonCards)
+                                        card = random.choice(TarotCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
                                             break
                                     if rarity_choice <= 50:
-                                        card = random.choice(SharkCards)
+                                        card = random.choice(ShadowCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
                                             break
                                     if rarity_choice <= 75:
