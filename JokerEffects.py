@@ -1,3 +1,4 @@
+import random
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -12,6 +13,58 @@ class JokerEffectsManager:
             'copy': [],
             'on_joker_sell': [],
         }
+
+    def Hacked_effect(context):
+        return context
+
+    def Michigan_effect(context):
+        return context
+
+    def Invincible_effect(context):
+        return context
+
+    def Lucky_effect(context):
+        return context
+
+    def PoolTable_effect(context):
+        return context
+
+    def RulesCard_effect(context):
+        return context
+
+    def TheJonklerBaby_effect(context):
+        return context
+
+    def UpsideDown_effect(context):
+        return context
+    
+    def GettingAnUpgrade_effect(context):
+        return context
+
+    def FlyDeity_effect(context):
+        return context
+
+    def Yin_effect(context):
+        return context
+
+    def Yang_effect(context):
+        return context
+
+    def PTSD_effect(context):
+        return context
+
+    def WetFloor_effect(context):
+        return context
+
+    def YinYang_effect(context):
+        return context
+
+    def Fountain_effect(context):
+        return context
+
+    def OopyGoopy_effect(context):
+        return context
+
     def register_joker(self, joker_name, event_type, effect_function):
         if event_type in self.effects:
             self.effects[event_type].append({
@@ -39,7 +92,82 @@ class JokerEffectsManager:
             context.setdefault('triggered_jokers', []).append('Clever')
         return context
     
+    def Disguised_effect(context):
+        return context
     
+    def Crafty_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Flush":
+            context['chips'] += 80
+            context.setdefault('triggered_jokers', []).append('Crafty')
+        return context
+    
+    def Crazy_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Straight":
+            context['mult'] += 12
+            context.setdefault('triggered_jokers', []).append('Crazy')
+        return context
+    
+    def Devious_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Straight":
+            context['chips'] += 100
+            context.setdefault('triggered_jokers', []).append('Crazy')
+        return context
+    
+    def Droll_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Flush":
+            context["mult"] += 10
+            context.setdefault('triggered_jokers', []).append('Droll')
+        return context
+    
+    def Jolly_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Pair":
+            context["mult"] += 8
+            context.setdefault('triggered_jokers', []).append('Jolly')
+        return context
+    
+    def Mad_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Four of a Kind":
+            context["mult"] += 20
+            context.setdefault('triggered_jokers', []).append('Mad')
+        return context
+    
+    def Sly_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Pair":
+            context["chips"] += 50
+            context.setdefault('triggered_jokers', []).append('Sly')
+        return context
+    
+    def Wily_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Straight":
+            context["chips"] += 100
+            context.setdefault('triggered_jokers', []).append('Wily')
+        return context
+    
+    def Zany_effect(context):
+        hand = context.get('hand_type')
+        if hand and hand == "Three of a Kind":
+            context["mult"] += 12
+            context.setdefault('triggered_jokers', []).append('Mad')
+        return context
+    
+    def Jevil_effect(context):
+        deck = context.get('deck')
+        if deck:
+            suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
+            random_suit = random.choice(suits)
+            for card in deck:
+                card.suit = random_suit
+    
+            context.setdefault('triggered_jokers', []).append('Jevil')
+        return context
 
     JOKER_REGISTRY = {
         'Bald': {
