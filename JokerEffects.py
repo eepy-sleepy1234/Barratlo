@@ -13,6 +13,58 @@ class JokerEffectsManager:
             'copy': [],
             'on_joker_sell': [],
         }
+
+    def Hacked_effect(context):
+        return context
+
+    def Michigan_effect(context):
+        return context
+
+    def Invincible_effect(context):
+        return context
+
+    def Lucky_effect(context):
+        return context
+
+    def PoolTable_effect(context):
+        return context
+
+    def RulesCard_effect(context):
+        return context
+
+    def TheJonklerBaby_effect(context):
+        return context
+
+    def UpsideDown_effect(context):
+        return context
+    
+    def GettingAnUpgrade_effect(context):
+        return context
+
+    def FlyDeity_effect(context):
+        return context
+
+    def Yin_effect(context):
+        return context
+
+    def Yang_effect(context):
+        return context
+
+    def PTSD_effect(context):
+        return context
+
+    def WetFloor_effect(context):
+        return context
+
+    def YinYang_effect(context):
+        return context
+
+    def Fountain_effect(context):
+        return context
+
+    def OopyGoopy_effect(context):
+        return context
+
     def register_joker(self, joker_name, event_type, effect_function):
         if event_type in self.effects:
             self.effects[event_type].append({
@@ -40,7 +92,8 @@ class JokerEffectsManager:
             context.setdefault('triggered_jokers', []).append('Clever')
         return context
     
-    
+    def Disguised_effect(context):
+        return context
     
     def Crafty_effect(context):
         hand = context.get('hand_type')
