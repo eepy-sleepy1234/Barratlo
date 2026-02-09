@@ -12,6 +12,7 @@ import pygame
 import numpy
 import cv2
 import pyperclip
+from JokerEffects import initialize_joker_effects
 pygame.init()
 pygame.font.init()
 
@@ -1278,6 +1279,21 @@ class Card:
                             chip_indicators.append(indicator)
                             self.state = "scored"
                             self.scoring_complete = True
+
+                            context = {
+                                'card': card,
+                                'chips': chips,
+                                'mult': mult,
+                                'active_jokers': Active_Jokers,
+                                'hand_type': hand_type,
+                                'deck': deck,
+                            }
+                            context = joker_manager.trigger('on_card_scored', context)
+                            chips = context['chips']
+                            mult = context['mult']
+                            if 'triggered_jokers' in context:
+                                for joker_name in context['triggered_jokers']:
+                                    joker_name = 'idfk'
                         else:
                             self.state = "discarded"
         self.angle += self.rotation_speed
@@ -2778,6 +2794,7 @@ while game:
                                             Shop_Cards.remove(card)
                                             money -= card.price
                                             purchases += 1
+                                            joker_manager = initialize_joker_effects(Active_Jokers)
                                     if isinstance(card, Consumable):
                                         if len(Held_Consumables) < maxConsCount:
                                             shopJokerSelected = False
@@ -2786,6 +2803,7 @@ while game:
                                             Shop_Cards.remove(card)
                                             money -= card.price
                                             purchases += 1
+                                            joker_manager = initialize_joker_effects(Active_Jokers)
                             for pack in ShopPacks:
                                 if pack.state == "selected" and money >= pack.price:
                                     print("pack open")
@@ -2851,6 +2869,8 @@ while game:
                         current_blind = None
                         victory = False
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
+                        context = {'active_jokers': Active_Jokers, 'round_num': round_num}
+                        context = joker_manager.trigger('on_round_start', context)
                         get_current_blind()
                         if round_num % 3 == 0:
                             boss_debuff()
@@ -3503,6 +3523,8 @@ while game:
                 if not calculating and not scoring_in_progress and card.x > WIDTH + 200:
                     index = card.slot
                     hand.remove(card)
+                    context = {'card': card, 'active_jokers': Active_Jokers}
+                    context = joker_manager.trigger('on_discard', context)
                     for c in hand:
                         if c.slot > index:
                             c.slot -= 1
@@ -3547,6 +3569,18 @@ while game:
                     scoring_queue[0].scaling = True
 
         if scored:
+            context = {
+                'card': card,
+                'chips': chips,
+                'mult': mult,
+                'active_jokers': Active_Jokers,
+                'hand_type': hand_type,
+                'deck': deck,
+            }
+            context = joker_manager.trigger('on_hand_played', context)
+            chips = context['chips']
+            mult = context['mult']
+            total_score = chips * mult
             calculating = True
             scored = False
             calc_progress = 0.0
