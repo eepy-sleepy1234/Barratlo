@@ -1351,16 +1351,28 @@ def boss_debuff():
             for card in deck:
                 if card.suit == "Hearts":
                     card.is_debuffed = True
+            for card in hand:
+                if card.suit == "Hearts":
+                    card.is_debuffed = True
         if current_blind.name == "The Arrow":
             for card in deck:
+                if card.suit == "Spades":
+                    card.is_debuffed = True
+            for card in hand:
                 if card.suit == "Spades":
                     card.is_debuffed = True
         if current_blind.name == "The Cone":
             for card in deck:
                 if card.suit == "Clubs":
                     card.is_debuffed = True
+            for card in hand:
+                if card.suit == "Clubs":
+                    card.is_debuffed = True
         if current_blind.name == "The Bow":
             for card in deck:
+                if card.suit == "Diamonds":
+                    card.is_debuffed = True
+            for card in hand:
                 if card.suit == "Diamonds":
                     card.is_debuffed = True
         if current_blind.name == "The Bounce":
@@ -1376,16 +1388,29 @@ def boss_debuff():
             for card in deck:
                 if card.chip_value <= 9:
                     card.is_debuffed = True
+            for card in hand:
+                if card.chip_value <= 9:
+                    card.is_debuffed = True
         if current_blind.name == "The Chair":
             for card in deck:
+                if card.chip_value >= 10:
+                    card.is_debuffed = True
+            for card in hand:
                 if card.chip_value >= 10:
                     card.is_debuffed = True
         if current_blind.name == "The Crate":
             for card in deck:
                 if card.value % 2 == 0:
                     card.is_debuffed = True
+            for card in hand:
+                if card.value % 2 == 0:
+                    card.is_debuffed = True
         if current_blind.name == "The Luck":
             for card in deck:
+                rand = random.randint(1, 5)
+                if rand == 1 and not card.debuff_assigned:
+                    card.is_debuffed = True
+            for card in hand:
                 rand = random.randint(1, 5)
                 if rand == 1 and not card.debuff_assigned:
                     card.is_debuffed = True
@@ -1419,6 +1444,9 @@ def boss_debuff():
             for card in deck:
                 if card.suit in ("Hearts", "Diamonds"):
                     card.freeze_timer = 4
+            for card in hand:
+                if card.suit in ("Hearts", "Diamonds"):
+                    card.freeze_timer = 4
         if current_blind.name == "The Splinter":
             for card in hand:
                 if card.suit in ("Spades", "Clubs"):
@@ -1429,11 +1457,19 @@ def boss_debuff():
                 if rand == 1 and not card.debuff_assigned:
                     card.is_frozen = True
                     card.freeze_timer = random.randint(1, 3)
+            for card in hand:
+                rand = random.randint(1, 5)
+                if rand == 1 and not card.debuff_assigned:
+                    card.is_frozen = True
+                    card.freeze_timer = random.randint(1, 3)
         if current_blind.name == "The Band":
             if handsize == max_handsize:
                 handsize -= 1
         if current_blind.name == "The Check":
             for card in deck:
+                if card.value % 2 == 0:
+                    card.is_debuffed = True
+            for card in hand:
                 if card.value % 2 == 0:
                     card.is_debuffed = True
         if current_blind.name == "The Spear":
@@ -1461,6 +1497,9 @@ def boss_debuff():
                     card.is_debuffed = True
         if current_blind.name == "The Sign":
             for card in deck:
+                if card.rank in ("J", "Q", "K"):
+                    card.freeze_timer = 4
+            for card in hand:
                 if card.rank in ("J", "Q", "K"):
                     card.freeze_timer = 4
         for card in deck:
@@ -1721,7 +1760,7 @@ def calculate_target_score(ante, round_num):
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 def get_current_blind():
-    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState
+    global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState, boss_blind
     if not current_blind or victory:
         if round_num % 3 == 1:
             if small_blind:
@@ -1767,9 +1806,11 @@ def set_boss_blind(boss_name):
             return True
     return False
 def advance_to_next_blind():
-    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState
+    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState, boss_blind, current_blind
     if round_num % 3 == 0:
         ante += 1
+        boss_blind = random.choice(boss_blinds)
+        current_blind = None
     round_num += 1
     current_score = 0
     totalReward += hands + blind_reward
@@ -1778,7 +1819,6 @@ def advance_to_next_blind():
     rerollCost = 3
     hand.clear()
     deck.clear()
-    boss_blind = random.choice(boss_blinds)
     for card in perm_deck:
         new_card = Card(card.rank, card.suit, card.image)
         deck.append(new_card)
@@ -2037,7 +2077,7 @@ class Consumable:
 
 TarotCards = []
 ShadowCards = []
-SplatoonCards = []
+SpectralCards = []
 Held_Consumables = []
 maxConsCount = 2
 for root, dirs, files in os.walk(CONS_DIR):
@@ -2053,8 +2093,8 @@ for root, dirs, files in os.walk(CONS_DIR):
                 TarotCards.append(consumable)
             elif "ShadowCards" in filepath:
                 ShadowCards.append(consumable)
-            elif "SplatoonCards" in filepath:
-                SplatoonCards.append(consumable)
+            elif "SpectralCards" in filepath:
+                SpectralCards.append(consumable)
 
 def draw_consumables(surface, cards, center_x, center_y, spread=20):
     n = len(cards)
@@ -2187,7 +2227,7 @@ def draw_cardpacks(surface, cards, center_x, center_y, spread=20):
 
 StandardPacks = []
 TarotPacks = []
-SplatoonPacks = []
+SpectralPacks = []
 ShadowPacks = []
 ShopPacks = []
 for root, dirs, files in os.walk(PACKS_DIR):
@@ -2203,8 +2243,8 @@ for root, dirs, files in os.walk(PACKS_DIR):
                 StandardPacks.append(cardpack)
             elif "Shadow" in Pack_name:
                 ShadowPacks.append(cardpack)
-            elif "Splatoon" in Pack_name:
-                SplatoonPacks.append(cardpack)
+            elif "Spectral" in Pack_name:
+                SpectralPacks.append(cardpack)
             elif "Tarot" in Pack_name:
                 TarotPacks.append(cardpack)
 
@@ -2557,7 +2597,7 @@ while game:
                             rarity_choice = random.randint(1, 100)
                             while True:
                                 if rarity_choice <= 5:
-                                    card = random.choice(SplatoonCards)
+                                    card = random.choice(SpectralCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
                                 if rarity_choice <= 28:
@@ -2585,7 +2625,7 @@ while game:
                             rarity_choice = random.randint(1, 100)
                             while True:
                                 if rarity_choice <= 5:
-                                    pack = random.choice(SplatoonPacks)
+                                    pack = random.choice(SpectralPacks)
                                     if pack not in ShopPacks:
                                         break
                                 if rarity_choice <= 37:
@@ -2776,7 +2816,7 @@ while game:
                                 rarity_choice = random.randint(1, 100)
                                 while True:
                                     if rarity_choice <= 5:
-                                        card = random.choice(SplatoonCards)
+                                        card = random.choice(SpectralCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
                                             break
                                     if rarity_choice <= 28:
@@ -3519,7 +3559,10 @@ while game:
                 current_score = round(final_score * ease_progress)
                 saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
                 saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
-                hand_plays[saved_hand] += 1
+                if saved_hand != 'Royal Flush':
+                    hand_plays[saved_hand] += 1
+                else:
+                    hand_plays['Straight Flush'] += 1
                 if saved_base_mult * saved_base_chips > highest_hand:
                     highest_hand = saved_base_mult * saved_base_chips
                 if calc_progress >= 1.0:
