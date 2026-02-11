@@ -401,24 +401,7 @@ class User_settings():
             self.img = SETTINGONIMG
         elif not self.toggle:
             self.img = SETTINGOFFIMG
-    def check_dev(self):
-        global developer
-        global devtoggle
-        
-        if developer == False:
-            
-            if self == DEV_MODE:
-                answer = input("Insert Dev Key")
-                if answer == devkey:
-                    self.toggle = True
-                    developer = True
-                    global answer2
-                    devtoggle = input("Insert Toggle Key")
-             
-                elif answer != devkey:
-                    self.toggle = False
-                    print('incorect')
-            self.update_img()
+    
 
 
 
@@ -440,8 +423,11 @@ def dev_commands():
     if DEV_MODE.toggle:
         if dev_toggle:
             dev_command = input('Insert Developer Command')
-
             
+
+dev_code = "talabro"
+dev_progress = ""
+           
 
 guibutton = []
 guiToggleList = []
@@ -551,6 +537,15 @@ def blit_img():
     if DEV_MODE.toggle:
         while dev_toggle:
             
+            if dev_command.lower() == 'addjoker':
+                addedJoker = input("Insert Name Of Joker")
+                if addedJoker in All_Jokers_Name:
+                    for joke in All_Jokers:
+                        if joke.name == addedJoker:
+                            Active_Jokers.append(joke)
+                    
+                
+              
             if dev_command.lower() == 'setblit':
                 asset = input('Input asset name, including .png if a png: ')
                 directory = input('Choose a directory(assets, joker, gui, Suits): ').lower()
@@ -826,6 +821,7 @@ def blit_img():
                 print("Unknown command. Type 'help' for list of commands.")
                 dev_toggle = False
                 return
+        dev_toggle = False
             
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
@@ -1294,6 +1290,11 @@ class Card:
                             if 'triggered_jokers' in context:
                                 for joker_name in context['triggered_jokers']:
                                     print(f"{joker_name} working")
+                                    if joker_name == "Jevil":
+                                        newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
+                                        for card in perm_deck:
+                                            card.suit = newSuit
+
                         else:
                             self.state = "discarded"
         self.angle += self.rotation_speed
@@ -1958,6 +1959,7 @@ Legendary_Jokers = []
 All_Jokers = []
 Active_Jokers = []
 Shop_Cards = []
+All_Jokers_Name = []
 joker_manager = initialize_joker_effects(Active_Jokers)
 for root, dirs, files in os.walk(JOKERS_DIR):
     for filename in files:
@@ -1979,7 +1981,9 @@ for root, dirs, files in os.walk(JOKERS_DIR):
             elif rarity == 'L':
                 Legendary_Jokers.append(joker)
             All_Jokers.append(joker)
-
+            
+for jokername in All_Jokers:
+    All_Jokers_Name.append(jokername.name)
 def draw_jokers(surface, cards, center_x, center_y, spread=20):
     n = len(cards)
     if n == 0:
@@ -2373,7 +2377,7 @@ for i, letter in enumerate(sorted_letters):
 current_order = sorted(Letters, key=lambda letter: letter.xpos)
 letter_string = ''.join([letter.letter for letter in current_order])
 
-devkey = 'holyguac' + letter_string
+
 startGame = False
 
 def sort_hand():
@@ -2414,6 +2418,8 @@ while game:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
                 hovering = True
                 break
+
+
         current_blind = get_current_blind()
         if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
             hovering = True
@@ -2422,10 +2428,24 @@ while game:
                 pygame.quit()
                 sys.exit()
 
-            
+            keys = pygame.key.get_pressed()
+
             if event.type == pygame.KEYDOWN:
-                if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
-                    dev_toggle = True
+    
+                if event.unicode:
+                        dev_progress += event.unicode.lower()
+
+                        
+                        dev_progress = dev_progress[-len(dev_code):]
+
+                        if dev_progress == dev_code:
+                            DEV_MODE.toggle = not DEV_MODE.toggle
+                            print("Developer Mode:", DEV_MODE.toggle)
+                            dev_progress = ""
+                            dev_toggle = True
+                
+            
+                    
             if event.type == pygame.MOUSEBUTTONDOWN:
                 
                 if event.button == 1:
@@ -2446,12 +2466,15 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                                setting.check_dev()
+                                if setting == DEV_MODE:
+                                    continue
+                                
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
                         settings = True
                     if xbutton_rect.collidepoint(event.pos):
                         settings = False
+            
         screen.fill((0, 0, 0))  
         spinningBG.animate()
         settingsButton.animate()
@@ -2568,10 +2591,27 @@ while game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            keys = pygame.key.get_pressed()
 
+           
+
+            
             if event.type == pygame.KEYDOWN:
-                if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
-                    dev_toggle = True
+                if event.unicode:
+                    
+                        print(dev_progress)
+
+                        dev_progress += event.unicode.lower()
+
+                        
+                        dev_progress = dev_progress[-len(dev_code):]
+
+                        if dev_progress == dev_code:
+                            DEV_MODE.toggle = not DEV_MODE.toggle
+                            print("Developer Mode:", DEV_MODE.toggle)
+                            dev_progress = ""
+                            dev_toggle = True
+
                 if event.key == pygame.K_ESCAPE:
                     question.toggle = not question.toggle
                     
@@ -2600,7 +2640,8 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                                setting.check_dev()
+                                if setting == DEV_MODE:
+                                    continue
                                 setting.update_img()
                         
                     
