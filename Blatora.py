@@ -103,7 +103,7 @@ scroll_offset = 0
 scroll_speed = 30
 line_height = OSDmono.get_height()
 
-
+jevilActive = True
 for line in help_lines:
 
     clean_line = html.unescape(line.replace('\t', '    ').rstrip())
@@ -1222,6 +1222,19 @@ class Card:
         self.is_contributing = False
         self.scoring_animating = False
         self.idx = 0
+    def refresh_image(self):
+        filename = f"{self.rank}Of{self.suit}.png"
+        filepath = os.path.join(SUITS_DIR, self.suit, filename)
+
+        raw_image = pygame.image.load(filepath).convert_alpha()
+
+        self.image = pygame.transform.smoothscale(
+            raw_image,
+            (HEIGHT/8, HEIGHT/5.82)
+        )
+
+        self.rect = self.image.get_rect()
+
     def update(self):
         scoring_count = 0
         stiffness = 0.3
@@ -1293,9 +1306,7 @@ class Card:
                                 for joker_name in context['triggered_jokers']:
                                     print(f"{joker_name} working")
                                     if joker_name == "Jevil":
-                                        newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
-                                        for card in perm_deck:
-                                            card.suit = newSuit
+                                        jevilActive = True
 
                         else:
                             self.state = "discarded"
@@ -1353,7 +1364,15 @@ for root, dirs, files in os.walk(SUITS_DIR):
             card = Card(rank, suit, image)
             perm_deck.append(card)
 
+if jevilActive:
+    newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
+    for card in perm_deck:
+        card.suit = newSuit
+        card.refresh_image()
 deck = perm_deck.copy()
+
+
+        
 
 random.shuffle(deck)
 
@@ -2923,6 +2942,12 @@ while game:
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
                         context = {'active_jokers': Active_Jokers, 'round_num': round_num}
                         context = joker_manager.trigger('on_round_start', context)
+                        if jevilActive:
+                            newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
+                            for card in deck:
+                                card.suit = newSuit
+                                card.refresh_image()
+                        
                         get_current_blind()
                         if round_num % 3 == 0:
                             boss_debuff()
