@@ -401,24 +401,7 @@ class User_settings():
             self.img = SETTINGONIMG
         elif not self.toggle:
             self.img = SETTINGOFFIMG
-    def check_dev(self):
-        global developer
-        global devtoggle
-        
-        if developer == False:
-            
-            if self == DEV_MODE:
-                answer = input("Insert Dev Key")
-                if answer == devkey:
-                    self.toggle = True
-                    developer = True
-                    global answer2
-                    devtoggle = input("Insert Toggle Key")
-             
-                elif answer != devkey:
-                    self.toggle = False
-                    print('incorect')
-            self.update_img()
+    
 
 
 
@@ -551,6 +534,10 @@ def blit_img():
     if DEV_MODE.toggle:
         while dev_toggle:
             
+            if dev_command.lower() == 'addjoker':
+                addedJoker = input("Insert Name Of Joker")
+                
+                Active_Jokers.append()
             if dev_command.lower() == 'setblit':
                 asset = input('Input asset name, including .png if a png: ')
                 directory = input('Choose a directory(assets, joker, gui, Suits): ').lower()
@@ -1294,6 +1281,11 @@ class Card:
                             if 'triggered_jokers' in context:
                                 for joker_name in context['triggered_jokers']:
                                     print(f"{joker_name} working")
+                                    if joker_name == "Jevil":
+                                        newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
+                                        for card in perm_deck:
+                                            card.suit = newSuit
+
                         else:
                             self.state = "discarded"
         self.angle += self.rotation_speed
@@ -2371,7 +2363,7 @@ for i, letter in enumerate(sorted_letters):
 current_order = sorted(Letters, key=lambda letter: letter.xpos)
 letter_string = ''.join([letter.letter for letter in current_order])
 
-devkey = 'holyguac' + letter_string
+
 startGame = False
 
 def sort_hand():
@@ -2412,6 +2404,8 @@ while game:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
                 hovering = True
                 break
+
+
         current_blind = get_current_blind()
         if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
             hovering = True
@@ -2420,10 +2414,25 @@ while game:
                 pygame.quit()
                 sys.exit()
 
-            
+            keys = pygame.key.get_pressed()
+
+            dev_combo = [
+                pygame.K_t,
+                pygame.K_a,
+                pygame.K_l,
+                pygame.K_b,
+                pygame.K_r,
+                pygame.K_o
+            ]
+
+            if all(keys[k] for k in dev_combo):
+                if not DEV_MODE.toggle:
+                    DEV_MODE.toggle = True
+                    developer = True
+                
             if event.type == pygame.KEYDOWN:
                 if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
-                    dev_toggle = True
+                    
             if event.type == pygame.MOUSEBUTTONDOWN:
                 
                 if event.button == 1:
@@ -2444,12 +2453,15 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                                setting.check_dev()
+                                if setting == DEV_MODE:
+                                    continue
+                                
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
                         settings = True
                     if xbutton_rect.collidepoint(event.pos):
                         settings = False
+            
         screen.fill((0, 0, 0))  
         spinningBG.animate()
         settingsButton.animate()
@@ -2566,7 +2578,21 @@ while game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            keys = pygame.key.get_pressed()
 
+            dev_combo = [
+                pygame.K_t,
+                pygame.K_a,
+                pygame.K_l,
+                pygame.K_b,
+                pygame.K_r,
+                pygame.K_o
+            ]
+
+            if all(keys[k] for k in dev_combo):
+                if not DEV_MODE.toggle:
+                    DEV_MODE.toggle = True
+                    developer = True
             if event.type == pygame.KEYDOWN:
                 if event.unicode.lower() == devtoggle.lower() and DEV_MODE.toggle:
                     dev_toggle = True
@@ -2598,7 +2624,8 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                                setting.check_dev()
+                                if setting == DEV_MODE:
+                                    continue
                                 setting.update_img()
                         
                     
