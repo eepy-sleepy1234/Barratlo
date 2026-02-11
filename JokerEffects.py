@@ -207,6 +207,14 @@ def Fountain_effect(context):
     return context
 
 def OopyGoopy_effect(context):
+    jokers = context.get('active_jokers')
+    index = jokers.index('Oopy Goopy')
+    if index + 1 < len(jokers):
+        next_joker = jokers[index + 1]
+        func_name = f"{next_joker}_effect"
+        effect_func = globals().get(func_name)
+        if effect_func:
+            context = effect_func(context)
     return context
 
 JOKER_REGISTRY = {

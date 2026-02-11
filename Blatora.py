@@ -1955,6 +1955,7 @@ Common_Jokers = []
 Uncommon_Jokers = []
 Rare_Jokers = []
 Legendary_Jokers = []
+All_Jokers = []
 Active_Jokers = []
 Shop_Cards = []
 joker_manager = initialize_joker_effects(Active_Jokers)
@@ -1977,6 +1978,7 @@ for root, dirs, files in os.walk(JOKERS_DIR):
                 Rare_Jokers.append(joker)
             elif rarity == 'L':
                 Legendary_Jokers.append(joker)
+            All_Jokers.append(joker)
 
 def draw_jokers(surface, cards, center_x, center_y, spread=20):
     n = len(cards)
@@ -2807,8 +2809,16 @@ while game:
                                             purchases += 1
                             for pack in ShopPacks:
                                 if pack.state == "selected" and money >= pack.price:
-                                    print("pack open")
                                     money -= pack.price
+                                    if "Standard" in pack.name:
+                                        GameState = "StandardPack"
+                                    if "Shadow" in pack.name:
+                                        GameState = "ShadowPack"
+                                    if "Spectral" in pack.name:
+                                        GameState = "SpectralPack"
+                                    if "Tarot" in pack.name:
+                                        GameState = "TarotPack"
+                                    ShopPacks.pop(pack)
                     if SellButton_rect.collidepoint(mouse_pos):
                         for card in Active_Jokers:
                             if card.state == "selected":
