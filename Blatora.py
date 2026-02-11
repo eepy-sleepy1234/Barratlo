@@ -538,6 +538,7 @@ def blit_img():
         while dev_toggle:
             
             if dev_command.lower() == 'addjoker':
+                print(All_Jokers_Name)
                 addedJoker = input("Insert Name Of Joker")
                 if addedJoker in All_Jokers_Name:
                     for joke in All_Jokers:
@@ -822,6 +823,7 @@ def blit_img():
                 dev_toggle = False
                 return
         dev_toggle = False
+        DEV_MODE.toggle = False
             
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
