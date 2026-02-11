@@ -12,7 +12,7 @@ import pygame
 import numpy
 import cv2
 import pyperclip
-from JokerEffects import initialize_joker_effects
+from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_effects
 pygame.init()
 pygame.font.init()
 
@@ -1068,7 +1068,7 @@ calculating = False
 discarding = False
 round_num = 1
 ante = 1
-money = 0
+money = 10000000
 blind_defeated = False
 victory = False
 target_score = 300
@@ -1273,7 +1273,7 @@ class Card:
                         self.angle = 0
                         scoring_count += 1
                         if self.is_contributing:
-                            global saved_base_chips
+                            global saved_base_chips, saved_base_mult
                             saved_base_chips += self.chip_value
                             indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
                             chip_indicators.append(indicator)
@@ -1281,19 +1281,19 @@ class Card:
                             self.scoring_complete = True
 
                             context = {
-                                'card': card,
-                                'chips': chips,
-                                'mult': mult,
+                                'card': self,
+                                'chips': saved_base_chips,
+                                'mult': saved_base_mult,
                                 'active_jokers': Active_Jokers,
-                                'hand_type': hand_type,
+                                'hand_type': saved_hand,
                                 'deck': deck,
                             }
                             context = joker_manager.trigger('on_card_scored', context)
-                            chips = context['chips']
-                            mult = context['mult']
+                            saved_base_chips = context['chips']
+                            saved_base_mult = context['mult']
                             if 'triggered_jokers' in context:
                                 for joker_name in context['triggered_jokers']:
-                                    joker_name = 'idfk'
+                                    print(f"{joker_name} working")
                         else:
                             self.state = "discarded"
         self.angle += self.rotation_speed
@@ -1957,6 +1957,7 @@ Rare_Jokers = []
 Legendary_Jokers = []
 Active_Jokers = []
 Shop_Cards = []
+joker_manager = initialize_joker_effects(Active_Jokers)
 for root, dirs, files in os.walk(JOKERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2428,6 +2429,7 @@ while game:
                 if event.button == 1:
                     if start_button_rect.collidepoint(event.pos):
                         card_animating = True
+                        joker_manager = initialize_joker_effects(Active_Jokers)
                         GameState = "Blinds"
                         seed = ''
                         for i in range(8):
@@ -2803,7 +2805,6 @@ while game:
                                             Shop_Cards.remove(card)
                                             money -= card.price
                                             purchases += 1
-                                            joker_manager = initialize_joker_effects(Active_Jokers)
                             for pack in ShopPacks:
                                 if pack.state == "selected" and money >= pack.price:
                                     print("pack open")
@@ -2815,6 +2816,7 @@ while game:
                                 card.state = "normal"
                                 Active_Jokers.remove(card)
                                 money += int(card.price / 2)
+                                joker_manager = initialize_joker_effects(Active_Jokers)
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -3569,18 +3571,23 @@ while game:
                     scoring_queue[0].scaling = True
 
         if scored:
+            selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
+            if len(selected_cards) > 0:
+                hand_type_temp, contributing_temp = detect_hand(selected_cards)
+            else:
+                hand_type_temp = saved_hand
+                contributing_temp = []
             context = {
-                'card': card,
-                'chips': chips,
-                'mult': mult,
+                'chips': saved_base_chips,
+                'mult': saved_base_mult,
                 'active_jokers': Active_Jokers,
-                'hand_type': hand_type,
+                'hand_type': hand_type_temp,
                 'deck': deck,
+                'hand_played': contributing_temp,
             }
             context = joker_manager.trigger('on_hand_played', context)
-            chips = context['chips']
-            mult = context['mult']
-            total_score = chips * mult
+            saved_base_chips = context['chips']
+            saved_base_mult = context['mult']
             calculating = True
             scored = False
             calc_progress = 0.0
