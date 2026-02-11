@@ -2616,10 +2616,6 @@ while game:
                         for i in range(ShopCount):
                             rarity_choice = random.randint(1, 100)
                             while True:
-                                if rarity_choice <= 5:
-                                    card = random.choice(SpectralCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables:
-                                        break
                                 if rarity_choice <= 28:
                                     card = random.choice(TarotCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
@@ -2818,7 +2814,7 @@ while game:
                                         GameState = "SpectralPack"
                                     if "Tarot" in pack.name:
                                         GameState = "TarotPack"
-                                    ShopPacks.pop(pack)
+                                    ShopPacks.remove(pack)
                     if SellButton_rect.collidepoint(mouse_pos):
                         for card in Active_Jokers:
                             if card.state == "selected":
@@ -2845,10 +2841,6 @@ while game:
                             for i in range(ShopCount):
                                 rarity_choice = random.randint(1, 100)
                                 while True:
-                                    if rarity_choice <= 5:
-                                        card = random.choice(SpectralCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables:
-                                            break
                                     if rarity_choice <= 28:
                                         card = random.choice(TarotCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
@@ -2875,6 +2867,11 @@ while game:
                         Shop_Cards.clear()
                         ShopPacks.clear()
                         shopJokerSelected = False
+                        context = {
+                            'active_jokers': Active_Jokers,
+                            'deck': deck,
+                        }
+                        context = joker_manager.trigger('on_round_start', context)
                         break
                     if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         GameState = "Playing"
@@ -3377,14 +3374,16 @@ while game:
 
         boss_debuff()
         draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
-        jokerSpacing = 600 / (len(Shop_Cards) + 1) * WIDTH/1500
-        draw_jokers(screen, Shop_Cards, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
+        if GameState == "Shop":
+            jokerSpacing = 600 / (len(Shop_Cards) + 1) * WIDTH/1500
+            draw_jokers(screen, Shop_Cards, WIDTH/1.6, HEIGHT/1.565, spread=jokerSpacing)
         jokerSpacing = 600 / (len(Active_Jokers) + 1) * WIDTH/1500
         draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
         consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
-        consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
-        draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
+        if GameState == "Shop":
+            consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
+            draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
         update_card_animation()
 
