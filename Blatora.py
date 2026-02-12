@@ -2427,7 +2427,7 @@ def get_selected_Shop_Cards(joker):
         return (-100, -100)
     
 def get_cons_effect(name):
-    global money, lastFool
+    global money, lastFool, selected_cards
     if name == "Hermit":
         if money > 20:
             money += 20
@@ -2444,14 +2444,104 @@ def get_cons_effect(name):
         lastFool = "Temperance"
     if name == "Emperor":
         if len(Held_Consumables) < maxConsCount:
-            card = random.choice(TarotCards)
+            while True:
+                card = random.choice(TarotCards)
+                if card not in Held_Consumables and card not in Shop_Cards:
+                    break
             Held_Consumables.append(card)
         if len(Held_Consumables) < maxConsCount:
-            card = random.choice(TarotCards)
+            while True:
+                card = random.choice(TarotCards)
+                if card not in Held_Consumables and card not in Shop_Cards:
+                    break
             Held_Consumables.append(card)
         lastFool = "Emperor"
     if name == "Fool":
-        print('aw man')
+        if lastFool:
+            if len(Held_Consumables) < maxConsCount:
+                for card in TarotCards + ShadowCards:
+                    if card.name == lastFool:
+                        new_card = Consumable(card.image, card.name)
+                        Held_Consumables.append(new_card)
+                lastFool = None
+    if name == "High Priest":
+        if len(Held_Consumables) < maxConsCount:
+            while True:
+                card = random.choice(ShadowCards)
+                if card not in Held_Consumables and card not in Shop_Cards:
+                    break
+            Held_Consumables.append(card)
+        if len(Held_Consumables) < maxConsCount and card not in Shop_Cards:
+            while True:
+                card = random.choice(ShadowCards)
+                if card not in Held_Consumables and card not in Shop_Cards:
+                    break
+            Held_Consumables.append(card)
+        lastFool = "High Priest"
+    if name == "Judgement":
+        if len(Active_Jokers) < maxJokerCount:
+            jokester = random.randint(1, 3)
+            while True:
+                if jokester == 1:
+                    card = random.choice(Common_Jokers)
+                    if card not in Active_Jokers and card not in Shop_Cards:
+                        break
+                elif jokester == 2:
+                    card = random.choice(Uncommon_Jokers)
+                    if card not in Active_Jokers and card not in Shop_Cards:
+                        break
+                elif jokester == 3:
+                    card = random.choice(Rare_Jokers)
+                    if card not in Active_Jokers and card not in Shop_Cards:
+                        break
+            Active_Jokers.append(card)
+        lastFool = "Judgement"
+    if name == "Chariot":
+        if len(selected_cards) < 2:
+            for card in selected_cards:
+                card.enhancement = "Steel"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Steel"
+                        break
+        lastFool = "Chariot"
+    if name == "Death":
+        lastFool = "Death"
+    if name == "Devil":
+        lastFool = "Devil"
+    if name == "Empress":
+        lastFool = "Empress"
+    if name == "Hanged Man":
+        lastFool = "Hanged Man"
+    if name == "Hierophant":
+        lastFool = "Hierophant"
+    if name == "Justice":
+        lastFool = "Justice"
+    if name == "Lovers":
+        lastFool = "Lovers"
+    if name == "Magician":
+        lastFool = "Magician"
+    if name == "Moon":
+        lastFool = "Moon"
+    if name == "Star":
+        lastFool = "Star"
+    if name == "Strength":
+        lastFool = "Strength"
+    if name == "Sun":
+        lastFool = "Sun"
+    if name == "Tower":
+       if len(selected_cards) < 2:
+            for card in selected_cards:
+                card.enhancement = "Stone"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Stone"
+                        break
+            lastFool = "Tower"
+    if name == "Wheel Of Fortune":
+        lastFool = "Wheel Of Fortune"
+    if name == "World":
+        lastFool = "World"
     
 
 init_video()
@@ -3650,6 +3740,7 @@ while game:
                             c.slot -= 1
                     if deck and GameState == "Playing":
                         new_card = deck.pop()
+                        new_card.original_card_id = new_card.card_id
                         new_card.slot = index
                         new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
                         hand.append(new_card)
@@ -3665,6 +3756,7 @@ while game:
         if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
             index = card.slot
             new_card = deck.pop()
+            new_card.original_card_id = new_card.card_id
             new_card.slot = index
             new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
             hand.append(new_card)
