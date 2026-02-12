@@ -63,7 +63,7 @@ def hand_contains(context):
     """
     print(f"\n  [hand_contains] Checking context...")
     
-    # FIX #1: Get cards from hand_played - this is the actual cards being scored
+    
     cards = context.get('hand_played')
     print(f"  [hand_contains] hand_played: {cards}")
     
