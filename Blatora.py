@@ -103,7 +103,7 @@ scroll_offset = 0
 scroll_speed = 30
 line_height = OSDmono.get_height()
 
-jevilActive = True
+jevilActive = False
 for line in help_lines:
 
     clean_line = html.unescape(line.replace('\t', '    ').rstrip())
@@ -523,7 +523,7 @@ def draw_settings():
 dev_selection = True
 blitting = False    
 def blit_img():
-    global blitting, ante, round_num, current_blind, target_score, blitpositionx, blitpositiony, blitting_img, blitting_img_original, dev_toggle, scaling, dimensionsx, dimensionsy
+    global blitting,dev_command, ante, round_num, current_blind, target_score, blitpositionx, blitpositiony, blitting_img, blitting_img_original, dev_toggle, scaling, dimensionsx, dimensionsy
     if blitting and blitting_img_original:
         if scaling == 'wh':
             blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(HEIGHT/dimensionsy)))
@@ -548,10 +548,12 @@ def blit_img():
                     for joke in All_Jokers:
                         if joke.name == addedJoker:
                             Active_Jokers.append(joke)
+                            joker_manager = initialize_joker_effects(Active_Jokers) 
+                            print(f"Added {joke.name} and reinitialized joker manager!")
                     
                 
               
-            if dev_command.lower() == 'setblit':
+            elif dev_command.lower() == 'setblit':
                 asset = input('Input asset name, including .png if a png: ')
                 directory = input('Choose a directory(assets, joker, gui, Suits): ').lower()
 
@@ -565,8 +567,8 @@ def blit_img():
                     directory = SUITS_DIR
                 else:
                     print("Invalid Directory")
-                    dev_toggle = False
-                    return
+                    
+                    
 
                 scaling = input('WH, WW, HH, HW, pixel: ').lower()
 
@@ -584,8 +586,7 @@ def blit_img():
                         blitpositiony = int(HEIGHT/(float(blitpositiony)))
                 except:
                     print("Invalid position")
-                    dev_toggle = False
-                    return
+                    
                 
                 dimensionsx = input('Choose a width: ')
                 dimensionsy = input('Choose a height: ')
@@ -594,15 +595,13 @@ def blit_img():
                     dimensionsy = float(dimensionsy)
                 except:
                     print("Invalid dimensions")
-                    dev_toggle = False
-                    return
+                   
                 
                 try:
                     blitting_img_original = pygame.image.load(os.path.join(directory, str(asset))).convert_alpha()
                 except:
                     print("Something went wrong loading image")
-                    dev_toggle = False
-                    return
+                    
                 
                 try:
                     if scaling == 'wh':
@@ -617,32 +616,30 @@ def blit_img():
                         blitting_img = pygame.transform.scale(blitting_img_original, (int(dimensionsx), int(dimensionsy)))
                     
                     blitting = True
-                    dev_toggle = False
-                    return
+                    
 
                 except:
                     print("Something went wrong scaling")
                     dev_toggle = False
                     return
 
-            elif dev_command.lower() == 'cancel':
+            elif dev_command.lower() == 'exit':
                 dev_toggle = False
+            
+                DEV_MODE.toggle = False
                 return
             
             elif dev_command.lower() == 'unblit':
                 blitting = False
-                dev_toggle = False
-                return
+                
             
             elif dev_command.lower() == 'reblit':
                 blitting = True
-                dev_toggle = False
-                return
+                
             
             elif dev_command.lower() == 'help':
-                print("Commands: \n Help\n reblit\n unblit\n cancel\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n setround\n setboss\n")
-                dev_toggle = False
-                return
+                print("Commands: \n Help\n reblit\n unblit\n exit\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n setround\n setboss\n addjoker\n")
+                
 
             elif dev_command.lower() == 'blitx':
                 new_x = input("Insert New X position (Width/x): ")
@@ -654,8 +651,7 @@ def blit_img():
                     print(f"X position updated to: {blitpositionx}")
                 except:
                     print("Invalid position")
-                dev_toggle = False
-                return
+                
             
             elif dev_command.lower() == 'blity':
                 new_y = input("Insert New Y position (Height/y): ")
@@ -667,15 +663,13 @@ def blit_img():
                     print(f"Y position updated to: {blitpositiony}")
                 except:
                     print("Invalid position")
-                dev_toggle = False
-                return
+                
             
             elif dev_command.lower() == 'changescaling':
                 new_scale = input("Insert New Scale Config (wh, ww, hh, hw, pixel): ").lower()
                 scaling = new_scale
                 print(f"Scaling mode changed to: {scaling}")
-                dev_toggle = False
-                return
+                
 
             elif dev_command.lower() == 'blitw':
                 new_W = input("Insert New Width: ")
@@ -684,8 +678,7 @@ def blit_img():
                     print(f"Width updated to: {dimensionsx}")
                 except:
                     print("Invalid number")
-                dev_toggle = False
-                return
+                
             
             elif dev_command.lower() == 'blith':
                 new_H = input("Insert New Height: ")
@@ -694,8 +687,7 @@ def blit_img():
                     print(f"Height updated to: {dimensionsy}")
                 except:
                     print("Invalid number")
-                dev_toggle = False
-                return
+                
 
             elif dev_command.lower() == 'sethand':
                 print("Available ranks: Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace")
@@ -747,8 +739,7 @@ def blit_img():
                 
                 sort_hand()
                 print(f"Hand set with {len(hand)} cards")
-                dev_toggle = False
-                return
+                
 
             elif dev_command.lower() == 'resetdeck':
             
@@ -770,8 +761,7 @@ def blit_img():
                 
                 sort_hand()
                 print(f"Deck reset! New hand dealt with {len(hand)} cards. {len(deck)} cards remaining in deck.")
-                dev_toggle = False
-                return
+                
 
 
             elif dev_command.lower() == 'setresources':
@@ -782,8 +772,7 @@ def blit_img():
                     print(f"Resources updated: {hands} hands, {discards} discards")
                 except:
                     print("Invalid input")
-                dev_toggle = False
-                return
+                
             elif dev_command.lower() == 'setround':
                 try:
                     new_round = int(input("Set round number: "))
@@ -797,14 +786,12 @@ def blit_img():
                     print(f"Current blind: {current_blind.name if current_blind else 'None'}")
                 except:
                     print("Invalid input")
-                dev_toggle = False
-                return
+                
 
             elif dev_command.lower() == 'setboss':
                 if not boss_blinds:
                     print("No boss blinds available")
-                    dev_toggle = False
-                    return
+                    
                 
                 print("Available boss blinds:")
                 for boss in boss_blinds:
@@ -820,14 +807,12 @@ def blit_img():
                     print(f"Round adjusted to: {round_num}, Ante: {ante}")
                 else:
                     print(f"Boss blind '{boss_name}' not found")
-                dev_toggle = False
-                return
+                
             else:
                 print("Unknown command. Type 'help' for list of commands.")
-                dev_toggle = False
-                return
-        dev_toggle = False
-        DEV_MODE.toggle = False
+
+            dev_command = input("Input Developer Command")    
+        
             
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
@@ -984,6 +969,7 @@ mainMusic.play(-1)
     
 perm_deck = []
 Active_Jokers = []
+joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
 ActiveJokerSelected = False
@@ -1985,7 +1971,7 @@ All_Jokers = []
 Active_Jokers = []
 Shop_Cards = []
 All_Jokers_Name = []
-joker_manager = initialize_joker_effects(Active_Jokers)
+
 for root, dirs, files in os.walk(JOKERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2457,6 +2443,11 @@ def get_cons_effect(name):
 
 init_video()
 game = True
+
+
+if joker_manager is None:
+    joker_manager = initialize_joker_effects(Active_Jokers)
+
 while game:
     while startGame == False:
         cursor_pos = pygame.mouse.get_pos()
@@ -2613,6 +2604,9 @@ while game:
     while running:
         global discard_queue
         global scoring_queue
+      
+    
+           
         question.should_draw = True
         mouse_pos = pygame.mouse.get_pos()
         
@@ -2880,6 +2874,7 @@ while game:
                                             shopJokerSelected = False
                                             card.state = "normal"
                                             Active_Jokers.append(card)
+                                            joker_manager = initialize_joker_effects(Active_Jokers)
                                             Shop_Cards.remove(card)
                                             money -= card.price
                                             purchases += 1
@@ -2910,6 +2905,7 @@ while game:
                                 ActiveJokerSelected = False
                                 card.state = "normal"
                                 Active_Jokers.remove(card)
+                                joker_manager = initialize_joker_effects(Active_Jokers)
                                 money += int(card.price / 2)
                                 joker_manager = initialize_joker_effects(Active_Jokers)
                         for card in Held_Consumables:
@@ -3670,9 +3666,9 @@ while game:
             sort_hand()
         if scoring_in_progress:
             if len(scoring_queue) == 0:
+        
                 for c in hand:
                     if c.state in ("played", "scored"):
-                        c.state = "scored"
                         c.target_x = c.x
                         c.target_y = c.y
                         c.vx = 0
@@ -3688,23 +3684,32 @@ while game:
                     scoring_queue[0].scaling = True
 
         if scored:
-            selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
+    
+            selected_cards = [card for card in hand if card.state in ("played", "scored")]
+          
+            
             if len(selected_cards) > 0:
                 hand_type_temp, contributing_temp = detect_hand(selected_cards)
             else:
                 hand_type_temp = saved_hand
                 contributing_temp = []
+            
             context = {
                 'chips': saved_base_chips,
                 'mult': saved_base_mult,
                 'active_jokers': Active_Jokers,
                 'hand_type': hand_type_temp,
                 'deck': deck,
-                'hand_played': contributing_temp,
+                'hand_played': selected_cards,   
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
             saved_base_mult = context['mult']
+            final_score = saved_base_chips * saved_base_mult
+     
+            for c in selected_cards:
+                c.state = "scored"
+            
             calculating = True
             scored = False
             calc_progress = 0.0
