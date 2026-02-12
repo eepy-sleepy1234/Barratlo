@@ -1019,6 +1019,7 @@ cards_discarded = 0
 purchases = 0
 rerolls = 0
 cards_found = 0
+lastFool = None
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -2426,12 +2427,13 @@ def get_selected_Shop_Cards(joker):
         return (-100, -100)
     
 def get_cons_effect(name):
-    global money
+    global money, lastFool
     if name == "Hermit":
         if money > 20:
             money += 20
         else:
             money *= 2
+        lastFool = "Hermit"
     if name == "Temperance":
         price_count = 0
         for joker in Active_Jokers:
@@ -2439,6 +2441,7 @@ def get_cons_effect(name):
         if price_count > 50:
             price_count = 50
         money += price_count
+        lastFool = "Temperance"
     if name == "Emperor":
         if len(Held_Consumables) < maxConsCount:
             card = random.choice(TarotCards)
@@ -2446,6 +2449,9 @@ def get_cons_effect(name):
         if len(Held_Consumables) < maxConsCount:
             card = random.choice(TarotCards)
             Held_Consumables.append(card)
+        lastFool = "Emperor"
+    if name == "Fool":
+        print('aw man')
     
 
 init_video()
@@ -2702,11 +2708,11 @@ while game:
                                     card = random.choice(TarotCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
-                                if rarity_choice <= 50:
+                                elif rarity_choice <= 50:
                                     card = random.choice(ShadowCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
-                                if rarity_choice <= 75:
+                                elif rarity_choice <= 75:
                                     card = random.choice(Common_Jokers)
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         break
@@ -2936,11 +2942,11 @@ while game:
                                         card = random.choice(TarotCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
                                             break
-                                    if rarity_choice <= 50:
+                                    elif rarity_choice <= 50:
                                         card = random.choice(ShadowCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
                                             break
-                                    if rarity_choice <= 75:
+                                    elif rarity_choice <= 75:
                                         card = random.choice(Common_Jokers)
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             break
