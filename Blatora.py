@@ -388,22 +388,24 @@ devtoggle = ""
 
 
 class User_settings():
-    def __init__(self,name):
+    def __init__(self,name, visible = True):
         
         self.toggle = False
         font_size = int(HEIGHT / 40)
         self.name = PixelFont.render(name, True, (0, 0, 0))
-
+        self.visible = visible
         self.img = SETTINGOFFIMG
         settingsList.append(self)
      
         self.rect = SETTINGSRECT.copy()
         
     def update_img(self):
-        if self.toggle:
-            self.img = SETTINGONIMG
-        elif not self.toggle:
-            self.img = SETTINGOFFIMG
+        if self.visible:
+
+            if self.toggle:
+                self.img = SETTINGONIMG
+            elif not self.toggle:
+                self.img = SETTINGOFFIMG
     
 
 
@@ -414,12 +416,12 @@ prev_attention_state = False
     
         
     
-DEV_MODE = User_settings('Developer')
+
 dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
 Atttention_helper = User_settings('Attention Span Helper')
 Focy = User_settings('Focy')
-
+DEV_MODE = User_settings('Developer', False)  #Keep At Bottem#
 def dev_commands():
     global dev_toggle
     global dev_command
@@ -506,16 +508,21 @@ def update_gui_buttons():
 def draw_settings():
     index = 0
     for setting in settingsList:
-        x_pos = int(WIDTH/20)
-        y_pos = int((HEIGHT/10 + 20) * index) + 20
-        text_x = x_pos + setting.img.get_width() + 10 
-        screen.blit(setting.name, (text_x, y_pos))
-    
-        screen.blit(setting.img, (x_pos, y_pos))
-        setting.rect.x = x_pos
-        setting.rect.y = y_pos
-        index += 1
-        setting.update_img()
+        if setting.visible:
+           
+        
+
+       
+            x_pos = int(WIDTH/20)
+            y_pos = int((HEIGHT/10 + 20) * index) + 20
+            text_x = x_pos + setting.img.get_width() + 10 
+            screen.blit(setting.name, (text_x, y_pos))
+        
+            screen.blit(setting.img, (x_pos, y_pos))
+            setting.rect.x = x_pos
+            setting.rect.y = y_pos
+            index += 1
+            setting.update_img()
 
 
         
@@ -2688,8 +2695,7 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                                if setting == DEV_MODE:
-                                    continue
+                       
                                 
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
@@ -2842,7 +2848,7 @@ while game:
                     
             if event.type == pygame.MOUSEWHEEL and help_menu:
                 scroll_offset += event.y * scroll_speed
-                # Prevent over-scrolling
+            
                 max_scroll = -max(0, len(helpMenu_surfaces) * line_height - HEIGHT + 200)
                 scroll_offset = max(max_scroll, min(0, scroll_offset))
                 
@@ -2865,8 +2871,6 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                                if setting == DEV_MODE:
-                                    continue
                                 setting.update_img()
                         
                     
