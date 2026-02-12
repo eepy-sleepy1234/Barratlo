@@ -2494,27 +2494,114 @@ def get_cons_effect(name):
     if name == "Death":
         lastFool = "Death"
     if name == "Devil":
+        if len(selected_cards) < 2:
+            for card in selected_cards:
+                card.enhancement = "Gold"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Gold"
+                        break
         lastFool = "Devil"
     if name == "Empress":
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.enhancement = "Mult"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Mult"
+                        break
         lastFool = "Empress"
     if name == "Hanged Man":
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                hand.remove(card)
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_deck.remove(perm_card)
+                        break
         lastFool = "Hanged Man"
     if name == "Hierophant":
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.enhancement = "Bonus"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Bonus"
+                        break
         lastFool = "Hierophant"
     if name == "Justice":
+        if len(selected_cards) < 2:
+            for card in selected_cards:
+                card.enhancement = "Glass"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Glass"
+                        break
         lastFool = "Justice"
     if name == "Lovers":
+        if len(selected_cards) < 2:
+            for card in selected_cards:
+                card.enhancement = "Wild"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Wild"
+                        break
         lastFool = "Lovers"
     if name == "Magician":
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.enhancement = "Lucky"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Lucky"
+                        break
         lastFool = "Magician"
     if name == "Moon":
-        lastFool = "Moon"
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.suit = "Clubs"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.suit = "Clubs"
+                        break
+            lastFool = "Clubs"
     if name == "Star":
-        lastFool = "Star"
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.suit = "Diamonds"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.suit = "Diamonds"
+                        break
+            lastFool = "Star"
     if name == "Strength":
-        lastFool = "Strength"
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                if type(card.rank) == int:
+                    card.rank += 1
+                else:
+                    if card.rank == "J":
+                        card.rank = "Q"
+                    elif card.rank == "Q":
+                        card.rank = "K":
+                    elif card.rank == "K":
+                        card.rank = "A"
+                    elif card.rank == "A":
+                        card.rank = 2
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.enhancement = "Lucky"
+                        break
+        lastFool = "Magician"
     if name == "Sun":
-        lastFool = "Sun"
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.suit = "Hearts"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.suit = "Hearts"
+                        break
+            lastFool = "Sun"
     if name == "Tower":
        if len(selected_cards) < 2:
             for card in selected_cards:
@@ -2527,7 +2614,14 @@ def get_cons_effect(name):
     if name == "Wheel Of Fortune":
         lastFool = "Wheel Of Fortune"
     if name == "World":
-        lastFool = "World"
+        if len(selected_cards) < 3:
+            for card in selected_cards:
+                card.suit = "Spades"
+                for perm_card in perm_deck:
+                    if perm_card.card_id == card.original_card_id:
+                        perm_card.suit = "Spades"
+                        break
+            lastFool = "World"
     
 
 init_video()
