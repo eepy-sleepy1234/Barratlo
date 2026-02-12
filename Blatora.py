@@ -102,7 +102,6 @@ helpMenu_surfaces = []
 scroll_offset = 0
 scroll_speed = 30
 line_height = OSDmono.get_height()
-
 jevilActive = False
 for line in help_lines:
 
@@ -1294,7 +1293,6 @@ class Card:
                             saved_base_mult = context['mult']
                             if 'triggered_jokers' in context:
                                 for joker_name in context['triggered_jokers']:
-                                    print(f"{joker_name} working")
                                     if joker_name == "Jevil":
                                         jevilActive = True
 
@@ -1354,11 +1352,6 @@ for root, dirs, files in os.walk(SUITS_DIR):
             card = Card(rank, suit, image)
             perm_deck.append(card)
 
-if jevilActive:
-    newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
-    for card in perm_deck:
-        card.suit = newSuit
-        card.refresh_image()
 deck = perm_deck.copy()
 
 
@@ -2908,6 +2901,8 @@ while game:
                                 joker_manager = initialize_joker_effects(Active_Jokers)
                                 money += int(card.price / 2)
                                 joker_manager = initialize_joker_effects(Active_Jokers)
+                                if card.name == "Jevil":
+                                    jevilActive = False
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False

@@ -139,66 +139,66 @@ def Disguised_effect(context):
     return context
 
 def Crafty_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Two Pair":
+    hand = hand_contains(context)
+    if "Flush" in hand:
         context['chips'] += 80
         context.setdefault('triggered_jokers', []).append('Crafty Joker')
     return context
 
 def Crazy_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Straight":
+    hand = hand_contains(context)
+    if "Straight" in hand:
         context['mult'] += 12
         context.setdefault('triggered_jokers', []).append('Crazy Joker')
     return context
 
 def Devious_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Straight":
+    hand = hand_contains(context)
+    if "Straight" in hand:
         context['chips'] += 100
-        context.setdefault('triggered_jokers', []).append('Devious Joker')
+        context.setdefault('triggered_jokers', []).append('Devious')
     return context
 
 def Droll_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Flush":
-        context["mult"] += 10
-        context.setdefault('triggered_jokers', []).append('Droll Joker')
+    hand = hand_contains(context)
+    if "Flush" in hand:
+        context['mult'] += 10
+        context.setdefault('triggered_jokers', []).append('Droll')
     return context
 
 def Jolly_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Pair":
-        context["mult"] += 8
-        context.setdefault('triggered_jokers', []).append('Jolly Joker')
+    hand = hand_contains(context)
+    if "Pair" in hand:
+        context['mult'] += 8
+        context.setdefault('triggered_jokers', []).append('Jolly')
     return context
 
 def Mad_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Four of a Kind":
-        context["mult"] += 20
-        context.setdefault('triggered_jokers', []).append('Mad Joker')
+    hand = hand_contains(context)
+    if "Four of a Kind" in hand:
+        context['mult'] += 20
+        context.setdefault('triggered_jokers', []).append('Mad')
     return context
 
 def Sly_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Pair":
-        context["chips"] += 50
-        context.setdefault('triggered_jokers', []).append('Sly Joker')
+    hand = hand_contains(context)
+    if "Pair" in hand:
+        context['chips'] += 50
+        context.setdefault('triggered_jokers', []).append('Sly')
     return context
 
 def Wily_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Straight":
-        context["chips"] += 100
-        context.setdefault('triggered_jokers', []).append('Wily Joker')
+    hand = hand_contains(context)
+    if "Straight" in hand:
+        context['chips'] += 100
+        context.setdefault('triggered_jokers', []).append('Wily')
     return context
 
 def Zany_effect(context):
-    hand = context.get('hand_type')
-    if hand and hand == "Three of a Kind":
-        context["mult"] += 12
-        context.setdefault('triggered_jokers', []).append('Zany Joker')
+    hand = hand_contains(context)
+    if "Three of a Kind" in hand:
+        context['mult'] += 12
+        context.setdefault('triggered_jokers', []).append('Zany')
     return context
 
 def Jevil_effect(context):
