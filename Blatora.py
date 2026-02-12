@@ -522,7 +522,7 @@ def draw_settings():
 dev_selection = True
 blitting = False    
 def blit_img():
-    global blitting,dev_command, ante, round_num, current_blind, target_score, blitpositionx, blitpositiony, blitting_img, blitting_img_original, dev_toggle, scaling, dimensionsx, dimensionsy
+    global blitting,dev_command, ante, joker_manager, round_num, current_blind, target_score, blitpositionx, blitpositiony, blitting_img, blitting_img_original, dev_toggle, scaling, dimensionsx, dimensionsy
     if blitting and blitting_img_original:
         if scaling == 'wh':
             blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(HEIGHT/dimensionsy)))
@@ -2868,10 +2868,10 @@ while game:
                                             card.state = "normal"
                                             Active_Jokers.append(card)
                                             joker_manager = initialize_joker_effects(Active_Jokers)
-                                            Shop_Cards.remove(card)
+                                            Shop_Cards.remove(card) 
                                             money -= card.price
                                             purchases += 1
-                                            joker_manager = initialize_joker_effects(Active_Jokers)
+                                            
                                     if isinstance(card, Consumable):
                                         if len(Held_Consumables) < maxConsCount:
                                             shopJokerSelected = False
@@ -2900,7 +2900,7 @@ while game:
                                 Active_Jokers.remove(card)
                                 joker_manager = initialize_joker_effects(Active_Jokers)
                                 money += int(card.price / 2)
-                                joker_manager = initialize_joker_effects(Active_Jokers)
+                               
                                 if card.name == "Jevil":
                                     jevilActive = False
                         for card in Held_Consumables:
