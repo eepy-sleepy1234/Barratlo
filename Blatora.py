@@ -256,6 +256,7 @@ SortbuttonRank_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SortbuttonSuit.png")), (WIDTH/8.33, WIDTH/20))
 CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
 ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/14.54))
+UseButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "UseButton.png")), (WIDTH/43.5, HEIGHT/15))
 SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
 RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Reroll.png")), (WIDTH/9.1, HEIGHT/12.5))
 NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
@@ -334,6 +335,9 @@ ShopBuy_rect.topleft =(-100, -100)
 
 SellButton_rect = SellButton_img.get_rect()
 SellButton_rect.topleft =(-100, -100)
+
+UseButton_rect = UseButton_img.get_rect()
+UseButton_rect.topleft =(-100, -100)
 
 SkipBlind_rect = SkipBlind_img.get_rect()
 SkipBlind_rect.topleft =(-100, -100)
@@ -2108,6 +2112,7 @@ for root, dirs, files in os.walk(CONS_DIR):
         if filename.endswith(".png"):
             filepath = os.path.join(root, filename)
             Cons_name_raw = filename
+            Cons_name_raw = Cons_name_raw.replace(".png", "")
             Cons_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', Cons_name_raw)
             Cons_name = Cons_name.title()
             image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
@@ -2405,7 +2410,29 @@ def get_selected_Shop_Cards(joker):
         return (joker.x, joker.y)
     else:
         return (-100, -100)
-        
+    
+def get_cons_effect(name):
+    global money
+    if name == "Hermit":
+        if money > 20:
+            money += 20
+        else:
+            money *= 2
+    if name == "Temperance":
+        price_count = 0
+        for joker in Active_Jokers:
+            price_count += joker.price / 2
+        if price_count > 50:
+            price_count = 50
+        money += price_count
+    if name == "Emperor":
+        if len(Held_Consumables) < maxConsCount:
+            card = random.choice(TarotCards)
+            Held_Consumables.append(card)
+        if len(Held_Consumables) < maxConsCount:
+            card = random.choice(TarotCards)
+            Held_Consumables.append(card)
+    
 
 init_video()
 game = True
@@ -2870,6 +2897,13 @@ while game:
                                 card.state = "normal"
                                 Held_Consumables.remove(card)
                                 money += int(card.price / 2)
+                    if UseButton_rect.collidepoint(mouse_pos):
+                        for card in Held_Consumables:
+                            if card.state == "selected":
+                                ActiveJokerSelected = False
+                                card.state = "normal"
+                                Held_Consumables.remove(card)
+                                get_cons_effect(card.name)
                     if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
                         if rerollCost <= money:
                             rerolls += 1
@@ -3402,6 +3436,12 @@ while game:
                 text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
+        for joker in Held_Consumables:
+            useX, useY = get_selected_Shop_Cards(joker)
+            if useX > 0:
+                screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
+                UseButton_rect = UseButton_img.get_rect()
+                UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in ShopPacks:
             buyX, buyY = get_selected_Shop_Cards(joker)
             if buyX > 0:
