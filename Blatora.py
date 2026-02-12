@@ -3054,6 +3054,8 @@ while game:
                                 elif not shopJokerSelected:
                                     card.state = "selected"
                                     shopJokerSelected = True
+                                    if hasattr(card, 'sound') and card.sound: 
+                                        card.sound.play() 
                             n = len(Shop_Cards)
                             spread_local = card.spread
                             total_width = (n - 1) * spread_local + 80
@@ -3078,6 +3080,8 @@ while game:
                                 elif not ActiveJokerSelected:
                                     ActiveJokerSelected = True
                                     card.state = "selected"
+                                    if hasattr(card, 'sound') and card.sound:  
+                                        card.sound.play()   
                             n = len(Active_Jokers)
                             spread_local = card.spread
                             total_width = (n - 1) * spread_local + 80
@@ -3102,6 +3106,7 @@ while game:
                                 elif not ActiveJokerSelected:
                                     ActiveJokerSelected = True
                                     card.state = "selected"
+                                  
                             n = len(Held_Consumables)
                             spread_local = card.spread
                             total_width = (n - 1) * spread_local + 80
