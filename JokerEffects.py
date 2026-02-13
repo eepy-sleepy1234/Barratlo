@@ -424,7 +424,7 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True
     },
     'Invincible Joker': {
-        'events': [('on_round_end', Invincible_effect)],
+        'events': [('on_hand_played', Invincible_effect)],
         'description': 'If blind is lost, complete blind as if it was won. Do not collect any money and destry Invincible Joker. Cannot be destroyed in any other way',
         'Oopy Goopy': True
     },
