@@ -413,7 +413,9 @@ class User_settings():
 
             
 prev_attention_state = False
-            
+
+jonkler_sphere_clicked = False
+jonkler_sphere_active = False           
     
         
     
@@ -1697,7 +1699,7 @@ class Draggable_Animation(Animation):
 
 spinningBG = Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 settingsButton = Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
-soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, 0, 0, int(WIDTH/5), int(WIDTH/5))
+soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, (WIDTH/1.5)-250, (HEIGHT/2)-250, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
 shopAnimation = Animation(SHOPANIMATIONIMG, 476, 1600, 24, 87, 0 + ((HEIGHT/2.86 - HEIGHT/3.3)/2),0, int(HEIGHT/3.3), (HEIGHT/3.3 * 3.36134453782))
@@ -1848,7 +1850,7 @@ def set_boss_blind(boss_name):
             return True
     return False
 def advance_to_next_blind():
-    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState, boss_blind, current_blind
+    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState, boss_blind, current_blind, jonkler_sphere_active, jonkler_sphere_clicked
     if round_num % 3 == 0:
         ante += 1
         boss_blind = random.choice(boss_blinds)
@@ -1859,6 +1861,8 @@ def advance_to_next_blind():
     hands = max_hand
     discards = max_discard
     rerollCost = 3
+    jonkler_sphere_active = False
+    jonkler_sphere_clicked = False
     hand.clear()
     deck.clear()
     for card in perm_deck:
@@ -2971,14 +2975,22 @@ while game:
                                     game = False
                                     running = False
                         
-                    if SO_SERIOUS.toggle and soserious.rect.collidepoint(mouse_pos):
-                        soserious.dragging = True
-                        soserious.drag_offset_x = soserious.xpos - mouse_x
-                        soserious.drag_offset_y = soserious.ypos - mouse_y
-                        soserious.drag_start = (mouse_x, mouse_y)
-                        soserious.was_dragged = False
-                    else:
-                        selected_count = sum(1 for card in hand if card.state == "selected")
+                    if (SO_SERIOUS.toggle or jonkler_sphere_active) and soserious.rect.collidepoint(mouse_pos):
+                        if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
+                            jonkler_sphere_clicked = True
+                            jonkler_sphere_active = False
+                            for card in hand:
+                                card.state = "discarded"
+                            discard_queue = hand.copy()
+                            discarding = True
+                        
+                            print("The Jonkler Baby activated! Discarding hand...")
+                        else:
+                            soserious.dragging = True
+                            soserious.drag_offset_x = soserious.xpos - mouse_x
+                            soserious.drag_offset_y = soserious.ypos - mouse_y
+                            soserious.drag_start = (mouse_x, mouse_y)
+                            soserious.was_dragged = False
                     if not scoring_in_progress and not GameState == "Dead":
                         for card in reversed(hand):
                             if card.rect.collidepoint(mouse_pos) and not calculating:
@@ -3187,6 +3199,9 @@ while game:
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
                         context = {'active_jokers': Active_Jokers, 'round_num': round_num}
                         context = joker_manager.trigger('on_round_start', context)
+                        jonkler_sphere_active = context.get('jonkler_sphere_active', False)
+                        if jonkler_sphere_active:
+                            jonkler_sphere_clicked = False
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
                             for card in deck:
@@ -3711,10 +3726,15 @@ while game:
 
         update_card_animation()
 
-        if SO_SERIOUS.toggle:
+        if SO_SERIOUS.toggle or jonkler_sphere_active:
             soserious.animate()
-            if not soseriousmusic.get_num_channels(): 
-                soseriousmusic.play(-1) 
+            if not soseriousmusic.get_num_channels() and SO_SERIOUS.toggle: 
+                soseriousmusic.play(-1)
+            
+            if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
+                text = PixelFontXS.render("Click Jonkler to discard first hand!", True, white)
+                text_rect = text.get_rect(center=(soserious.xpos + soserious.setWidth//2, soserious.ypos + soserious.setHeight + 20))
+                screen.blit(text, text_rect)
         else:
             soseriousmusic.stop()
 
