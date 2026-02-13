@@ -1849,8 +1849,7 @@ def advance_to_next_blind():
     hand.clear()
     deck.clear()
     for card in perm_deck:
-        new_card = Card(card.rank, card.suit, card.image)
-        deck.append(new_card)
+        deck.append(card)
     random.shuffle(deck)
     
 def check_blind_defeated():
@@ -2420,7 +2419,7 @@ def get_selected_Shop_Cards(joker):
         return (-100, -100)
     
 def get_cons_effect(name):
-    global money, lastFool, selected_cards
+    global money, lastFool, selected_cards, perm_deck
     if name == "Hermit":
         if money > 20:
             money += 20
@@ -2500,14 +2499,16 @@ def get_cons_effect(name):
         lastFool = "Chariot"
     if name == "Death":
         if len(selected_cards) == 2:
-            card1 = selected_cards[1]
-            card2 = selected_cards[0]
-            card1.rank, card1.suit = card2.rank, card2.suit
+            card1 = selected_cards[0]
+            card2 = selected_cards[1]
+            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal
+            card1.refresh_image()
         lastFool = "Death"
     if name == "Devil":
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Gold"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Gold"
@@ -2517,6 +2518,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Mult"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Mult"
@@ -2535,6 +2537,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Bonus"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Bonus"
@@ -2544,6 +2547,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Glass"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Glass"
@@ -2553,6 +2557,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Wild"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Wild"
@@ -2562,6 +2567,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Lucky"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Lucky"
@@ -2571,6 +2577,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Clubs"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Clubs"
@@ -2580,6 +2587,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Diamonds"
@@ -2599,6 +2607,7 @@ def get_cons_effect(name):
                         card.rank = "A"
                     elif card.rank == "A":
                         card.rank = 2
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.rank = card.rank
@@ -2608,6 +2617,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Hearts"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
@@ -2617,6 +2627,7 @@ def get_cons_effect(name):
        if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Stone"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Stone"
@@ -2637,6 +2648,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Spades"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Spades"
@@ -3830,10 +3842,11 @@ while game:
         if draw_fox:
         
             focy_scare.animate()
-        if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score:
-            GameState = "Dead"
-            most_played = max(hand_plays.items(), key=lambda item: item[1])
-            most_played = most_played[0]
+        if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
+            if  hands <= 0 or len(hand) < 1:
+                GameState = "Dead"
+                most_played = max(hand_plays.items(), key=lambda item: item[1])
+                most_played = most_played[0]
 
         pygame.display.flip()   ###########################################################
         clock.tick(60)
