@@ -1173,7 +1173,7 @@ hand_plays = {
 invincibleActive = False
 class Card:
     card_id_counter = 0
-    def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition="Negative", seal=None):
+    def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
         self.image = image
         self.scale= 1.0
         self.rotation_speed = 0
@@ -1542,51 +1542,7 @@ def boss_debuff():
     for card in hand:
         if card.freeze_timer <= 0:
             card.is_frozen = False
-
-def apply_foil(card_surf, t):
-    w, h = card_surf.get_size()
-    foil = pygame.Surface((w, h), pygame.SRCALPHA)
-
-    for x in range(w):
-        intensity = int(
-            180 * max(0, 1 - abs((x + t) % (w*2) - w) / w)
-        )
-        pygame.draw.line(
-            foil,
-            (255, 255, 255, intensity),
-            (x, 0),
-            (x, h)
-        )
-
-    card_surf.blit(foil, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-
-def apply_holographic(card_surf, t):
-    w, h = card_surf.get_size()
-    holo = pygame.Surface((w, h), pygame.SRCALPHA)
-
-    for x in range(w):
-        hue = ((x / w) + t * 0.001) % 1.0
-        r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(hue, 0.6, 1)]
-        pygame.draw.line(holo, (r, g, b, 60), (x, 0), (x, h))
-
-    card_surf.blit(holo, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-
-def apply_polychrome(card_surf):
-    w, h = card_surf.get_size()
-    poly = pygame.Surface((w, h), pygame.SRCALPHA)
-
-    for y in range(h):
-        hue = y / h
-        r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(hue, 0.4, 1)]
-        pygame.draw.line(poly, (r, g, b, 40), (0, y), (w, y))
-
-    card_surf.blit(poly, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-
-def apply_negative(card_surf):
-    arr = pygame.surfarray.pixels3d(card_surf)
-    arr[:] = 255 - arr
-
-         
+      
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
     global scoring_in_progress, scoring_sequence_index
     if "scoring_in_progress" not in globals():
