@@ -206,7 +206,7 @@ def close_video():
 # ==================== SOUNDS ====================
 foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
-
+invinciblesound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "Invincible.mp3"))
 # ==================== SPRITESHEETS ====================
 FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
 SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
@@ -283,6 +283,7 @@ DeadBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DeadB
 NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRunButton.png")), (WIDTH/6.8, HEIGHT/20))
 MainMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MainMenuButton.png")), (WIDTH/6.8, HEIGHT/20))
 Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyButton.png")), (WIDTH/6.8, HEIGHT/20))
+Invincible_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "InvincibleSplash.png")), (WIDTH,HEIGHT))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -525,7 +526,7 @@ def draw_settings():
             setting.update_img()
 
 
-        
+       
 dev_selection = True
 blitting = False    
 def blit_img():
@@ -969,6 +970,7 @@ def loadAudio(file):
 
 
 mainMusic = loadAudio('Music.mp3')
+mainMusic.set_volume(0.1)
 mainMusic.play(-1)
 
     
@@ -1165,7 +1167,7 @@ hand_plays = {
     "Flush House": 0,
     "Flush Five": 0
 }
-
+invincibleActive = False
 class Card:
     card_id_counter = 0
     def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -1281,7 +1283,7 @@ class Card:
                         self.angle = 0
                         scoring_count += 1
                         if self.is_contributing:
-                            global saved_base_chips, saved_base_mult
+                            global saved_base_chips, saved_base_mult, invincibleActive
                             saved_base_chips += self.chip_value
                             indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
                             chip_indicators.append(indicator)
@@ -1303,6 +1305,7 @@ class Card:
                                 for joker_name in context['triggered_jokers']:
                                     if joker_name == "Jevil":
                                         jevilActive = True
+                                    
 
                         else:
                             self.state = "discarded"
@@ -1788,6 +1791,16 @@ def calculate_target_score(ante, round_num):
         return int(base_score * multipliers[4])
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
+invincibleSplashEffect = False
+invincibleSplashTimer  = 0
+def invincibleSplash():
+    global invincibleSplashTimer
+    invincibleSplashTimer -= 1
+    if invincibleSplashTimer <= 0:
+        invincibleSplashEffect = False
+    else:
+        screen.blit(Invincible_img, (0,0))
+
 def get_current_blind():
     global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState, boss_blind
     if not current_blind or victory:
@@ -3830,12 +3843,46 @@ while game:
         if draw_fox:
         
             focy_scare.animate()
-        if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score:
-            GameState = "Dead"
-            most_played = max(hand_plays.items(), key=lambda item: item[1])
-            most_played = most_played[0]
+        if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
 
-        pygame.display.flip()   ###########################################################
+            has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
+            
+            if has_invincible:
+        
+                Active_Jokers = [j for j in Active_Jokers if j.name != "Invincible Joker"]
+                joker_manager = initialize_joker_effects(Active_Jokers)
+                
+             
+                total_score = target_score
+                
+           
+                victory = True
+                GameState = "Cashing"
+                advance_to_next_blind()
+                get_current_blind()
+                
+                invincibleSplashTimer  = 180
+                invinciblesound.play(0)
+
+
+   
+                invincibleSplashEffect = True
+   
+        
+           
+                for card in hand:
+                    discard_queue.append(card)
+                discarding = True
+                
+                print("Invincible Joker saved you!")
+            else:
+                GameState = "Dead"
+                print("Dead")
+                most_played = max(hand_plays.items(), key=lambda item: item[1])
+                most_played = most_played[0]
+        if invincibleSplashEffect:
+            invincibleSplash()
+        pygame.display.flip()  
         clock.tick(60)
         currentFrame += 1
 
