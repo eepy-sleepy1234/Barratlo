@@ -99,9 +99,8 @@ def hand_contains(context):
         hand_contains.append('Pair')
     if sorted(value_counts.values()) == [2, 3]:
         hand_contains.append('Full House')
-    if list(value_counts.values()).count(2) == 2:
+    if list(value_counts.values()).count(2) == 2 or (list(value_counts.values()).count(3) == 1 and list(value_counts.values()).count(2) == 1):
         hand_contains.append('Two Pair')
-        print(f"  [hand_contains] ✓ TWO PAIR DETECTED!")
     if is_flush and is_straight and values[-1] == 14:
         hand_contains.append('Royal Flush')
     if 5 in value_counts.values():
