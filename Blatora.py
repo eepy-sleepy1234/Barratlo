@@ -4100,7 +4100,7 @@ while game:
         if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
             if  hands <= 0 or len(hand) < 1:
 
-            has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
+                has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
             
             if has_invincible:
         
