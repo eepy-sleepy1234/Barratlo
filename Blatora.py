@@ -173,19 +173,14 @@ def get_video_frame():
     
     ret, frame = video_cap.read()
     
-    # Loop video if it ends
+
     if not ret:
         video_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         ret, frame = video_cap.read()
     
     if ret:
-        # Convert BGR to RGB
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Resize frame
         frame = cv2.resize(frame, (VIDEO_WIDTH, VIDEO_HEIGHT))
-        
-        # Convert to pygame surface
         frame = frame.swapaxes(0, 1)
         video_surface = pygame.surfarray.make_surface(frame)
         return video_surface
@@ -406,20 +401,10 @@ class User_settings():
             if self.toggle:
                 self.img = SETTINGONIMG
             elif not self.toggle:
-                self.img = SETTINGOFFIMG
-    
-
-
-
-            
+                self.img = SETTINGOFFIMG      
 prev_attention_state = False
-
 jonkler_sphere_clicked = False
 jonkler_sphere_active = False           
-    
-        
-    
-
 dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
 Atttention_helper = User_settings('Attention Span Helper')
@@ -786,9 +771,7 @@ def blit_img():
                 try:
                     new_round = int(input("Set round number: "))
                     round_num = new_round
-                    # Calculate ante from round number
                     ante = ((round_num - 1) // 3) + 1
-                    # Reset current blind and get new one
                     current_blind = None
                     get_current_blind()
                     print(f"Round set to {round_num}, Ante: {ante}")
@@ -808,7 +791,6 @@ def blit_img():
                 
                 boss_name = input("Enter boss blind name: ").strip()
                 if set_boss_blind(boss_name):
-                    # Force round to be a boss blind round (multiple of 3)
                     if round_num % 3 != 0:
                         round_num = ((round_num // 3) + 1) * 3
                         ante = (round_num - 1) // 3 + 1
@@ -821,7 +803,264 @@ def blit_img():
                 print("Unknown command. Type 'help' for list of commands.")
 
             dev_command = input("Input Developer Command")    
+    
+def process_dev_command(command):
+    global dev_command, ante, joker_manager, round_num, current_blind, target_score
+    global hands, discards, chips, mult, hand, deck, perm_deck, handsize
+    global blitting, blitting_img, blitting_img_original, blitpositionx, blitpositiony
+    global scaling, dimensionsx, dimensionsy, Active_Jokers, All_Jokers, All_Jokers_Name
+    global dev_awaiting_input, dev_current_command, dev_input_prompt, dev_multi_step_data
+    global money
+    
+    command = command.strip()
+    if dev_awaiting_input:
+        return handle_multi_step_input(command)
+    if not command:
+        return "No command entered"
+    
+    command_lower = command.lower()
+    if command_lower == 'help':
+        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
+    
+    elif command_lower == 'exit':
+        DEV_MODE.toggle = False
+        return "Developer Mode disabled"
+    elif command_lower == 'addjoker':
+        dev_awaiting_input = True
+        dev_current_command = 'addjoker'
+        dev_input_prompt = "Joker name"
+        return f"Available jokers: {', '.join(All_Jokers_Name[:8])}\n(Type joker name)"
+    elif command_lower == 'resetdeck':
+        hand.clear()
+        deck.clear()
+        deck = perm_deck.copy()
+        random.shuffle(deck)
         
+        for i in range(handsize):
+            if deck:
+                card = deck.pop()
+                card.slot = i
+                card.x, card.y = WIDTH + 100, HEIGHT - 170
+                card.state = "hand"
+                hand.append(card)
+        sort_hand()
+        return f"Deck reset! {len(hand)} cards in hand, {len(deck)} in deck"
+
+    elif command_lower == 'setresources':
+        dev_awaiting_input = True
+        dev_current_command = 'setresources'
+        dev_input_prompt = "Hands"
+        dev_multi_step_data = {'step': 1}
+        return "Enter number of hands:"
+
+    elif command_lower == 'setround':
+        dev_awaiting_input = True
+        dev_current_command = 'setround'
+        dev_input_prompt = "Round number"
+        return "Enter round number:"
+
+    elif command_lower == 'setboss':
+        dev_awaiting_input = True
+        dev_current_command = 'setboss'
+        dev_input_prompt = "Boss name"
+        boss_names = [b.name for b in boss_blinds]
+        return f"Available bosses:\n  {chr(10).join(boss_names)}\n(Type boss name)"
+
+    elif command_lower == 'money':
+        dev_awaiting_input = True
+        dev_current_command = 'money'
+        dev_input_prompt = "Amount"
+        return "Enter money amount:"
+
+    elif command_lower == 'sethand':
+        dev_awaiting_input = True
+        dev_current_command = 'sethand'
+        dev_input_prompt = "Card 1 rank"
+        dev_multi_step_data = {'cards': [], 'step': 'rank', 'card_num': 1}
+        return "Building custom hand.\nEnter rank for card 1 (or 'done'):\n  Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace"
+    
+    else:
+        return f"Unknown command: '{command}'\nType 'help' for available commands"
+
+def handle_multi_step_input(input_text):
+    global dev_awaiting_input, dev_current_command, dev_input_prompt, dev_multi_step_data
+    global hands, discards, money, round_num, ante, current_blind, hand, deck
+    global Active_Jokers, joker_manager, All_Jokers, All_Jokers_Name
+    
+    input_text = input_text.strip()
+  
+    if dev_current_command == 'addjoker':
+        dev_awaiting_input = False
+        joker_name = input_text
+        
+   
+        for joke in All_Jokers:
+            if joke.name.lower() == joker_name.lower():
+                Active_Jokers.append(joke)
+                joker_manager = initialize_joker_effects(Active_Jokers)
+                return f"Added {joke.name}!"
+        
+        return f"Joker '{joker_name}' not found"
+ 
+    elif dev_current_command == 'setresources':
+        if dev_multi_step_data.get('step') == 1:
+            try:
+                hands = int(input_text)
+                dev_multi_step_data['hands'] = hands
+                dev_multi_step_data['step'] = 2
+                dev_input_prompt = "Discards"
+                return f"Hands set to {hands}. Now enter discards:"
+            except:
+                dev_awaiting_input = False
+                return "Invalid number"
+        elif dev_multi_step_data.get('step') == 2:
+            try:
+                discards = int(input_text)
+                dev_awaiting_input = False
+                return f"Set hands={dev_multi_step_data['hands']}, discards={discards}"
+            except:
+                dev_awaiting_input = False
+                return "Invalid number"
+    
+
+    elif dev_current_command == 'setround':
+        try:
+            round_num = int(input_text)
+            ante = ((round_num - 1) // 3) + 1
+            current_blind = None
+            get_current_blind()
+            dev_awaiting_input = False
+            return f"Round={round_num}, Ante={ante}"
+        except:
+            dev_awaiting_input = False
+            return "Invalid round number"
+    
+   
+    elif dev_current_command == 'setboss':
+        boss_name = input_text
+        if set_boss_blind(boss_name):
+            if round_num % 3 != 0:
+                round_num = ((round_num // 3) + 1) * 3
+                ante = (round_num - 1) // 3 + 1
+            dev_awaiting_input = False
+            return f"Boss set to {current_blind.name}"
+        dev_awaiting_input = False
+        return f"Boss '{boss_name}' not found"
+    
+  
+    elif dev_current_command == 'money':
+        try:
+            money = int(input_text)
+            dev_awaiting_input = False
+            return f"Money set to ${money}"
+        except:
+            dev_awaiting_input = False
+            return "Invalid amount"
+    
+    elif dev_current_command == 'sethand':
+        data = dev_multi_step_data
+        
+        if input_text.lower() == 'done':
+            hand.clear()
+            for card_data in data['cards']:
+                rank, suit, image = card_data
+                new_card = Card(rank, suit, image)
+                new_card.slot = len(hand)
+                new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+                new_card.state = "hand"
+                hand.append(new_card)
+            sort_hand()
+            dev_awaiting_input = False
+            return f"Hand set with {len(hand)} cards"
+        
+        if data['step'] == 'rank':
+            rank = input_text.title()
+            if rank not in ["Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King", "Ace"]:
+                return f"Invalid rank. Try again or type 'done'"
+            data['current_rank'] = rank
+            data['step'] = 'suit'
+            dev_input_prompt = f"Card {data['card_num']} suit"
+            return f"Card {data['card_num']}: {rank}\nNow enter suit (Hearts, Diamonds, Clubs, Spades):"
+        
+        elif data['step'] == 'suit':
+            suit = input_text.title()
+            if suit not in ["Hearts", "Diamonds", "Clubs", "Spades"]:
+                return "Invalid suit. Enter: Hearts, Diamonds, Clubs, or Spades"
+            
+          
+            rank = data['current_rank']
+            filepath = os.path.join(SUITS_DIR, suit, f"{rank}Of{suit}.png")
+            try:
+                image = pygame.transform.smoothscale(pygame.image.load(filepath).convert_alpha(), (HEIGHT/8, HEIGHT/5.82))
+                data['cards'].append((rank, suit, image))
+                data['card_num'] += 1
+                data['step'] = 'rank'
+                dev_input_prompt = f"Card {data['card_num']} rank"
+                
+                if data['card_num'] > 8:
+                    hand.clear()
+                    for card_data in data['cards']:
+                        rank, suit, image = card_data
+                        new_card = Card(rank, suit, image)
+                        new_card.slot = len(hand)
+                        new_card.x, new_card.y = WIDTH + 100, HEIGHT - 170
+                        new_card.state = "hand"
+                        hand.append(new_card)
+                    sort_hand()
+                    dev_awaiting_input = False
+                    return f"Hand set with {len(hand)} cards"
+                
+                return f"Added {rank} of {suit}. Enter rank for card {data['card_num']} (or 'done'):"
+            except:
+                return f"Card not found. Try again."
+    
+    dev_awaiting_input = False
+    return "Command cancelled"
+
+def draw_dev_command_bar():
+    global dev_command_output_timer
+    
+    if not dev_command_bar_active:
+        return
+    
+    
+    bar_height = HEIGHT // 3  
+    bar_y = HEIGHT - bar_height
+    
+
+    bar_surface = pygame.Surface((WIDTH, bar_height))
+    bar_surface.fill((0, 0, 0))
+    bar_surface.set_alpha(230)
+    screen.blit(bar_surface, (0, bar_y))
+    pygame.draw.rect(screen, yellow, (0, bar_y, WIDTH, bar_height), 2)
+    y_offset = bar_y + 10
+    line_height = PixelFontXXS.get_height() + 5
+    max_lines = (bar_height - 60) // line_height
+    start_index = max(0, len(dev_command_output_lines) - max_lines)
+    for i in range(start_index, len(dev_command_output_lines)):
+        line = dev_command_output_lines[i]
+        if line.startswith("> "):  
+            color = yellow
+        else:  # Output
+            color = white
+        for subline in line.split('\n'):
+            if y_offset + line_height < HEIGHT - 50:
+                text = PixelFontXXS.render(subline[:100], True, color) 
+                screen.blit(text, (10, y_offset))
+                y_offset += line_height
+    input_y = HEIGHT - 35
+
+    if dev_awaiting_input:
+        prompt = f"{dev_input_prompt}> "
+    else:
+        prompt = "> "
+    
+    prompt_text = PixelFontXS.render(prompt, True, yellow)
+    screen.blit(prompt_text, (10, input_y))
+
+    input_display = dev_command_input + "_"
+    input_text = PixelFontXS.render(input_display, True, white)
+    screen.blit(input_text, (10 + prompt_text.get_width(), input_y))
             
 class starting_letters():
     def __init__(self,sprite_name,xpos,ypos):
@@ -1705,7 +1944,14 @@ focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
 shopAnimation = Animation(SHOPANIMATIONIMG, 476, 1600, 24, 87, 0 + ((HEIGHT/2.86 - HEIGHT/3.3)/2),0, int(HEIGHT/3.3), (HEIGHT/3.3 * 3.36134453782))
 
 
-
+dev_command_bar_active = False
+dev_command_input = ""
+dev_command_history = []
+dev_command_output_lines = [] 
+dev_awaiting_input = False  
+dev_current_command = None 
+dev_input_prompt = "" 
+dev_multi_step_data = {}  
 shop_down = False
 
 def shopAnimaton():
@@ -2858,22 +3104,44 @@ while game:
 
             
             if event.type == pygame.KEYDOWN:
-                if event.unicode:
-                    
-                        print(dev_progress)
-
-                        dev_progress += event.unicode.lower()
-
+                if event.key == pygame.K_BACKQUOTE and DEV_MODE.toggle:
+                    dev_command_bar_active = not dev_command_bar_active
+                    if not dev_command_bar_active:
+                        dev_awaiting_input = False
+                        dev_current_command = None
+                elif DEV_MODE.toggle and dev_command_bar_active:
+                    if event.key == pygame.K_RETURN and dev_command_input:
+                        if dev_awaiting_input:
+                            dev_command_output_lines.append(f"{dev_input_prompt}> {dev_command_input}")
+                        else:
+                            dev_command_output_lines.append(f"> {dev_command_input}")
+                        result = process_dev_command(dev_command_input)
+                        dev_command_output_lines.append(result)
+                        dev_command_history.append(dev_command_input)
+                        dev_command_input = ""
                         
-                        dev_progress = dev_progress[-len(dev_code):]
-
-                        if dev_progress == dev_code:
-                            DEV_MODE.toggle = not DEV_MODE.toggle
-                            print("Developer Mode:", DEV_MODE.toggle)
-                            dev_progress = ""
-                            dev_toggle = True
-
-                if event.key == pygame.K_ESCAPE:
+                    elif event.key == pygame.K_ESCAPE:
+                        dev_command_bar_active = False
+                        dev_command_input = ""
+                        dev_awaiting_input = False
+                        dev_current_command = None
+                        
+                    elif event.key == pygame.K_BACKSPACE:
+                        dev_command_input = dev_command_input[:-1]
+                        
+                    elif event.unicode and len(dev_command_input) < 100:
+                        dev_command_input += event.unicode
+                
+               
+                elif event.unicode and not dev_command_bar_active:
+                    dev_progress += event.unicode.lower()
+                    dev_progress = dev_progress[-len(dev_code):]
+                    if dev_progress == dev_code:
+                        DEV_MODE.toggle = not DEV_MODE.toggle
+                        print("Developer Mode:", DEV_MODE.toggle)
+                        dev_progress = ""
+                
+                if event.key == pygame.K_ESCAPE and not dev_command_bar_active:
                     question.toggle = not question.toggle
                     
             if event.type == pygame.MOUSEWHEEL and help_menu:
@@ -2958,7 +3226,7 @@ while game:
                                         break
                             ShopPacks.append(pack)
                         break
-                        ###Gui toggles###
+                       
                     if settings == False:
                         for toggle in guiToggleList:
                             if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
@@ -3900,6 +4168,7 @@ while game:
                 print("Dead")
                 most_played = max(hand_plays.items(), key=lambda item: item[1])
                 most_played = most_played[0]
+        draw_dev_command_bar()
         if invincibleSplashEffect:
             invincibleSplash()
         pygame.display.flip()  
