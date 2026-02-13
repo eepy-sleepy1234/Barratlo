@@ -12,6 +12,7 @@ import pygame
 import numpy
 import cv2
 import pyperclip
+import colorsys
 from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_effects
 pygame.init()
 pygame.font.init()
@@ -1605,14 +1606,9 @@ for root, dirs, files in os.walk(SUITS_DIR):
             perm_deck.append(card)
 
 deck = perm_deck.copy()
-
-
-        
-
 random.shuffle(deck)
 
 hand = []
-
 
 currentFrame = 0
 spacing = 600 / handsize * WIDTH/1500
@@ -1785,8 +1781,7 @@ def boss_debuff():
     for card in hand:
         if card.freeze_timer <= 0:
             card.is_frozen = False
-            
-
+      
 def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset=-30, angle_range=8):
     global scoring_in_progress, scoring_sequence_index
     if "scoring_in_progress" not in globals():
@@ -1865,12 +1860,21 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 scaled_overlay = pygame.transform.smoothscale(Frozen3_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
+        if card.edition == "Foil":
+            apply_foil(card.image, 1)
+        if card.edition == "Holographic":
+            apply_holographic(card.image, 1)
+        if card.edition == "Polychrome":
+            apply_polychrome(card.image)
+        if card.edition == "Negative":
+            apply_negative(card.image)
         rotated = pygame.transform.rotate(scaled_img, angle)
         rotated_base = pygame.transform.rotate(scaled_base, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated_base, rect.topleft)
         surface.blit(rotated, rect.topleft)
         card.rect = rect
+
 
 class Animation():
     def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
@@ -1910,13 +1914,10 @@ class Animation():
                 
         
         screen.blit(self.cached_frames[self.current_frame], (self.xpos, self.ypos))
-        
-
-            
+      
     def reset_animation(self):
         self.current_frame = 1
     
-
 class Draggable_Animation(Animation):
     def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
         super().__init__(sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight)
@@ -1934,8 +1935,6 @@ class Draggable_Animation(Animation):
         self.rect.x = int(self.xpos)
         self.rect.y = int(self.ypos)
         
-
-
 spinningBG = Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 settingsButton = Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, (WIDTH/1.5)-250, (HEIGHT/2)-250, int(WIDTH/5), int(WIDTH/5))
@@ -1968,15 +1967,13 @@ def shopAnimaton():
             else:
                 shopAnimation.animate()
         else:
-            
             screen.blit(shopAnimation.cached_frames[66], (shopAnimation.xpos, shopAnimation.ypos))
     else:
         if shopAnimation.current_frame == 0:  
             shop_down = False
-
-        
         if shop_down:
             shopAnimation.animate()
+
 class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
@@ -2112,8 +2109,7 @@ def advance_to_next_blind():
     hand.clear()
     deck.clear()
     for card in perm_deck:
-        new_card = Card(card.rank, card.suit, card.image)
-        deck.append(new_card)
+        deck.append(card)
     random.shuffle(deck)
     
 def check_blind_defeated():
@@ -2172,8 +2168,7 @@ class Joker:
             case 'L':
                 self.price = 20
         self.sound = jokerSound.get(self.name)
-        def playsound(self, loop):
-            
+        def playsound(self, loop):   
             if self.sound:
                 if loop:
                     self.sound.play(-1)
@@ -2642,7 +2637,6 @@ running = True
 letter_classes()
 animate_letters()
 
-
 sorted_letters = sorted(Letters, key=lambda letter: letter.xpos)
     
 startAnimation = True
@@ -2652,7 +2646,6 @@ for i, letter in enumerate(sorted_letters):
     letter.animation = True
 current_order = sorted(Letters, key=lambda letter: letter.xpos)
 letter_string = ''.join([letter.letter for letter in current_order])
-
 
 startGame = False
 
@@ -2683,7 +2676,7 @@ def get_selected_Shop_Cards(joker):
         return (-100, -100)
     
 def get_cons_effect(name):
-    global money, lastFool, selected_cards
+    global money, lastFool, selected_cards, perm_deck
     if name == "Hermit":
         if money > 20:
             money += 20
@@ -2763,14 +2756,16 @@ def get_cons_effect(name):
         lastFool = "Chariot"
     if name == "Death":
         if len(selected_cards) == 2:
-            card1 = selected_cards[1]
-            card2 = selected_cards[0]
-            card1.rank, card1.suit = card2.rank, card2.suit
+            card1 = selected_cards[0]
+            card2 = selected_cards[1]
+            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal
+            card1.refresh_image()
         lastFool = "Death"
     if name == "Devil":
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Gold"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Gold"
@@ -2780,6 +2775,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Mult"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Mult"
@@ -2798,6 +2794,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Bonus"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Bonus"
@@ -2807,6 +2804,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Glass"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Glass"
@@ -2816,6 +2814,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Wild"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Wild"
@@ -2825,6 +2824,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Lucky"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Lucky"
@@ -2834,6 +2834,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Clubs"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Clubs"
@@ -2843,6 +2844,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Diamonds"
@@ -2862,6 +2864,7 @@ def get_cons_effect(name):
                         card.rank = "A"
                     elif card.rank == "A":
                         card.rank = 2
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.rank = card.rank
@@ -2871,6 +2874,7 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Hearts"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
@@ -2880,6 +2884,7 @@ def get_cons_effect(name):
        if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Stone"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Stone"
@@ -2900,16 +2905,15 @@ def get_cons_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Spades"
+                card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Spades"
                         break
             lastFool = "World"
     
-
 init_video()
 game = True
-
 
 if joker_manager is None:
     joker_manager = initialize_joker_effects(Active_Jokers)
@@ -2923,7 +2927,6 @@ while game:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
                 hovering = True
                 break
-
 
         current_blind = get_current_blind()
         if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
@@ -2939,8 +2942,7 @@ while game:
     
                 if event.unicode:
                         dev_progress += event.unicode.lower()
-
-                        
+ 
                         dev_progress = dev_progress[-len(dev_code):]
 
                         if dev_progress == dev_code:
@@ -2948,9 +2950,7 @@ while game:
                             print("Developer Mode:", DEV_MODE.toggle)
                             dev_progress = ""
                             dev_toggle = True
-                
-            
-                    
+                                    
             if event.type == pygame.MOUSEBUTTONDOWN:
                 
                 if event.button == 1:
@@ -2971,8 +2971,7 @@ while game:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 setting.toggle = not setting.toggle
-                       
-                                
+                           
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
                         settings = True
@@ -2988,8 +2987,7 @@ while game:
         elif not Atttention_helper.toggle and prev_attention_state:
             close_video()
         prev_attention_state = Atttention_helper.toggle
-        
-
+    
         if Atttention_helper.toggle:
             frame = get_video_frame()
             if frame:
@@ -3019,8 +3017,6 @@ while game:
             draw_settings()
             screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
             
-
-            
         update_card_animation()
         if card_x > -WIDTH:  
             screen.blit(STARTCARD, (card_x, 0))
@@ -3030,17 +3026,13 @@ while game:
 
         dev_commands()
         blit_img()
-
-        
-            
+   
         if hovering:
             screen.blit(cursor_hover, cursor_pos)
         else:
             screen.blit(cursor_normal, cursor_pos)   
 
-        if Focy.toggle:
-        
-            
+        if Focy.toggle: 
             if random.randint(1, 20000)  == 1:
                 
                 subprocess.run(['powershell', '-Command', 
@@ -3048,30 +3040,21 @@ while game:
                 '$obj.SendKeys([char]173);'
                 'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
                 shell=True)
-                
-                foxsound.play()
-                    
-                    
+                foxsound.play()   
                 draw_fox = True
         if draw_fox:
-        
             focy_scare.animate()
         pygame.display.flip()
         clock.tick(60)
         currentFrame += 1
-        
 
     overlay = pygame.Surface((WIDTH, HEIGHT))
     overlay.fill((0, 0, 0))  
     overlay.set_alpha(128)
 
-
     while running:
         global discard_queue
         global scoring_queue
-      
-    
-           
         question.should_draw = True
         mouse_pos = pygame.mouse.get_pos()
         
@@ -3089,7 +3072,6 @@ while game:
             
         update_gui_buttons()
 
-
         if Atttention_helper.toggle and not prev_attention_state:
             init_video()
         elif not Atttention_helper.toggle and prev_attention_state:
@@ -3098,11 +3080,7 @@ while game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            keys = pygame.key.get_pressed()
-
-           
-
-            
+            keys = pygame.key.get_pressed() 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKQUOTE and DEV_MODE.toggle:
                     dev_command_bar_active = not dev_command_bar_active
@@ -3150,7 +3128,6 @@ while game:
                 max_scroll = -max(0, len(helpMenu_surfaces) * line_height - HEIGHT + 200)
                 scroll_offset = max(max_scroll, min(0, scroll_offset))
                 
-        
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     mouse_x, mouse_y = mouse_pos
@@ -3171,7 +3148,6 @@ while game:
                                 setting.toggle = not setting.toggle
                                 setting.update_img()
                         
-                    
                     if xbutton_rect.collidepoint(event.pos):
                         settings = False
                         settings2.toggle = False
@@ -3470,6 +3446,8 @@ while game:
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
                             jonkler_sphere_clicked = False
+                        deck = perm_deck.copy()
+                        random.shuffle(deck)
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
                             for card in deck:
@@ -3743,7 +3721,6 @@ while game:
         screen.blit(GameBackground_img, (0, 0))
         screen.blit(SideBar_img, (0, 0))
         
-
         if not calculating:
             selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
             if len(selected_cards) > 0:
@@ -3840,7 +3817,6 @@ while game:
                 screen.blit(text, text_rect)
                 screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.53))
         
-            
         if not calculating:
             if scoring_in_progress:
                 text = PixelFontS.render(saved_hand, True, white)
@@ -3978,7 +3954,6 @@ while game:
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         
-
         boss_debuff()
         draw_hand(screen, hand, WIDTH/2, HEIGHT/1.2, spread=spacing, max_vertical_offset=-30, angle_range=8)
         if GameState == "Shop":
@@ -4111,27 +4086,19 @@ while game:
             screen.blit(blurred, (0, 0))
         
         if Focy.toggle:
-            
-        
-        
-            
             if random.randint(1, 15000)  == 1:
-            
-                
                 subprocess.run(['powershell', '-Command', 
                 '$obj = New-Object -ComObject WScript.Shell;'
                 '$obj.SendKeys([char]173);'
                 'for($i=0;$i -lt 50;$i++){$obj.SendKeys([char]175)}'], 
                 shell=True)
-                
                 foxsound.play()
-                    
-                    
                 draw_fox = True
         if draw_fox:
         
             focy_scare.animate()
-        if hands <= 0 and not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
+        if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
+            if  hands <= 0 or len(hand) < 1:
 
             has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
             
@@ -4232,7 +4199,6 @@ while game:
     
             selected_cards = [card for card in hand if card.state in ("played", "scored")]
           
-            
             if len(selected_cards) > 0:
                 hand_type_temp, contributing_temp = detect_hand(selected_cards)
             else:
