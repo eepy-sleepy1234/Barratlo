@@ -422,7 +422,31 @@ def dev_commands():
 dev_code = "talabro"
 dev_progress = ""
            
-
+def reset_deck_for_new_round():
+    global deck, hand
+    hand.clear()
+    deck.clear()
+    for card in perm_deck:
+        card.state = "hand"
+        card.is_debuffed = False
+        card.debuff_assigned = False
+        card.is_frozen = False
+        card.freeze_timer = 0
+        card.scoring_x = 0
+        card.scoring_y = 0
+        card.scaling = False
+        card.growing = False
+        card.scaling_done = False
+        card.scoring_complete = False
+        card.is_contributing = False
+        card.scoring_animating = False
+        card.vx = 0
+        card.vy = 0
+        card.angle = 0
+        card.rotation_speed = 0
+        card.scale = 1.0
+        deck.append(card)
+    random.shuffle(deck)
 guibutton = []
 guiToggleList = []
 class GUITOGGLES():
@@ -1019,48 +1043,47 @@ def handle_multi_step_input(input_text):
     return "Command cancelled"
 
 def draw_dev_command_bar():
-    global dev_command_output_timer
-    
     if not dev_command_bar_active:
         return
     
-    
-    bar_height = HEIGHT // 3  
+    bar_height = HEIGHT // 3
     bar_y = HEIGHT - bar_height
-    
-
     bar_surface = pygame.Surface((WIDTH, bar_height))
     bar_surface.fill((0, 0, 0))
     bar_surface.set_alpha(230)
     screen.blit(bar_surface, (0, bar_y))
     pygame.draw.rect(screen, yellow, (0, bar_y, WIDTH, bar_height), 2)
-    y_offset = bar_y + 10
+    
     line_height = PixelFontXXS.get_height() + 5
-    max_lines = (bar_height - 60) // line_height
-    start_index = max(0, len(dev_command_output_lines) - max_lines)
-    for i in range(start_index, len(dev_command_output_lines)):
-        line = dev_command_output_lines[i]
-        if line.startswith("> "):  
-            color = yellow
-        else:  # Output
-            color = white
+    max_y = HEIGHT - 50
+    
+   
+    expanded_lines = []
+    for line in dev_command_output_lines:
+        color = yellow if line.startswith("> ") else white
         for subline in line.split('\n'):
-            if y_offset + line_height < HEIGHT - 50:
-                text = PixelFontXXS.render(subline[:100], True, color) 
-                screen.blit(text, (10, y_offset))
-                y_offset += line_height
-    input_y = HEIGHT - 35
+            expanded_lines.append((subline[:100], color))
+    
 
+    max_lines = (bar_height - 60) // line_height
+    visible = expanded_lines[-max_lines:]
+    
+    y_offset = bar_y + 10
+    for subline, color in visible:
+        if y_offset + line_height < max_y:
+            text = PixelFontXXS.render(subline, True, color)
+            screen.blit(text, (10, y_offset))
+            y_offset += line_height
+    
+
+    input_y = HEIGHT - 35
     if dev_awaiting_input:
         prompt = f"{dev_input_prompt}> "
     else:
         prompt = "> "
-    
     prompt_text = PixelFontXS.render(prompt, True, yellow)
     screen.blit(prompt_text, (10, input_y))
-
-    input_display = dev_command_input + "_"
-    input_text = PixelFontXS.render(input_display, True, white)
+    input_text = PixelFontXS.render(dev_command_input + "_", True, white)
     screen.blit(input_text, (10 + prompt_text.get_width(), input_y))
             
 class starting_letters():
@@ -1526,6 +1549,7 @@ class Card:
                         scoring_count += 1
                         if self.is_contributing:
                             global saved_base_chips, saved_base_mult, invincibleActive
+                            card_play_counts[self.card_id] = card_play_counts.get(self.card_id, 0) + 1
                             saved_base_chips += self.chip_value
                             indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
                             chip_indicators.append(indicator)
@@ -1539,10 +1563,14 @@ class Card:
                                 'active_jokers': Active_Jokers,
                                 'hand_type': saved_hand,
                                 'deck': deck,
+                                'card_play_counts': card_play_counts, 
                             }
                             context = joker_manager.trigger('on_card_scored', context)
                             saved_base_chips = context['chips']
                             saved_base_mult = context['mult']
+                            for x, y, value in context.get('retrigger_indicators', []):
+                                indicator = ChipIndicator(int(x + 30), int(y - 130), value)
+                                chip_indicators.append(indicator)
                             if 'triggered_jokers' in context:
                                 for joker_name in context['triggered_jokers']:
                                     if joker_name == "Jevil":
@@ -1952,7 +1980,7 @@ dev_current_command = None
 dev_input_prompt = "" 
 dev_multi_step_data = {}  
 shop_down = False
-
+card_play_counts = {} 
 def shopAnimaton():
     
     global shop_down
@@ -2093,7 +2121,7 @@ def set_boss_blind(boss_name):
             return True
     return False
 def advance_to_next_blind():
-    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, deck, perm_deck, hand, GameState, boss_blind, current_blind, jonkler_sphere_active, jonkler_sphere_clicked
+    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, GameState, boss_blind, current_blind, jonkler_sphere_active, jonkler_sphere_clicked
     if round_num % 3 == 0:
         ante += 1
         boss_blind = random.choice(boss_blinds)
@@ -2103,14 +2131,9 @@ def advance_to_next_blind():
     totalReward += hands + blind_reward
     hands = max_hand
     discards = max_discard
-    rerollCost = 3
     jonkler_sphere_active = False
     jonkler_sphere_clicked = False
-    hand.clear()
-    deck.clear()
-    for card in perm_deck:
-        deck.append(card)
-    random.shuffle(deck)
+    reset_deck_for_new_round()
     
 def check_blind_defeated():
     global blind_defeated, current_score, GameState
@@ -3446,14 +3469,14 @@ while game:
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
                             jonkler_sphere_clicked = False
-                        deck = perm_deck.copy()
-                        random.shuffle(deck)
+                        
+                        reset_deck_for_new_round()  # replaces deck = perm_deck.copy() and hand clearing
+                        
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
                             for card in deck:
                                 card.suit = newSuit
                                 card.refresh_image()
-                        
                         get_current_blind()
                         if round_num % 3 == 0:
                             boss_debuff()
@@ -4198,7 +4221,11 @@ while game:
                 'active_jokers': Active_Jokers,
                 'hand_type': hand_type_temp,
                 'deck': deck,
-                'hand_played': selected_cards,   
+                'hand_played': selected_cards, 
+                'card_play_counts': card_play_counts,
+                
+
+
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
