@@ -45,7 +45,7 @@ scroll_offset = 0
 scroll_speed = 30
 
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
-
+has_invincible = False
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     """Load image with fallback to placeholder if file not found"""
     try:
@@ -4097,44 +4097,31 @@ while game:
         if draw_fox:
         
             focy_scare.animate()
+        
         if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
-            if  hands <= 0 or len(hand) < 1:
-
+            if hands <= 0 or len(hand) < 1:
                 has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
-            
-            if has_invincible:
-        
-                Active_Jokers = [j for j in Active_Jokers if j.name != "Invincible Joker"]
-                joker_manager = initialize_joker_effects(Active_Jokers)
                 
-             
-                total_score = target_score
-                
-           
-                victory = True
-                GameState = "Cashing"
-                advance_to_next_blind()
-                get_current_blind()
-                
-                invincibleSplashTimer  = 180
-                invinciblesound.play(0)
-
-
-   
-                invincibleSplashEffect = True
-   
-        
-           
-                for card in hand:
-                    discard_queue.append(card)
-                discarding = True
-                
-                print("Invincible Joker saved you!")
-            else:
-                GameState = "Dead"
-                print("Dead")
-                most_played = max(hand_plays.items(), key=lambda item: item[1])
-                most_played = most_played[0]
+                if has_invincible:
+                    Active_Jokers = [j for j in Active_Jokers if j.name != "Invincible Joker"]
+                    joker_manager = initialize_joker_effects(Active_Jokers)
+                    total_score = target_score
+                    victory = True
+                    GameState = "Cashing"
+                    advance_to_next_blind()
+                    get_current_blind()
+                    invincibleSplashTimer = 180
+                    invinciblesound.play(0)
+                    invincibleSplashEffect = True
+                    for card in hand:
+                        discard_queue.append(card)
+                    discarding = True
+                    print("Invincible Joker saved you!")
+                else:
+                    GameState = "Dead"
+                    print("Dead")
+                    most_played = max(hand_plays.items(), key=lambda item: item[1])
+                    most_played = most_played[0]
         draw_dev_command_bar()
         if invincibleSplashEffect:
             invincibleSplash()
