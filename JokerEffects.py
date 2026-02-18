@@ -139,7 +139,7 @@ def Clever_effect(context):
     if "Two Pair" in hand:
         print(f"  [Clever_effect] ✓✓✓ TWO PAIR FOUND! Adding 80 chips!")
         old_chips = context.get('chips', 0)
-        context['chips'] = context.get('chips', 0) + 80  # FIX #3: Make sure chips exists
+        context['chips'] = context.get('chips', 0) + 80 
         print(f"  [Clever_effect] Chips: {old_chips} → {context['chips']}")
         context.setdefault('triggered_jokers', []).append('Clever Joker')
     else:
@@ -277,6 +277,17 @@ def Jevil_effect(context):
     return context
 
 def Hacked_effect(context):
+    card = context.get('card')
+    if not card:
+        return context
+    card_play_counts = context.get('card_play_counts', {})
+    top_5 = sorted(card_play_counts, key=card_play_counts.get, reverse=True)[:5]
+    
+    if card.card_id in top_5:
+        context['chips'] = context.get('chips', 0) + card.chip_value
+        context.setdefault('triggered_jokers', []).append('Hacked Joker')
+        print("Retriggered")
+    
     return context
 
 def Invincible_effect(context):
