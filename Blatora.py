@@ -1244,7 +1244,7 @@ def loadAudio(file):
         return quackplay
 
 ptsdExplosion = loadAudio('PTSD reset.mp3')
-
+ptsdExplosion.set_volume(0.75)
 mainMusic = loadAudio('Music.mp3')
 mainMusic.set_volume(0.1)
 mainMusic.play(-1)
