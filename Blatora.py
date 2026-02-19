@@ -412,7 +412,12 @@ dev_toggle = False
 SO_SERIOUS = User_settings('SO SERIOUS')
 Atttention_helper = User_settings('Attention Span Helper')
 Focy = User_settings('Focy')
+Music = User_settings('Music')
+Music.toggle = True
 DEV_MODE = User_settings('Developer', False)  #Keep At Bottem#
+
+
+
 def dev_commands():
     global dev_toggle
     global dev_command
@@ -1248,8 +1253,10 @@ buttonClick.set_volume(0.5)
 ptsdExplosion = loadAudio('PTSD reset.mp3')
 ptsdExplosion.set_volume(0.75)
 mainMusic = loadAudio('Music.mp3')
+
 mainMusic.set_volume(0.1)
 mainMusic.play(-1)
+mainMusicPlaying = True
 
     
     
@@ -2956,6 +2963,13 @@ if joker_manager is None:
 
 while game:
     while startGame == False:
+        if Music.toggle:
+            if not mainMusicPlaying:
+                mainMusic.play(-1)
+                mainMusicPlaying = True
+        else:
+            mainMusic.stop()
+            mainMusicPlaying = False
         cursor_pos = pygame.mouse.get_pos()
         pygame.mouse.set_visible(False)
         hovering = False
@@ -3094,7 +3108,11 @@ while game:
 
     while running:
 
-
+        if Music.toggle:
+            if not mainMusicPlaying:
+                mainMusic.play(-1)
+        else:
+            mainMusic.stop()
         yin_active = any(j.name == "Yin Joker" for j in Active_Jokers)
         yang_active = any(j.name == "Yang Joker" for j in Active_Jokers)
         yinyang_active = any(j.name == "Yin Yang" for j in Active_Jokers)
