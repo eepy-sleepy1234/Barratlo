@@ -439,7 +439,7 @@ JOKER_REGISTRY = {
     'Invincible Joker': {
         'events': [('on_hand_played', Invincible_effect)],
         'description': 'If blind is lost, complete blind as if it was won. Do not collect any money and destry Invincible Joker. Cannot be destroyed in any other way',
-        'Oopy Goopy': True
+        'Oopy Goopy': False
     },
     'Lucky Joker': {
         'events': [('on_round_start', Lucky_effect)],
@@ -454,7 +454,7 @@ JOKER_REGISTRY = {
     'Pool Table': {
         'events': [('on_round_end', PoolTable_effect)],
         'description': '+ S0.1 earned at the end of round for every hand left',
-        'Oopy Goopy': True
+        'Oopy Goopy': False
     },
     'Rules Card': {
         'events': [('on_hand_played', RulesCard_effect)],
@@ -464,7 +464,7 @@ JOKER_REGISTRY = {
     'The Jonkler Baby': {
         'events': [('on_round_start', TheJonklerBaby_effect)],
         'description': 'Click on the Jonkler Sphere at the start of the round to discard your first hand',
-        'Oopy Goopy': True
+        'Oopy Goopy': False
     },
     'Upside Down Joker': {
         'events': [('on_card_scored', UpsideDown_effect)],
@@ -474,7 +474,7 @@ JOKER_REGISTRY = {
     'Getting An Upgrade': {
         'events': [('on_round_start', GettingAnUpgrade_effect)],
         'description': 'Sell to guarantee a rare Joker in the next shop',
-        'Oopy Goopy': True
+        'Oopy Goopy': False
     },
     'Fly Deity': {
         'events': [('on_hand_played', FlyDeity_effect)],
@@ -514,12 +514,12 @@ JOKER_REGISTRY = {
     'Jevil': {
         'events': [('on_round_start', Jevil_effect)],
         'description': 'Converts all cards in deck to a random suit every time round starts',
-        'Oopy Goopy': True
+        'Oopy Goopy': False
     },
     'Oopy Goopy': {
         'events': [('on_hand_played', OopyGoopy_effect)],
         'description': 'Duplicates the joker to the right of it and double its effect',
-        'Oopy Goopy': False  
+        'Oopy Goopy': True  
     },
 }
 

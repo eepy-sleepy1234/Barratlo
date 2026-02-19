@@ -566,9 +566,12 @@ def blit_img():
                 if addedJoker in All_Jokers_Name:
                     for joke in All_Jokers:
                         if joke.name == addedJoker:
-                            Active_Jokers.append(joke)
+                            new_joka = Joker(joke.image, joke.rarity, joke.name)
+                            Active_Jokers.append(new_joka)
                             joker_manager = initialize_joker_effects(Active_Jokers) 
                             print(f"Added {joke.name} and reinitialized joker manager!")
+            
+
                     
                 
               
@@ -921,7 +924,8 @@ def handle_multi_step_input(input_text):
    
         for joke in All_Jokers:
             if joke.name.lower() == joker_name.lower():
-                Active_Jokers.append(joke)
+                new_joka = Joker(joke.image, joke.rarity, joke.name)
+                Active_Jokers.append(new_joka)
                 joker_manager = initialize_joker_effects(Active_Jokers)
                 return f"Added {joke.name}!"
         
@@ -1888,14 +1892,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 scaled_overlay = pygame.transform.smoothscale(Frozen3_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
-        if card.edition == "Foil":
-            apply_foil(card.image, 1)
-        if card.edition == "Holographic":
-            apply_holographic(card.image, 1)
-        if card.edition == "Polychrome":
-            apply_polychrome(card.image)
-        if card.edition == "Negative":
-            apply_negative(card.image)
         rotated = pygame.transform.rotate(scaled_img, angle)
         rotated_base = pygame.transform.rotate(scaled_base, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
@@ -2699,7 +2695,7 @@ def get_selected_Shop_Cards(joker):
         return (-100, -100)
     
 def get_cons_effect(name):
-    global money, lastFool, selected_cards, perm_deck
+    global money, lastFool, selected_cards, perm_deck, hand, deck
     if name == "Hermit":
         if money > 20:
             money += 20
@@ -2876,31 +2872,37 @@ def get_cons_effect(name):
     if name == "Strength":
         if len(selected_cards) < 3:
             for card in selected_cards:
-                if type(card.rank) == int:
-                    card.rank += 1
-                else:
-                    if card.rank == "J":
-                        card.rank = "Q"
-                    elif card.rank == "Q":
-                        card.rank = "K"
-                    elif card.rank == "K":
-                        card.rank = "A"
-                    elif card.rank == "A":
-                        card.rank = 2
+                if card.rank == "J":
+                    card.rank = "Q"
+                elif card.rank == "Q":
+                    card.rank = "K"
+                elif card.rank == "K":
+                    card.rank = "A"
+                elif card.rank == "A":
+                    card.rank = "Two"
+                elif card.rank in RANK_VALUES:
+                    keys = list(RANK_VALUES.keys())
+                    idx = keys.index(card.rank)
+                    card.rank = keys[(idx + 1) % len(keys)]
+                card.value = RANK_VALUES[card.rank]
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.rank = card.rank
+                        perm_card.value = card.value
                         break
         lastFool = "Strength"
     if name == "Sun":
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.suit = "Hearts"
+                card.name = f"{card.rank} of {card.suit}"
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
+                        perm_card.name = card.name
+                        perm_card.refresh_image()
                         break
             lastFool = "Sun"
     if name == "Tower":
