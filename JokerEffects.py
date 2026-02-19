@@ -1,6 +1,9 @@
 import random
 from collections import Counter
-
+wetFloorValue = 0
+last_hand = 0
+last_hand_counter = 0
+YinYang_Active = False
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -276,6 +279,7 @@ def Jevil_effect(context):
         context.setdefault('triggered_jokers', []).append('Jevil')
     return context
 
+
 def Hacked_effect(context):
     card = context.get('card')
     if not card:
@@ -320,18 +324,57 @@ def FlyDeity_effect(context):
     return context
 
 def Yin_effect(context):
+    context["mult"] = context.get('mult', 0) + 4
+    context.setdefault('triggered_jokers', []).append('Yin Joker')
     return context
 
 def Yang_effect(context):
+    context["mult"] = context.get('mult', 0) + 4
+    context.setdefault('triggered_jokers', []).append('Yin Joker')
     return context
 
 def PTSD_effect(context):
+    global last_hand
+    global last_hand_counter
+    hand = hand_contains(context)
+    if hand == last_hand:
+        last_hand_counter = 0
+        last_hand = hand
+    else:
+        last_hand = hand
+        last_hand_counter += 0.1
+        context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
+    context.setdefault('triggered_jokers', []).append('PTSD Joker')
+    print("PTSD effect = " + str(last_hand_counter))
     return context
 
+
+
+
+
 def WetFloor_effect(context):
+    global wetFloorValue
+    hand_played = [c for c in context.get('hand_played', []) if not isinstance(c, str)]
+    has_numbered = any(2 <= card.value <= 9 for card in hand_played)
+    if has_numbered:
+        wetFloorValue = 0
+    else:
+        wetFloorValue += 1
+    context.setdefault('triggered_jokers', []).append('Wet Floor Joker')
+    context['mult'] = context.get('mult', 0) + wetFloorValue
+    print("Wet Floor Value = " + str(wetFloorValue))
     return context
 
 def YinYang_effect(context):
+    cardsuits = []
+    hand_played = [c for c in context.get('hand_played', []) if not isinstance(c, str)]
+    for card in hand_played:
+        if card.suit not in cardsuits:
+            cardsuits.append(card.suit)
+    if len(cardsuits) == 2:
+        context['mult'] = context.get('mult', 0) * 5
+    else:
+        context['mult'] = context.get('mult', 0) * 1.5
     return context
 
 def Fountain_effect(context):
@@ -481,12 +524,12 @@ JOKER_REGISTRY = {
         'description': 'give +5 chips on Small and Big Blind, give +50 mult on Boss Blinds',
         'Oopy Goopy': True
     },
-    'Yin': {
+    'Yin Joker': {
         'events': [('on_hand_played', Yin_effect)],
         'description': '+4 mult, becomes YinYang Joker when Yang Joker is also active',
         'Oopy Goopy': True
     },
-    'Yang': {
+    'Yang Joker': {
         'events': [('on_hand_played', Yang_effect)],
         'description': '+4 mult, becomes YinYang Joker when Yin Joker is also active',
         'Oopy Goopy': True
@@ -503,7 +546,7 @@ JOKER_REGISTRY = {
     },
     'Yin Yang': {
         'events': [('on_hand_played', YinYang_effect)],
-        'description': 'If Hand played with exactly two colors X5 Mult',
+        'description': 'If Hand played with exactly two colors X5 Mult, otherwise gives X1.5 Mult',
         'Oopy Goopy': True
     },
     'Fountain': {
@@ -519,7 +562,7 @@ JOKER_REGISTRY = {
     'Oopy Goopy': {
         'events': [('on_hand_played', OopyGoopy_effect)],
         'description': 'Duplicates the joker to the right of it and double its effect',
-        'Oopy Goopy': True  
+        'Oopy Goopy': True 
     },
 }
 

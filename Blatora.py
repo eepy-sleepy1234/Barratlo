@@ -13,6 +13,7 @@ import numpy
 import cv2
 import pyperclip
 import colorsys
+import JokerEffects
 from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_effects
 pygame.init()
 pygame.font.init()
@@ -104,6 +105,7 @@ scroll_offset = 0
 scroll_speed = 30
 line_height = OSDmono.get_height()
 jevilActive = False
+
 for line in help_lines:
 
     clean_line = html.unescape(line.replace('\t', '    ').rstrip())
@@ -909,7 +911,11 @@ def process_dev_command(command):
     
     else:
         return f"Unknown command: '{command}'\nType 'help' for available commands"
-
+def get_available_jokers(joker_list):
+    yinyang_active = any(j.name == "Yin Yang" for j in Active_Jokers)
+    if yinyang_active:
+        return [j for j in joker_list if j.name not in ("Yin Joker", "Yang Joker")]
+    return joker_list
 def handle_multi_step_input(input_text):
     global dev_awaiting_input, dev_current_command, dev_input_prompt, dev_multi_step_data
     global hands, discards, money, round_num, ante, current_blind, hand, deck
@@ -1237,6 +1243,7 @@ def loadAudio(file):
     except:
         return quackplay
 
+ptsdExplosion = loadAudio('PTSD reset.mp3')
 
 mainMusic = loadAudio('Music.mp3')
 mainMusic.set_volume(0.1)
@@ -2186,6 +2193,8 @@ class Joker:
                 self.price = 8
             case 'L':
                 self.price = 20
+            case 'S':
+                self.price = 15
         self.sound = jokerSound.get(self.name)
         def playsound(self, loop):   
             if self.sound:
@@ -2755,7 +2764,7 @@ def get_cons_effect(name):
                     if card not in Active_Jokers and card not in Shop_Cards:
                         break
                 elif jokester == 2:
-                    card = random.choice(Uncommon_Jokers)
+                    card = random.choice(get_available_jokers(Uncommon_Jokers))
                     if card not in Active_Jokers and card not in Shop_Cards:
                         break
                 elif jokester == 3:
@@ -3078,6 +3087,18 @@ while game:
     overlay.set_alpha(128)
 
     while running:
+
+
+        yin_active = any(j.name == "Yin Joker" for j in Active_Jokers)
+        yang_active = any(j.name == "Yang Joker" for j in Active_Jokers)
+        yinyang_active = any(j.name == "Yin Yang" for j in Active_Jokers)
+        if yin_active and yang_active and not yinyang_active:
+            yinyang_template = next((j for j in All_Jokers if j.name == "Yin Yang"), None)
+            if yinyang_template:
+                Active_Jokers = [j for j in Active_Jokers if j.name not in ("Yin Joker", "Yang Joker")]
+                new_joker = Joker(yinyang_template.image, yinyang_template.rarity, yinyang_template.name)
+                Active_Jokers.append(new_joker)
+                joker_manager = initialize_joker_effects(Active_Jokers)
         global discard_queue
         global scoring_queue
         question.should_draw = True
@@ -3198,7 +3219,7 @@ while game:
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         break
                                 elif rarity_choice <= 95:
-                                    card = random.choice(Uncommon_Jokers)
+                                    card = random.choice(get_available_jokers(Uncommon_Jokers))
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         break
                                 else:
@@ -3442,7 +3463,7 @@ while game:
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             break
                                     elif rarity_choice <= 95:
-                                        card = random.choice(Uncommon_Jokers)
+                                        card = random.choice(get_available_jokers(Uncommon_Jokers))
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             break
                                     else:
@@ -3766,7 +3787,7 @@ while game:
                 base_mult = Hand_Mult.get("Straight Flush", 1)
             chips = base_chips * level
             mult = base_mult * level
-            final_score = saved_base_chips * saved_base_mult
+            final_score = int(round(saved_base_chips * saved_base_mult))
         screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
         if GameState == "Playing":
             screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
@@ -4232,8 +4253,14 @@ while game:
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
             saved_base_mult = context['mult']
-            final_score = saved_base_chips * saved_base_mult
-     
+            final_score = int(round(saved_base_chips * saved_base_mult))
+            for joke in Active_Jokers:
+                if joke.name == "Ptsd Joker":
+
+                    if JokerEffects.last_hand_counter == 0:
+                        ptsdExplosion.play(0)
+
+
             for c in selected_cards:
                 c.state = "scored"
             
@@ -4267,7 +4294,7 @@ while game:
                 total_score = saved_total_score + round(final_score * (ease_progress))
                 if add_progress >= 1.0:
                     add_progress = 1.0
-                    total_score = saved_total_score + final_score
+                    total_score = int(round(saved_total_score + final_score))
                     calculating = False
                     discard_queue = []
                     discard_timer = 0
