@@ -1243,6 +1243,7 @@ def loadAudio(file):
     except:
         return quackplay
 
+buttonClick = loadAudio('Button.wav')
 ptsdExplosion = loadAudio('PTSD reset.mp3')
 ptsdExplosion.set_volume(0.75)
 mainMusic = loadAudio('Music.mp3')
@@ -2989,6 +2990,7 @@ while game:
                 
                 if event.button == 1:
                     if start_button_rect.collidepoint(event.pos):
+                        buttonClick.play(0)
                         card_animating = True
                         joker_manager = initialize_joker_effects(Active_Jokers)
                         GameState = "Blinds"
@@ -3004,12 +3006,15 @@ while game:
                     elif settings:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
+                                buttonClick.play(0)
                                 setting.toggle = not setting.toggle
                            
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
+                        buttonClick.play(0)
                         settings = True
                     if xbutton_rect.collidepoint(event.pos):
+                        buttonClick.play(0)
                         settings = False
             
         screen.fill((0, 0, 0))  
@@ -3191,15 +3196,18 @@ while game:
                     if settings:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
+                                buttonClick.play(0)
                                 setting.toggle = not setting.toggle
                                 setting.update_img()
                         
                     if xbutton_rect.collidepoint(event.pos):
+                        buttonClick.play(0)
                         settings = False
                         settings2.toggle = False
                         
                     if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                         GameState = "Shop"
+                        buttonClick.play(0)
                         money += totalReward
                         totalReward = 0
                         rerollCost = 3
@@ -3253,6 +3261,7 @@ while game:
                         for toggle in guiToggleList:
                             if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
                                 toggle.toggle = not question.toggle
+                                buttonClick.play(0)
                                 if toggle == settings2:
                                     settings = True
                                 if toggle == githubButton:
@@ -3323,6 +3332,7 @@ while game:
                             card.was_dragged = False
                             break
                     if Playhand_rect.collidepoint(mouse_pos):
+                        buttonClick.play(0)
                         if hands > 0 and not scoring_in_progress:
                             mouth_triggered = False
                             for card in hand:
@@ -3362,6 +3372,7 @@ while game:
                                 scoring_sequence_index = 0
                                 
                     if Discardhand_rect.collidepoint(mouse_pos):
+                        buttonClick.play(0)
                         if discards > 0 and not scoring_in_progress:
                             for card in hand:
                                 if card.freeze_timer >= 0:
@@ -3376,12 +3387,15 @@ while game:
                             discarding = True
                             discards -= 1
                     if SortbuttonRank_rect.collidepoint(mouse_pos):
+                        buttonClick.play(0)
                         sort_mode = "rank"
                         sort_hand()
                     if SortbuttonSuit_rect.collidepoint(mouse_pos):
+                        buttonClick.play(0)
                         sort_mode = "suit"
                         sort_hand()
                     if ShopBuy_rect.collidepoint(mouse_pos):
+                            buttonClick.play(0)
                             for card in Shop_Cards:
                                 if card.state == "selected" and money >= card.price:
                                     if len(Active_Jokers) < maxJokerCount:
@@ -3415,6 +3429,7 @@ while game:
                                         GameState = "TarotPack"
                                     ShopPacks.remove(pack)
                     if SellButton_rect.collidepoint(mouse_pos):
+                        buttonClick.play(0)
                         for card in Active_Jokers:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -3432,6 +3447,7 @@ while game:
                                 Held_Consumables.remove(card)
                                 money += int(card.price / 2)
                     if UseButton_rect.collidepoint(mouse_pos):
+                        buttonClick.play(0)
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -3439,6 +3455,7 @@ while game:
                                 Held_Consumables.remove(card)
                                 get_cons_effect(card.name)
                     if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
+                        buttonClick.play(0)
                         if rerollCost <= money:
                             rerolls += 1
                             for joker in Shop_Cards:
@@ -3472,6 +3489,7 @@ while game:
                                             break
                                 Shop_Cards.append(card)
                     if NextRound_rect.collidepoint(mouse_pos) and GameState == "Shop":
+                        buttonClick.play(0)
                         GameState = "Blinds"
                         Shop_Cards.clear()
                         ShopPacks.clear()
@@ -3483,6 +3501,7 @@ while game:
                         context = joker_manager.trigger('on_round_start', context)
                         break
                     if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
+                        buttonClick.play(0)
                         GameState = "Playing"
                         current_blind = None
                         victory = False
@@ -3512,6 +3531,7 @@ while game:
                                 hand.append(card)
                         break
                     if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
+                        buttonClick.play(0)
                         round_num += 1
                         current_blind = None
                         victory = False
