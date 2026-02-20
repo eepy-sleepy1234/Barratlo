@@ -1,0 +1,1 @@
+[blue]+100[/blue] Chips if the played hand contains a [orange]Straight[/orange]
