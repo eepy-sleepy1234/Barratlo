@@ -3087,7 +3087,7 @@ def get_tarot_effect(name):
                 card.suit = "Stone"
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
-                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Stone", None, None, None
+                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Stone", 0, 0, 0
                         break
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
