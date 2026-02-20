@@ -580,7 +580,7 @@ def blit_img():
             
 
                     
-                
+               
               
             elif dev_command.lower() == 'setblit':
                 asset = input('Input asset name, including .png if a png: ')
@@ -667,7 +667,7 @@ def blit_img():
                 
             
             elif dev_command.lower() == 'help':
-                print("Commands: \n Help\n reblit\n unblit\n exit\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n setround\n setboss\n addjoker\n")
+                print("Commands: \n Help\n reblit\n unblit\n exit\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n setround\n setboss\naddtarot\n addjoker\n")
                 
 
             elif dev_command.lower() == 'blitx':
@@ -859,6 +859,7 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
         'orange': (240, 150, 40),
         'green': (0, 200, 0),
         'white': (255, 255, 255),
+        'gray':(128.128,128),
     }
 
     def parse_segments(line):
@@ -924,7 +925,7 @@ def process_dev_command(command):
     global blitting, blitting_img, blitting_img_original, blitpositionx, blitpositiony
     global scaling, dimensionsx, dimensionsy, Active_Jokers, All_Jokers, All_Jokers_Name
     global dev_awaiting_input, dev_current_command, dev_input_prompt, dev_multi_step_data
-    global money
+    global money,TarotCards,Held_Consumables
     
     command = command.strip()
     if dev_awaiting_input:
@@ -934,8 +935,39 @@ def process_dev_command(command):
     
     command_lower = command.lower()
     if command_lower == 'help':
-        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
+        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n addtarot\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
+
+
+    elif command_lower == 'addtarot':
+        dev_awaiting_input = True
+        tarots = []
+        for tarot in TarotCards:
+            tarots.append(tarot.name)
+        
+        dev_input_prompt = "Tarot Name"
+        dev_current_command = "addtarot"
+        return f"Available Consumables: {', '.join(tarots)}\n(Type Tarot Card name)"
     
+    elif command_lower == 'addshadow':
+        dev_awaiting_input = True
+        shadow = []
+        for s in ShadowCards:
+            shadow.append(s.name)
+        
+        dev_input_prompt = "Shadow Name"
+        dev_current_command = "addshadow"
+        return f"Available Consumables: {', '.join(shadow)}\n(Type Shadow Card name)"
+    
+    elif command_lower == 'addspectral':
+        dev_awaiting_input = True
+        spectrals = []
+        for spectral in SpectralCards:
+            spectrals.append(spectral.name)
+        
+        dev_input_prompt = "Spectral Name"
+        dev_current_command = "addspectral"
+        return f"Available Consumables: {', '.join(spectrals)}\n(Type Spectral Card name)"
+
     elif command_lower == 'exit':
         DEV_MODE.toggle = False
         return "Developer Mode disabled"
@@ -943,7 +975,7 @@ def process_dev_command(command):
         dev_awaiting_input = True
         dev_current_command = 'addjoker'
         dev_input_prompt = "Joker name"
-        return f"Available jokers: {', '.join(All_Jokers_Name[:8])}\n(Type joker name)"
+        return f"Available jokers: {', '.join(All_Jokers_Name)}\n(Type joker name)"
     elif command_lower == 'resetdeck':
         hand.clear()
         deck.clear()
@@ -1065,6 +1097,42 @@ def handle_multi_step_input(input_text):
             return f"Boss set to {current_blind.name}"
         dev_awaiting_input = False
         return f"Boss '{boss_name}' not found"
+    
+    elif dev_current_command == 'addtarot':
+        tarotToAdd = input_text
+        for tarot in TarotCards:
+            if (tarot.name).lower() == input_text:
+                
+                new_tarot = Consumable(tarot.image, tarot.name)
+                Held_Consumables.append(new_tarot)
+                dev_awaiting_input = False
+                return f"Added '{tarotToAdd}' to Consumables"
+        dev_awaiting_input = False
+        return f"Tarot Card Not Found"
+
+    elif dev_current_command == 'addshadow':
+        shadowToAdd = input_text
+        for s in ShadowCards:
+            if (s.name).lower() == input_text:
+                
+                new_tarot = Consumable(s.image, s.name)
+                Held_Consumables.append(new_tarot)
+                dev_awaiting_input = False
+                return f"Added '{shadowToAdd}' to Consumables"
+        dev_awaiting_input = False
+        return f"Shadow Card Not Found"
+
+    elif dev_current_command == 'addspectral':
+        specToAdd = input_text
+        for spec in SpectralCards:
+            if (spec.name).lower() == input_text:
+                
+                new_tarot = Consumable(spec.image, spec.name)
+                Held_Consumables.append(new_tarot)
+                dev_awaiting_input = False
+                return f"Added '{specToAdd}' to Consumables"
+        dev_awaiting_input = False
+        return f"Spectral Card Not Found"
     
   
     elif dev_current_command == 'money':
