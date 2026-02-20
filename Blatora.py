@@ -838,7 +838,86 @@ def blit_img():
                 print("Unknown command. Type 'help' for list of commands.")
 
             dev_command = input("Input Developer Command")    
-    
+
+
+
+
+def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
+    x = rect.x + padding
+    y = rect.y + padding
+    max_width = rect.width - padding * 2
+    line_height = font.get_linesize()
+
+    if bg_color:
+        pygame.draw.rect(surface, bg_color, rect)
+        pygame.draw.rect(surface, color, rect, 2)
+
+    COLOR_TAGS = {
+        'red': (230, 50, 50),
+        'blue': (50, 150, 255),
+        'yellow': (250, 220, 80),
+        'orange': (240, 150, 40),
+        'green': (0, 200, 0),
+        'white': (255, 255, 255),
+    }
+
+    def parse_segments(line):
+        segments = []
+        pattern = re.compile(r'\[(\w+)\](.*?)\[/\1\]', re.DOTALL)
+        last = 0
+        for m in pattern.finditer(line):
+            if m.start() > last:
+                segments.append((line[last:m.start()], color))
+            seg_color = COLOR_TAGS.get(m.group(1), color)
+            segments.append((m.group(2), seg_color))
+            last = m.end()
+        if last < len(line):
+            segments.append((line[last:], color))
+        return segments
+
+    for paragraph in text.split('\n'):
+        if paragraph.strip() == '':
+            y += line_height
+            continue
+
+        stripped = paragraph.lstrip(' ')
+        indent_chars = len(paragraph) - len(stripped)
+        indent_px = font.size(' ')[0] * indent_chars
+
+        segments = parse_segments(stripped)
+
+        words = []
+        for seg_text, seg_color in segments:
+            for word in seg_text.split(' '):
+                if word:
+                    words.append((word, seg_color))
+
+        line_words = []
+        line_width = 0
+        for word, col in words:
+            w = font.size(word + ' ')[0]
+            if line_width + w > max_width - indent_px and line_words:
+                draw_x = x + indent_px
+                for lw, lc in line_words:
+                    surf = font.render(lw + ' ', True, lc)
+                    surface.blit(surf, (draw_x, y))
+                    draw_x += surf.get_width()
+                y += line_height
+                line_words = []
+                line_width = 0
+            line_words.append((word, col))
+            line_width += w
+
+        if line_words:
+            draw_x = x + indent_px
+            for lw, lc in line_words:
+                surf = font.render(lw + ' ', True, lc)
+                surface.blit(surf, (draw_x, y))
+                draw_x += surf.get_width()
+            y += line_height
+
+
+
 def process_dev_command(command):
     global dev_command, ante, joker_manager, round_num, current_blind, target_score
     global hands, discards, chips, mult, hand, deck, perm_deck, handsize
@@ -2154,7 +2233,23 @@ def check_blind_defeated():
         return True
     else:
         return False
+def get_file_names(folder):
+    names = []
+    for filename in os.listdir(folder):
+        if filename.endswith(".txt"):
+            names.append(filename[:-4]) 
+    return names
 
+def get_file_contents(folder, names):
+    contents = {}
+    for name in names:
+        with open(os.path.join(folder, name + ".txt"), "r") as f:
+            contents[name] = f.read()
+    return contents
+
+joker_folder = os.path.join(TEXT_PATH, "Jokers")
+jokerDescription = get_file_contents(joker_folder, get_file_names(joker_folder))
+print(jokerDescription)
 class Joker:
     card_id_counter = 0
     def __init__(self, image, rarity, name, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -2192,6 +2287,7 @@ class Joker:
         self.drag_offset_y = 0
         self.was_dragged = False
         self.scoring_animating = False
+        self.description = ""
         self.idx = 0
         match rarity:
             case 'C':
@@ -2211,6 +2307,23 @@ class Joker:
                     self.sound.play(-1)
                 else:
                     self.sound.play(0)
+
+    
+        if self.name in jokerDescription:
+            self.description = jokerDescription[self.name]
+           
+    def get_description(self):
+        if self.name not in jokerDescription:
+            return ""
+        desc = jokerDescription[self.name]
+        if self.name == "Wet Floor Joker":
+            desc = desc.replace("{value}", str(JokerEffects.wetFloorValue))
+        elif self.name == "Ptsd Joker":
+            desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
+        desc = desc.replace("{break}", "\n")
+        desc = desc.replace("[indent]", "    ")
+        desc = desc.replace("[indent2]", "        ")
+        return desc
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -3135,6 +3248,16 @@ while game:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
                 hovering = True
                 break
+
+        hovered_joker = None
+        for joker in Active_Jokers:
+            if joker.x > 0 and joker.rect.collidepoint(cursor_pos):
+                hovered_joker = joker
+                break
+        for joker in Shop_Cards:
+            if isinstance(joker, Joker) and joker.x > 0 and joker.rect.collidepoint(cursor_pos):
+                hovered_joker = joker
+                break
         for card in hand:
             if card.rect.collidepoint(cursor_pos) and GameState != "Dead":
                 hovering = True
@@ -4052,6 +4175,32 @@ while game:
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
+
+        if hovered_joker and hovered_joker.description:
+            tip_w = int(WIDTH / 8)
+            tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
+            tip_x = max(0, min(tip_x, WIDTH - tip_w))
+
+            desc = hovered_joker.get_description()
+            words = desc.split()
+            lines, line = [], ''
+            for word in words:
+                test = line + word + ' '
+                if PixelFontXXS.size(test)[0] <= tip_w - 20:
+                    line = test
+                else:
+                    lines.append(line)
+                    line = word + ' '
+            if line:
+                lines.append(line)
+            tip_h = len(lines) * PixelFontXXS.get_linesize() + 20
+            if hovered_joker.rect.bottom + tip_h > HEIGHT:
+                tip_y = int(hovered_joker.rect.top - tip_h - 10)
+            else:
+                tip_y = int(hovered_joker.rect.bottom + 10)
+            tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
+            draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30))
+        
         update_card_animation()
 
         if SO_SERIOUS.toggle or jonkler_sphere_active:
