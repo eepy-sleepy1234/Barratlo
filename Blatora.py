@@ -2875,13 +2875,13 @@ def get_selected_Shop_Cards(joker):
     
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
-    if name == "Hermit":
+    if name.lower() == "hermit":
         if money > 20:
             money += 20
         else:
             money *= 2
         lastFool = "Hermit"
-    if name == "Temperance":
+    if name.lower() == "temperance":
         price_count = 0
         for joker in Active_Jokers:
             price_count += int(joker.price / 2)
@@ -3077,7 +3077,7 @@ def get_tarot_effect(name):
                         perm_card.refresh_image()
                         break
             lastFool = "Sun"
-    if name == "Tower":
+    if name.lower() == "tower":
        if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Stone"
