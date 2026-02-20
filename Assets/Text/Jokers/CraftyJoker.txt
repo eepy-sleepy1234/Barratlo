@@ -1,0 +1,1 @@
+[blue]+80[/blue] Chips if the played hand contains a [orange]Flush[/orange]

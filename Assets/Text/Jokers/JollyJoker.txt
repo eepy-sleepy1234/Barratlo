@@ -1,0 +1,1 @@
+[red]+8[/red] Mult if the played hand contains a [orange]Pair[/orange]
