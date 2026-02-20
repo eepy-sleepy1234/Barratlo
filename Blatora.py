@@ -1809,36 +1809,32 @@ currentFrame = 0
 spacing = 600 / handsize * WIDTH/1500
 
 def boss_debuff():
-    global handsize, max_handsize, round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue, hand, deck, current_blind, selected_cards, mouth_triggered, is_straight
+    global handsize, max_handsize, round_num, boss_name, boss_calculated, scoring_in_progress, final_score, target_score, hands, discards, max_hand, discarding, discard_queue, hand, deck, current_blind, selected_cards, mouth_triggered, is_straight, saved_hand
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
                 if card.suit == "Hearts":
                     card.is_debuffed = True
-            for card in hand:
-                if card.suit == "Hearts":
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Arrow":
             for card in deck:
                 if card.suit == "Spades":
                     card.is_debuffed = True
-            for card in hand:
-                if card.suit == "Spades":
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Cone":
             for card in deck:
                 if card.suit == "Clubs":
                     card.is_debuffed = True
-            for card in hand:
-                if card.suit == "Clubs":
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Bow":
             for card in deck:
                 if card.suit == "Diamonds":
                     card.is_debuffed = True
-            for card in hand:
-                if card.suit == "Diamonds":
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Bounce":
             if final_score > target_score / 3:
                 final_score = int(target_score / 3)
@@ -1850,31 +1846,24 @@ def boss_debuff():
             return blurred
         if current_blind.name == "The Bridge":
             for card in deck:
-                if card.chip_value <= 9:
+                if card.value <= 9:
                     card.is_debuffed = True
-            for card in hand:
-                if card.chip_value <= 9:
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Chair":
             for card in deck:
-                if card.chip_value >= 10:
+                if card.value >= 10:
                     card.is_debuffed = True
-            for card in hand:
-                if card.chip_value >= 10:
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Crate":
             for card in deck:
                 if card.value % 2 == 0:
                     card.is_debuffed = True
-            for card in hand:
-                if card.value % 2 == 0:
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Luck":
             for card in deck:
-                rand = random.randint(1, 5)
-                if rand == 1 and not card.debuff_assigned:
-                    card.is_debuffed = True
-            for card in hand:
                 rand = random.randint(1, 5)
                 if rand == 1 and not card.debuff_assigned:
                     card.is_debuffed = True
@@ -1889,10 +1878,10 @@ def boss_debuff():
             played_card_count = 0
             for card in hand:
                 if card.state:
-                    if card.state in ("played", "scored"):
+                    if card.state in ("played", "scored", "scoring"):
                         played_card_count += 1
             for card in hand:
-                if played_card_count not in (1, 3, 5) and card.state in ("played", "scored"):
+                if played_card_count % 2 != 1 and card.state in ("played", "scored"):
                     card.is_debuffed = True
         if current_blind.name == "The Twin":
             hand_type, contributing = detect_hand(selected_cards)
@@ -1908,20 +1897,14 @@ def boss_debuff():
             for card in deck:
                 if card.suit in ("Hearts", "Diamonds"):
                     card.freeze_timer = 4
-            for card in hand:
-                if card.suit in ("Hearts", "Diamonds"):
-                    card.freeze_timer = 4
         if current_blind.name == "The Splinter":
-            for card in hand:
+            for card in deck:
                 if card.suit in ("Spades", "Clubs"):
                     card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The South":
             for card in deck:
-                rand = random.randint(1, 5)
-                if rand == 1 and not card.debuff_assigned:
-                    card.is_frozen = True
-                    card.freeze_timer = random.randint(1, 3)
-            for card in hand:
                 rand = random.randint(1, 5)
                 if rand == 1 and not card.debuff_assigned:
                     card.is_frozen = True
@@ -1933,14 +1916,13 @@ def boss_debuff():
             for card in deck:
                 if card.value % 2 == 0:
                     card.is_debuffed = True
-            for card in hand:
-                if card.value % 2 == 0:
-                    card.is_debuffed = True
+                else:
+                    card.is_debuffed = False
         if current_blind.name == "The Spear":
-            hand_type, contributing = detect_hand(selected_cards)
+            contributing = detect_hand(selected_cards)[0]
             for card in hand:
                 if card.state in ("played", "scored"):
-                        if not hand_type in ("Straight", "Straight Flush", "Royal Flush"):
+                        if not saved_hand in ("Straight", "Straight Flush", "Royal Flush"):
                             card.is_debuffed = True
         if current_blind.name == "The Mouth":
             for card in hand:
@@ -1957,13 +1939,10 @@ def boss_debuff():
                     if card.state in ("played", "scored"):
                         played_card_count += 1
             for card in hand:
-                if played_card_count not in (2, 4) and card.state in ("played", "scored"):
+                if played_card_count % 2 != 0 and card.state in ("played", "scored"):
                     card.is_debuffed = True
         if current_blind.name == "The Sign":
             for card in deck:
-                if card.rank in ("J", "Q", "K"):
-                    card.freeze_timer = 4
-            for card in hand:
                 if card.rank in ("J", "Q", "K"):
                     card.freeze_timer = 4
         for card in deck:
@@ -2059,7 +2038,8 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         rotated_base = pygame.transform.rotate(scaled_base, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated_base, rect.topleft)
-        surface.blit(rotated, rect.topleft)
+        if card.enhancement != "Stone":
+            surface.blit(rotated, rect.topleft)
         card.rect = rect
 
 
@@ -2893,7 +2873,7 @@ def get_selected_Shop_Cards(joker):
     else:
         return (-100, -100)
     
-def get_cons_effect(name):
+def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
     if name == "Hermit":
         if money > 20:
@@ -2904,7 +2884,7 @@ def get_cons_effect(name):
     if name == "Temperance":
         price_count = 0
         for joker in Active_Jokers:
-            price_count += joker.price / 2
+            price_count += int(joker.price / 2)
         if price_count > 50:
             price_count = 50
         money += price_count
@@ -2976,8 +2956,9 @@ def get_cons_effect(name):
         if len(selected_cards) == 2:
             card1 = selected_cards[0]
             card2 = selected_cards[1]
-            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal
+            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal, card1.value, card1.chip_value = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal, card2.value, card2.chip_value
             card1.refresh_image()
+            print(f"{card1.rank} of {card1.suit}")
         lastFool = "Death"
     if name == "Devil":
         if len(selected_cards) < 2:
@@ -3049,7 +3030,7 @@ def get_cons_effect(name):
                         break
         lastFool = "Magician"
     if name == "Moon":
-        if len(selected_cards) < 3:
+        if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Clubs"
                 card.refresh_image()
@@ -3059,7 +3040,7 @@ def get_cons_effect(name):
                         break
             lastFool = "Clubs"
     if name == "Star":
-        if len(selected_cards) < 3:
+        if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
                 card.refresh_image()
@@ -3071,18 +3052,10 @@ def get_cons_effect(name):
     if name == "Strength":
         if len(selected_cards) < 3:
             for card in selected_cards:
-                if card.rank == "J":
-                    card.rank = "Q"
-                elif card.rank == "Q":
-                    card.rank = "K"
-                elif card.rank == "K":
-                    card.rank = "A"
-                elif card.rank == "A":
-                    card.rank = "Two"
-                elif card.rank in RANK_VALUES:
+                if card.rank in RANK_VALUES:
                     keys = list(RANK_VALUES.keys())
                     idx = keys.index(card.rank)
-                    card.rank = keys[(idx + 1) % len(keys)]
+                    card.rank = keys[idx + 1 if idx < len(RANK_VALUES) else 0]
                 card.value = RANK_VALUES[card.rank]
                 card.refresh_image()
                 for perm_card in perm_deck:
@@ -3092,7 +3065,7 @@ def get_cons_effect(name):
                         break
         lastFool = "Strength"
     if name == "Sun":
-        if len(selected_cards) < 3:
+        if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Hearts"
                 card.name = f"{card.rank} of {card.suit}"
@@ -3108,10 +3081,13 @@ def get_cons_effect(name):
        if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Stone"
-                card.refresh_image()
+                card.rank = 0
+                card.value = 0
+                card.chip_value = 50
+                card.suit = "Stone"
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
-                        perm_card.enhancement = "Stone"
+                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Stone", None, None, None
                         break
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
@@ -3126,7 +3102,7 @@ def get_cons_effect(name):
             elif wheelnum2 == 3:
                 jonker.edition = "Polychrome"
     if name == "World":
-        if len(selected_cards) < 3:
+        if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Spades"
                 card.refresh_image()
@@ -3135,6 +3111,45 @@ def get_cons_effect(name):
                         perm_card.suit = "Spades"
                         break
             lastFool = "World"
+def get_shadow_effect(name):
+    global Hand_levels
+    if name == "Big":
+        Hand_levels["Flush"] += 1
+        lastFool = "Big"
+    elif name == "The Reaper":
+        Hand_levels["Five of a Kind"] += 1
+        lastFool = "The Reaper"
+    elif name == "Fists":
+        Hand_levels["Four of a Kind"] += 1
+        lastFool = "Fists"
+    elif name == "Glitch":
+        Hand_levels["Flush House"] += 1
+        lastFool = "Glitch"
+    elif name == "Ice":
+        Hand_levels["Two Pair"] += 1
+        lastFool = "Ice"
+    elif name == "King Shadow":
+        Hand_levels["Flush House"] += 1
+        lastFool = "King Shadow"
+    elif name == "Quick":
+        Hand_levels["Pair"] += 1
+        lastFool = "Quick"
+    elif name == "Shadow":
+        Hand_levels["Full House"] += 1
+        lastFool = "Shadow"
+    elif name == "Shadowbot":
+        Hand_levels["Straight Flush"] += 1
+        lastFool = "Shadowbot"
+    elif name == "Stretch":
+        Hand_levels["Straight"] += 1
+        lastFool = "Stretch"
+    elif name == "The Doctor":
+        Hand_levels["High Card"] += 1
+        lastFool = "The Doctor"
+    elif name == "Trick":
+        Hand_levels["Three of a Kind"] += 1
+        lastFool = "Trick"
+
     
 init_video()
 game = True
@@ -3663,7 +3678,10 @@ while game:
                                 ActiveJokerSelected = False
                                 card.state = "normal"
                                 Held_Consumables.remove(card)
-                                get_cons_effect(card.name)
+                                if card in TarotCards:
+                                    get_tarot_effect(card.name)
+                                elif card in ShadowCards:
+                                    get_shadow_effect(card.name)
                     if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
                         buttonClick.play(0)
                         if rerollCost <= money:
@@ -3998,8 +4016,10 @@ while game:
         screen.blit(SideBar_img, (0, 0))
         
         if not calculating:
-            selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring")]
+            selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring", "scored")]
             if len(selected_cards) > 0:
+                for card in selected_cards:
+                    print(f"{card.rank} of {card.suit}")
                 hand_type, contributing = detect_hand(selected_cards)
             else:
                 hand_type, contributing = None, None
