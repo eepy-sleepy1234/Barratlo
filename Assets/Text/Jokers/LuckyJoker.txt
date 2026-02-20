@@ -1,1 +1,0 @@
-Doubles all listed [green]probabilities[/green]{break}[grey](ex: [/grey][green]1 in 3 [/green][grey]-> [/grey][green]2 in 3 [/green][grey])[/grey]

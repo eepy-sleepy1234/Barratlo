@@ -1,1 +1,0 @@
-If the hand includes a Heart OR a Spade retrigger all scored cards once. [grey](Not both)[/grey]

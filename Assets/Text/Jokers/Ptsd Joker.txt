@@ -1,1 +1,0 @@
-Gains [red]X0.1[/red] Mult for each hand played that was not the previous hand{break}Current Mult: [red]X{value}[/red]

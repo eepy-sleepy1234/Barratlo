@@ -1,2 +1,0 @@
-[red]X1.5[/red] Mult
-[red][/red] Mult if played hand contains exactly 2 suits

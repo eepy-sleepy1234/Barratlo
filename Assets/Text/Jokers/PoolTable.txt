@@ -1,1 +1,0 @@
-[yellow]+$.1[/yellow] earned at end of blind for every hand{break}[grey](Currently [/grey][yellow]${value} [/yellow][grey])[/grey]
