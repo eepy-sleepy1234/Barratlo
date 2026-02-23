@@ -1411,6 +1411,7 @@ mainMusicPlaying = True
     
 perm_deck = []
 Active_Jokers = []
+packHand = []
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
@@ -2126,10 +2127,10 @@ def shopAnimaton():
     
     global shop_down
 
-    if GameState != "Shop" and not shop_down:
+    if GameState not in ("Shop", "TarotPack", "SpectralPack", "ShadowPack", "StandardPack") and not shop_down:
         shopAnimation.current_frame = 0
         
-    if GameState == "Shop":
+    if GameState in ("Shop", "TarotPack", "SpectralPack", "ShadowPack", "StandardPack"):
         if shop_down == False:
             if shopAnimation.current_frame >= 66:
                 shop_down = True
@@ -3573,7 +3574,7 @@ while game:
                             card.drag_start = (mouse_x, mouse_y)
                             card.was_dragged = False
                             break
-                    if Playhand_rect.collidepoint(mouse_pos):
+                    if Playhand_rect.collidepoint(mouse_pos) and GameState == "Playing":
                         buttonClick.play(0)
                         if hands > 0 and not scoring_in_progress:
                             mouth_triggered = False
@@ -3613,7 +3614,7 @@ while game:
                                         scoring_queue[0].scaling = True
                                 scoring_sequence_index = 0
                                 
-                    if Discardhand_rect.collidepoint(mouse_pos):
+                    if Discardhand_rect.collidepoint(mouse_pos) and GameState == "Playing":
                         buttonClick.play(0)
                         if discards > 0 and not scoring_in_progress:
                             for card in hand:
@@ -3669,6 +3670,14 @@ while game:
                                         GameState = "SpectralPack"
                                     if "Tarot" in pack.name:
                                         GameState = "TarotPack"
+                                        reset_deck_for_new_round()
+                                        for i in range(max_handsize):
+                                            if deck:
+                                                card = deck.pop()
+                                                card.slot = i
+                                                card.x, card.y = WIDTH + 100, HEIGHT - 170
+                                                card.state = "hand"
+                                                hand.append(card)
                                     ShopPacks.remove(pack)
                     if SellButton_rect.collidepoint(mouse_pos):
                         buttonClick.play(0)
@@ -3759,7 +3768,7 @@ while game:
                         if jonkler_sphere_active:
                             jonkler_sphere_clicked = False
                         
-                        reset_deck_for_new_round()  # replaces deck = perm_deck.copy() and hand clearing
+                        reset_deck_for_new_round()
                         
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
@@ -4276,12 +4285,14 @@ while game:
         draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
         consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
+        if GameState in ("TarotPack", "SpectralPack"):
+            draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
         if GameState == "Shop":
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
 
-        if hovered_joker and hovered_joker.description:
+        if hovered_joker and hovered_joker.description and GameState == "Shop":
             tip_w = int(WIDTH / 8)
             tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
             tip_x = max(0, min(tip_x, WIDTH - tip_w))
