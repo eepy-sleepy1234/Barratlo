@@ -2776,6 +2776,7 @@ def detect_hand(cards):
     n = len(cards)
     if n == 0:
         return "", []
+    s = len([c for c in cards if c.enhancement == "Stone"])
     values = sorted([c.value for c in cards if c.enhancement != "Stone"])
     suits = [c.suit for c in cards if c.enhancement != "Stone"]
     value_counts = Counter(values)
@@ -2804,6 +2805,9 @@ def detect_hand(cards):
     elif 4 in value_counts.values():
         four_value = [val for val, count in value_counts.items() if count == 4][0]
         contributing = [c for c in cards if c.value == four_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
         contributing = cards[:]
@@ -2817,18 +2821,33 @@ def detect_hand(cards):
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
         contributing = [c for c in cards if c.value == three_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
         pair_values = [val for val, count in value_counts.items() if count == 2]
         contributing = [c for c in cards if c.value in pair_values]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Two Pair", contributing
     elif 2 in value_counts.values():
         pair_value = [val for val, count in value_counts.items() if count == 2][0]
         contributing = [c for c in cards if c.value == pair_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Pair", contributing
     else:
-        high_value = max(values)
+        if s < len(cards):
+            high_value = max(values)
+        else:
+            high_value = 0
         contributing = [c for c in cards if c.value == high_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "High Card", contributing
 
 letter_animation = True
