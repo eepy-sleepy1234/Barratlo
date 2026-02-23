@@ -211,7 +211,7 @@ SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.
 SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
 SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
 SHOPANIMATIONIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'Shop_Animation.png'))
-GLITCHSHEET = load_image_safe(os.path.join(SPRITESHEETS_DIR,'GlitchBaseSprite.png'))
+GLITCHSHEET = load_image_safe(os.path.join(SPRITESHEETS_DIR,'GlitchBaseSpriteSheet.png'))
 
 # ==================== CURSORS ====================
 cursor_normal = load_image_safe(os.path.join(GUI_DIR, 'CursorNormal.png'))
@@ -2017,8 +2017,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         filepath = enhancement + "Base.png"
         filepath = os.path.join(BASES_DIR, filepath)
         card_base = pygame.image.load(filepath).convert_alpha()
-        if card.enhancement == "Stone":
-            card.image = glitchimage
+    
         scaled_base = pygame.transform.smoothscale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
             card.chip_value = 0
@@ -2044,6 +2043,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         surface.blit(rotated_base, rect.topleft)
         if card.enhancement != "Stone":
             surface.blit(rotated, rect.topleft)
+        else:
+            scaled_glitch = pygame.transform.smoothscale(glitchimage, (scaled_w, scaled_h))
+            rotated_glitch = pygame.transform.rotate(scaled_glitch, angle)
+            glitch_rect = rotated_glitch.get_rect(center=(card.x, card.y))
+            surface.blit(rotated_glitch, glitch_rect.topleft)
         card.rect = rect
 
 
@@ -2139,7 +2143,7 @@ GLITCHOBJ = SpriteSheet(GLITCHSHEET)
 glitchframes = GLITCHOBJ.get_all_frames(80, 110, rows=1, cols=42)
 glitch_index = 0
 glitch = glitchframes[0]  
-
+glitchimage = glitchframes[0]
 
 def animateGlitch():
     global glitch_index 
