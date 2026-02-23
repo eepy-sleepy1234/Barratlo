@@ -1,2 +1,0 @@
-Turn all cards in your deck into a single suit{break}after selecting each blind
-

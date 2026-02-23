@@ -1,1 +1,1 @@
-Jonkler Sphere appears once per round. Click it to discard entire hand.
+Click on Jonkler sphere popup at the start of the round to discard your first hand

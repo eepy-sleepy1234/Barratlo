@@ -1102,10 +1102,12 @@ def handle_multi_step_input(input_text):
         tarotToAdd = input_text
         for tarot in TarotCards:
             if (tarot.name).lower() == input_text:
-                
-                new_tarot = Consumable(tarot.image, tarot.name)
+                name = tarot.name
+                new_tarot = Consumable(tarot.image, name.title())
                 Held_Consumables.append(new_tarot)
                 dev_awaiting_input = False
+                for card in Held_Consumables:
+                    print(card.name)
                 return f"Added '{tarotToAdd}' to Consumables"
         dev_awaiting_input = False
         return f"Tarot Card Not Found"
@@ -2335,7 +2337,6 @@ def get_file_contents(folder, names):
 
 joker_folder = os.path.join(TEXT_PATH, "Jokers")
 jokerDescription = get_file_contents(joker_folder, get_file_names(joker_folder))
-print(jokerDescription)
 class Joker:
     card_id_counter = 0
     def __init__(self, image, rarity, name, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -2813,8 +2814,9 @@ def detect_hand(cards):
     n = len(cards)
     if n == 0:
         return "", []
-    values = sorted([c.value for c in cards])
-    suits = [c.suit for c in cards]
+    s = len([c for c in cards if c.enhancement == "Stone"])
+    values = sorted([c.value for c in cards if c.enhancement != "Stone"])
+    suits = [c.suit for c in cards if c.enhancement != "Stone"]
     value_counts = Counter(values)
     suits_counts = Counter(suits)
     is_flush = n == 5 and max(suits_counts.values()) == 5
@@ -2841,6 +2843,9 @@ def detect_hand(cards):
     elif 4 in value_counts.values():
         four_value = [val for val, count in value_counts.items() if count == 4][0]
         contributing = [c for c in cards if c.value == four_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
         contributing = cards[:]
@@ -2854,18 +2859,33 @@ def detect_hand(cards):
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
         contributing = [c for c in cards if c.value == three_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
         pair_values = [val for val, count in value_counts.items() if count == 2]
         contributing = [c for c in cards if c.value in pair_values]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Two Pair", contributing
     elif 2 in value_counts.values():
         pair_value = [val for val, count in value_counts.items() if count == 2][0]
         contributing = [c for c in cards if c.value == pair_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Pair", contributing
     else:
-        high_value = max(values)
+        if s < len(cards):
+            high_value = max(values)
+        else:
+            high_value = 0
         contributing = [c for c in cards if c.value == high_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "High Card", contributing
 
 letter_animation = True
@@ -2890,7 +2910,7 @@ def sort_hand():
     if sort_mode == "rank":
         hand.sort(key=lambda c: c.value, reverse=True)
     elif sort_mode == "suit":
-        suit_order = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1}
+        suit_order = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1, "Stone": 0}
         hand.sort(key=lambda c: (suit_order[c.suit], c.value), reverse = True)
     for scoring_sequence_index, c in enumerate(hand):
         c.slot = scoring_sequence_index
@@ -2913,13 +2933,13 @@ def get_selected_Shop_Cards(joker):
     
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
-    if name.lower() == "hermit":
+    if name == "Hermit":
         if money > 20:
             money += 20
         else:
             money *= 2
         lastFool = "Hermit"
-    if name.lower() == "temperance":
+    if name == "Temperance":
         price_count = 0
         for joker in Active_Jokers:
             price_count += int(joker.price / 2)
@@ -2996,7 +3016,6 @@ def get_tarot_effect(name):
             card2 = selected_cards[1]
             card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal, card1.value, card1.chip_value = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal, card2.value, card2.chip_value
             card1.refresh_image()
-            print(f"{card1.rank} of {card1.suit}")
         lastFool = "Death"
     if name == "Devil":
         if len(selected_cards) < 2:
@@ -3115,7 +3134,7 @@ def get_tarot_effect(name):
                         perm_card.refresh_image()
                         break
             lastFool = "Sun"
-    if name.lower() == "tower":
+    if name == "Tower":
        if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Stone"
@@ -3125,7 +3144,7 @@ def get_tarot_effect(name):
                 card.suit = "Stone"
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
-                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Stone", None, None, None
+                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Stone", 0, 0, "Stone"
                         break
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
@@ -3545,8 +3564,6 @@ while game:
                                 card.state = "discarded"
                             discard_queue = hand.copy()
                             discarding = True
-                        
-                            print("The Jonkler Baby activated! Discarding hand...")
                         else:
                             soserious.dragging = True
                             soserious.drag_offset_x = soserious.xpos - mouse_x
@@ -3716,10 +3733,12 @@ while game:
                                 ActiveJokerSelected = False
                                 card.state = "normal"
                                 Held_Consumables.remove(card)
-                                if card in TarotCards:
-                                    get_tarot_effect(card.name)
-                                elif card in ShadowCards:
-                                    get_shadow_effect(card.name)
+                                for tarot in TarotCards:
+                                    if tarot.name == card.name:
+                                        get_tarot_effect(card.name)
+                                for shadow in ShadowCards:
+                                    if shadow.name == card.name:
+                                        get_shadow_effect(card.name)
                     if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
                         buttonClick.play(0)
                         if rerollCost <= money:
@@ -4056,8 +4075,6 @@ while game:
         if not calculating:
             selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring", "scored")]
             if len(selected_cards) > 0:
-                for card in selected_cards:
-                    print(f"{card.rank} of {card.suit}")
                 hand_type, contributing = detect_hand(selected_cards)
             else:
                 hand_type, contributing = None, None
@@ -4476,10 +4493,8 @@ while game:
                     for card in hand:
                         discard_queue.append(card)
                     discarding = True
-                    print("Invincible Joker saved you!")
                 else:
                     GameState = "Dead"
-                    print("Dead")
                     most_played = max(hand_plays.items(), key=lambda item: item[1])
                     most_played = most_played[0]
         draw_dev_command_bar()
