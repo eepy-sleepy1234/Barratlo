@@ -315,6 +315,12 @@ def PoolTable_effect(context):
     return context
 
 def RulesCard_effect(context):
+    hand_played = context.get("hand_played")
+    rules_hand = context.get("rulesHand") 
+    hand_type, _ = hand_played and (context.get("hand_type"), None) or (None, None)
+    if context.get("hand_type") == rules_hand:
+        context["money"] = context.get('money', 0) + 5
+    context.setdefault('triggered_jokers', []).append('RulesCard')
     return context
 
 def TheJonklerBaby_effect(context):

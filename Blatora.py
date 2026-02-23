@@ -96,6 +96,8 @@ blue = (50, 50, 230)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
 black = (0, 0, 0)
+
+RulesHand = None
 with open((os.path.join(TEXT_PATH,"HelpMenu.md")), "r", encoding="utf-8") as file:
     helptext = file.read()
 
@@ -2413,6 +2415,11 @@ class Joker:
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
         elif self.name == "Pool Table":
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
+        elif self.name == "Rules Card":
+            if RulesHand is None:
+                desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
+            else:
+                desc = desc.replace("{value}", str(RulesHand))
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -3728,6 +3735,8 @@ while game:
                                     jevilActive = False
                                 if card.name == "Pool Table":
                                     JokerEffects.poolMoney = 0
+                                if card.name == "Rules Card":
+                                    RulesHand = None
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -4517,6 +4526,12 @@ while game:
         clock.tick(60)
         currentFrame += 1
 
+        for joker in Active_Jokers:
+            if joker.name == "Rules Card":
+                if RulesHand is None:
+                    RulesHand = random.choice(["Two Pair","High Card","Three of a Kind","Four of a Kind","Five of a Kind","Flush House","Flush Five","Straight","Straight Flush","Full House","Flush House","Pair","Flush","Royal Flush"])
+            
+
         for card in hand:
             card.update()
             if card.state == "discarded":
@@ -4592,6 +4607,7 @@ while game:
                 'hand_played': selected_cards, 
                 'card_play_counts': card_play_counts,
                 'money': money,
+                'rulesHand': RulesHand,
                 
 
 
