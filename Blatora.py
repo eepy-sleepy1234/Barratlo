@@ -2411,6 +2411,8 @@ class Joker:
             desc = desc.replace("{value}", str(JokerEffects.wetFloorValue))
         elif self.name == "Ptsd Joker":
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
+        elif self.name == "Pool Table":
+            desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -2906,7 +2908,7 @@ for i, letter in enumerate(sorted_letters):
     letter.animation = True
 current_order = sorted(Letters, key=lambda letter: letter.xpos)
 letter_string = ''.join([letter.letter for letter in current_order])
-
+sort_mode == "rank"
 startGame = False
 
 def sort_hand():
@@ -3362,7 +3364,7 @@ while game:
     overlay = pygame.Surface((WIDTH, HEIGHT))
     overlay.fill((0, 0, 0))  
     overlay.set_alpha(128)
-
+    
     while running:
 
         if Music.toggle:
@@ -3724,6 +3726,8 @@ while game:
                                
                                 if card.name == "Jevil":
                                     jevilActive = False
+                                if card.name == "Pool Table":
+                                    JokerEffects.poolMoney = 0
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -3801,7 +3805,8 @@ while game:
                         if jonkler_sphere_active:
                             jonkler_sphere_clicked = False
                         
-                        reset_deck_for_new_round()  # replaces deck = perm_deck.copy() and hand clearing
+                        reset_deck_for_new_round()
+                        
                         
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
@@ -3809,6 +3814,7 @@ while game:
                                 card.suit = newSuit
                                 card.refresh_image()
                         get_current_blind()
+                        sort_hand()
                         if round_num % 3 == 0:
                             boss_debuff()
                         for i in range(handsize):
@@ -4565,6 +4571,9 @@ while game:
                     scoring_queue[0].scaling = True
 
         if scored:
+            for joker in Active_Jokers:
+                if joker.name == "Pool Table":
+                    JokerEffects.poolMoney += 0.1
     
             selected_cards = [card for card in hand if card.state in ("played", "scored")]
           
@@ -4582,6 +4591,7 @@ while game:
                 'deck': deck,
                 'hand_played': selected_cards, 
                 'card_play_counts': card_play_counts,
+                'money': money,
                 
 
 
@@ -4589,12 +4599,14 @@ while game:
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
             saved_base_mult = context['mult']
+            money = context['money']
             final_score = int(round(saved_base_chips * saved_base_mult))
             for joke in Active_Jokers:
                 if joke.name == "Ptsd Joker":
 
                     if JokerEffects.last_hand_counter == 0:
                         ptsdExplosion.play(0)
+              
 
 
             for c in selected_cards:
@@ -4644,6 +4656,14 @@ while game:
                     victory = check_blind_defeated()
                     if victory:
                         GameState = "Cashing"
+                        context = {
+                            'active_jokers': Active_Jokers,
+                            'hands': hands,
+                            'money': money,
+                            'round_num': round_num,
+                        }
+                        context = joker_manager.trigger('on_round_end', context)
+                        money = context.get('money', money)
                         advance_to_next_blind()
                         get_current_blind()
                         for card in hand:
@@ -4660,6 +4680,6 @@ while game:
                     discard_timer += 1
             else:
                 discarding = False
-
+        
 close_video()
 pygame.quit()
