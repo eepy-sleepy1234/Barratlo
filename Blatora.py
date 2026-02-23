@@ -211,7 +211,7 @@ SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.
 SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
 SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
 SHOPANIMATIONIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'Shop_Animation.png'))
-
+GLITCHSHEET = load_image_safe(os.path.join(SPRITESHEETS_DIR,'GlitchBaseSprite.png'))
 
 # ==================== CURSORS ====================
 cursor_normal = load_image_safe(os.path.join(GUI_DIR, 'CursorNormal.png'))
@@ -2015,6 +2015,8 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         filepath = enhancement + "Base.png"
         filepath = os.path.join(BASES_DIR, filepath)
         card_base = pygame.image.load(filepath).convert_alpha()
+        if card.enhancement == "Stone":
+            card.image = glitchimage
         scaled_base = pygame.transform.smoothscale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
             card.chip_value = 0
@@ -2109,6 +2111,42 @@ setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
 shopAnimation = Animation(SHOPANIMATIONIMG, 476, 1600, 24, 87, 0 + ((HEIGHT/2.86 - HEIGHT/3.3)/2),0, int(HEIGHT/3.3), (HEIGHT/3.3 * 3.36134453782))
 
+import pygame
+
+class SpriteSheet:
+    def __init__(self, filename):
+        self.sheet = filename
+
+    def get_frame(self, x, y, width, height, scale=1):
+        frame = pygame.Surface((width, height), pygame.SRCALPHA)
+        frame.blit(self.sheet, (0, 0), (x, y, width, height))
+        if scale != 1:
+            frame = pygame.transform.scale(frame, (width * scale, height * scale))
+        return frame
+
+    def get_all_frames(self, frame_width, frame_height, rows=1, cols=1):
+        frames = []
+        for row in range(rows):
+            for col in range(cols):
+                x = col * frame_width
+                y = row * frame_height
+                frames.append(self.get_frame(x, y, frame_width, frame_height))
+        return frames
+
+GLITCHOBJ = SpriteSheet(GLITCHSHEET)
+glitchframes = GLITCHOBJ.get_all_frames(80, 110, rows=1, cols=42)
+glitch_index = 0
+glitch = glitchframes[0]  
+
+
+def animateGlitch():
+    global glitch_index 
+    global glitchimage
+    glitch_index += 0.15
+    if glitch_index >= len(glitchframes):
+        glitch_index = 0 
+    glitchimage = glitchframes[int(glitch_index)]
+    
 
 dev_command_bar_active = False
 dev_command_input = ""
@@ -4447,6 +4485,9 @@ while game:
         draw_dev_command_bar()
         if invincibleSplashEffect:
             invincibleSplash()
+
+        animateGlitch()
+
         pygame.display.flip()  
         clock.tick(60)
         currentFrame += 1
