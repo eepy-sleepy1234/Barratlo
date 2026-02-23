@@ -1,1 +1,1 @@
-Gains [red]X0.1[/red] Mult for each hand played that was not the previous hand{break}Current Mult: [red]X{value}[/red]
+Adds x.1 [red]Mult[/red] every time you play a hand that isnt the last hand you played{{break}}[grey](Currently[/grey][red]{{value}}[/red][grey])[/grey]
