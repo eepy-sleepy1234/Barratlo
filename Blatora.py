@@ -4699,8 +4699,10 @@ while game:
             for c in selected_cards:
                 c.state = "scored"
             
+            print(hand_type_temp)
             calculating = True
             JokerEffects.last_hand = hand_type_temp
+            print(JokerEffects.last_hand)
             scored = False
             calc_progress = 0.0
             add_progress = 0.0
