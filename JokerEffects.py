@@ -351,7 +351,7 @@ def Yang_effect(context):
 def PTSD_effect(context):
     global last_hand
     global last_hand_counter
-    hand = hand_contains(context)
+    hand = context.get("hand_type", 0)
     if hand == last_hand:
         last_hand_counter = 0
         
