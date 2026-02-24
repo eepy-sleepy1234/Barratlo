@@ -4700,6 +4700,7 @@ while game:
                 c.state = "scored"
             
             calculating = True
+            JokerEffects.last_hand = hand_type_temp
             scored = False
             calc_progress = 0.0
             add_progress = 0.0

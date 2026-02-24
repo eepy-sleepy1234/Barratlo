@@ -354,9 +354,9 @@ def PTSD_effect(context):
     hand = hand_contains(context)
     if hand == last_hand:
         last_hand_counter = 0
-        last_hand = hand
+        
     else:
-        last_hand = hand
+        
         last_hand_counter += 0.1
         context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
     context.setdefault('triggered_jokers', []).append('PTSD Joker')
