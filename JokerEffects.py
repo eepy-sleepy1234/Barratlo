@@ -4,6 +4,7 @@ wetFloorValue = 0
 last_hand = 0
 last_hand_counter = 0
 YinYang_Active = False
+poolMoney = 0
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -304,9 +305,22 @@ def Michigan_effect(context):
     return context
 
 def PoolTable_effect(context):
+    money = context.get('money')
+    money += poolMoney
+    money = round(money,1)
+    context.setdefault('triggered_jokers', []).append('Pool Table')
+    context['money'] = context.get('money',0) + money
+    
+
     return context
 
 def RulesCard_effect(context):
+    hand_played = context.get("hand_played")
+    rules_hand = context.get("rulesHand") 
+    hand_type, _ = hand_played and (context.get("hand_type"), None) or (None, None)
+    if context.get("hand_type") == rules_hand:
+        context["money"] = context.get('money', 0) + 5
+    context.setdefault('triggered_jokers', []).append('RulesCard')
     return context
 
 def TheJonklerBaby_effect(context):

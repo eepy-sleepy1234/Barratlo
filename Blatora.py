@@ -96,6 +96,8 @@ blue = (50, 50, 230)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
 black = (0, 0, 0)
+
+RulesHand = None
 with open((os.path.join(TEXT_PATH,"HelpMenu.md")), "r", encoding="utf-8") as file:
     helptext = file.read()
 
@@ -211,7 +213,7 @@ SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.
 SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
 SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
 SHOPANIMATIONIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'Shop_Animation.png'))
-
+GLITCHSHEET = load_image_safe(os.path.join(SPRITESHEETS_DIR,'GlitchBaseSpriteSheet.png'))
 
 # ==================== CURSORS ====================
 cursor_normal = load_image_safe(os.path.join(GUI_DIR, 'CursorNormal.png'))
@@ -1411,6 +1413,7 @@ mainMusicPlaying = True
     
 perm_deck = []
 Active_Jokers = []
+packHand = []
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
@@ -2017,6 +2020,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         filepath = enhancement + "Base.png"
         filepath = os.path.join(BASES_DIR, filepath)
         card_base = pygame.image.load(filepath).convert_alpha()
+    
         scaled_base = pygame.transform.smoothscale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
             card.chip_value = 0
@@ -2042,6 +2046,11 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         surface.blit(rotated_base, rect.topleft)
         if card.enhancement != "Stone":
             surface.blit(rotated, rect.topleft)
+        else:
+            scaled_glitch = pygame.transform.smoothscale(glitchimage, (scaled_w, scaled_h))
+            rotated_glitch = pygame.transform.rotate(scaled_glitch, angle)
+            glitch_rect = rotated_glitch.get_rect(center=(card.x, card.y))
+            surface.blit(rotated_glitch, glitch_rect.topleft)
         card.rect = rect
 
 
@@ -2111,6 +2120,42 @@ setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
 shopAnimation = Animation(SHOPANIMATIONIMG, 476, 1600, 24, 87, 0 + ((HEIGHT/2.86 - HEIGHT/3.3)/2),0, int(HEIGHT/3.3), (HEIGHT/3.3 * 3.36134453782))
 
+import pygame
+
+class SpriteSheet:
+    def __init__(self, filename):
+        self.sheet = filename
+
+    def get_frame(self, x, y, width, height, scale=1):
+        frame = pygame.Surface((width, height), pygame.SRCALPHA)
+        frame.blit(self.sheet, (0, 0), (x, y, width, height))
+        if scale != 1:
+            frame = pygame.transform.scale(frame, (width * scale, height * scale))
+        return frame
+
+    def get_all_frames(self, frame_width, frame_height, rows=1, cols=1):
+        frames = []
+        for row in range(rows):
+            for col in range(cols):
+                x = col * frame_width
+                y = row * frame_height
+                frames.append(self.get_frame(x, y, frame_width, frame_height))
+        return frames
+
+GLITCHOBJ = SpriteSheet(GLITCHSHEET)
+glitchframes = GLITCHOBJ.get_all_frames(80, 110, rows=1, cols=42)
+glitch_index = 0
+glitch = glitchframes[0]  
+glitchimage = glitchframes[0]
+
+def animateGlitch():
+    global glitch_index 
+    global glitchimage
+    glitch_index += 0.15
+    if glitch_index >= len(glitchframes):
+        glitch_index = 0 
+    glitchimage = glitchframes[int(glitch_index)]
+    
 
 dev_command_bar_active = False
 dev_command_input = ""
@@ -2126,10 +2171,10 @@ def shopAnimaton():
     
     global shop_down
 
-    if GameState != "Shop" and not shop_down:
+    if GameState not in ("Shop", "TarotPack", "SpectralPack", "ShadowPack", "StandardPack") and not shop_down:
         shopAnimation.current_frame = 0
         
-    if GameState == "Shop":
+    if GameState in ("Shop", "TarotPack", "SpectralPack", "ShadowPack", "StandardPack"):
         if shop_down == False:
             if shopAnimation.current_frame >= 66:
                 shop_down = True
@@ -2369,6 +2414,13 @@ class Joker:
             desc = desc.replace("{value}", str(JokerEffects.wetFloorValue))
         elif self.name == "Ptsd Joker":
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
+        elif self.name == "Pool Table":
+            desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
+        elif self.name == "Rules Card":
+            if RulesHand is None:
+                desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
+            else:
+                desc = desc.replace("{value}", str(RulesHand))
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -2776,6 +2828,7 @@ def detect_hand(cards):
     n = len(cards)
     if n == 0:
         return "", []
+    s = len([c for c in cards if c.enhancement == "Stone"])
     values = sorted([c.value for c in cards if c.enhancement != "Stone"])
     suits = [c.suit for c in cards if c.enhancement != "Stone"]
     value_counts = Counter(values)
@@ -2804,6 +2857,9 @@ def detect_hand(cards):
     elif 4 in value_counts.values():
         four_value = [val for val, count in value_counts.items() if count == 4][0]
         contributing = [c for c in cards if c.value == four_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
         contributing = cards[:]
@@ -2817,18 +2873,33 @@ def detect_hand(cards):
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
         contributing = [c for c in cards if c.value == three_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
         pair_values = [val for val, count in value_counts.items() if count == 2]
         contributing = [c for c in cards if c.value in pair_values]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Two Pair", contributing
     elif 2 in value_counts.values():
         pair_value = [val for val, count in value_counts.items() if count == 2][0]
         contributing = [c for c in cards if c.value == pair_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "Pair", contributing
     else:
-        high_value = max(values)
+        if s < len(cards):
+            high_value = max(values)
+        else:
+            high_value = 0
         contributing = [c for c in cards if c.value == high_value]
+        for c in cards:
+            if c.enhancement == "Stone":
+                contributing.append(c)
         return "High Card", contributing
 
 letter_animation = True
@@ -2845,7 +2916,7 @@ for i, letter in enumerate(sorted_letters):
     letter.animation = True
 current_order = sorted(Letters, key=lambda letter: letter.xpos)
 letter_string = ''.join([letter.letter for letter in current_order])
-
+sort_mode == "rank"
 startGame = False
 
 def sort_hand():
@@ -3301,7 +3372,7 @@ while game:
     overlay = pygame.Surface((WIDTH, HEIGHT))
     overlay.fill((0, 0, 0))  
     overlay.set_alpha(128)
-
+    
     while running:
 
         if Music.toggle:
@@ -3554,7 +3625,7 @@ while game:
                             card.drag_start = (mouse_x, mouse_y)
                             card.was_dragged = False
                             break
-                    if Playhand_rect.collidepoint(mouse_pos):
+                    if Playhand_rect.collidepoint(mouse_pos) and GameState == "Playing":
                         buttonClick.play(0)
                         if hands > 0 and not scoring_in_progress:
                             mouth_triggered = False
@@ -3594,7 +3665,7 @@ while game:
                                         scoring_queue[0].scaling = True
                                 scoring_sequence_index = 0
                                 
-                    if Discardhand_rect.collidepoint(mouse_pos):
+                    if Discardhand_rect.collidepoint(mouse_pos) and GameState == "Playing":
                         buttonClick.play(0)
                         if discards > 0 and not scoring_in_progress:
                             for card in hand:
@@ -3650,6 +3721,14 @@ while game:
                                         GameState = "SpectralPack"
                                     if "Tarot" in pack.name:
                                         GameState = "TarotPack"
+                                        reset_deck_for_new_round()
+                                        for i in range(max_handsize):
+                                            if deck:
+                                                card = deck.pop()
+                                                card.slot = i
+                                                card.x, card.y = WIDTH + 100, HEIGHT - 170
+                                                card.state = "hand"
+                                                hand.append(card)
                                     ShopPacks.remove(pack)
                     if SellButton_rect.collidepoint(mouse_pos):
                         buttonClick.play(0)
@@ -3663,6 +3742,10 @@ while game:
                                
                                 if card.name == "Jevil":
                                     jevilActive = False
+                                if card.name == "Pool Table":
+                                    JokerEffects.poolMoney = 0
+                                if card.name == "Rules Card":
+                                    RulesHand = None
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -3740,7 +3823,7 @@ while game:
                         if jonkler_sphere_active:
                             jonkler_sphere_clicked = False
                         
-                        reset_deck_for_new_round()  # replaces deck = perm_deck.copy() and hand clearing
+                        reset_deck_for_new_round()
                         
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
@@ -3748,6 +3831,7 @@ while game:
                                 card.suit = newSuit
                                 card.refresh_image()
                         get_current_blind()
+                        sort_hand()
                         if round_num % 3 == 0:
                             boss_debuff()
                         for i in range(handsize):
@@ -4257,12 +4341,14 @@ while game:
         draw_jokers(screen, Active_Jokers, WIDTH/1.8, HEIGHT/7, spread=jokerSpacing)
         consSpacing = 600 / (len(Held_Consumables) + 1) * WIDTH/2500
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
+        if GameState in ("TarotPack", "SpectralPack"):
+            draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
         if GameState == "Shop":
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
 
-        if hovered_joker and hovered_joker.description:
+        if hovered_joker and hovered_joker.description and GameState == "Shop":
             tip_w = int(WIDTH / 8)
             tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
             tip_x = max(0, min(tip_x, WIDTH - tip_w))
@@ -4443,9 +4529,18 @@ while game:
         draw_dev_command_bar()
         if invincibleSplashEffect:
             invincibleSplash()
+
+        animateGlitch()
+
         pygame.display.flip()  
         clock.tick(60)
         currentFrame += 1
+
+        for joker in Active_Jokers:
+            if joker.name == "Rules Card":
+                if RulesHand is None:
+                    RulesHand = random.choice(["Two Pair","High Card","Three of a Kind","Four of a Kind","Five of a Kind","Flush House","Flush Five","Straight","Straight Flush","Full House","Flush House","Pair","Flush","Royal Flush"])
+            
 
         for card in hand:
             card.update()
@@ -4501,6 +4596,9 @@ while game:
                     scoring_queue[0].scaling = True
 
         if scored:
+            for joker in Active_Jokers:
+                if joker.name == "Pool Table":
+                    JokerEffects.poolMoney += 0.1
     
             selected_cards = [card for card in hand if card.state in ("played", "scored")]
           
@@ -4518,6 +4616,8 @@ while game:
                 'deck': deck,
                 'hand_played': selected_cards, 
                 'card_play_counts': card_play_counts,
+                'money': money,
+                'rulesHand': RulesHand,
                 
 
 
@@ -4525,12 +4625,14 @@ while game:
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
             saved_base_mult = context['mult']
+            money = context['money']
             final_score = int(round(saved_base_chips * saved_base_mult))
             for joke in Active_Jokers:
                 if joke.name == "Ptsd Joker":
 
                     if JokerEffects.last_hand_counter == 0:
                         ptsdExplosion.play(0)
+              
 
 
             for c in selected_cards:
@@ -4580,6 +4682,14 @@ while game:
                     victory = check_blind_defeated()
                     if victory:
                         GameState = "Cashing"
+                        context = {
+                            'active_jokers': Active_Jokers,
+                            'hands': hands,
+                            'money': money,
+                            'round_num': round_num,
+                        }
+                        context = joker_manager.trigger('on_round_end', context)
+                        money = context.get('money', money)
                         advance_to_next_blind()
                         get_current_blind()
                         for card in hand:
@@ -4596,6 +4706,6 @@ while game:
                     discard_timer += 1
             else:
                 discarding = False
-
+        
 close_video()
 pygame.quit()
