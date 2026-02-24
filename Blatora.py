@@ -2804,6 +2804,8 @@ def change_notation(number):
         number = f"{saved_number}e{place}"
     return number
 
+
+
 def wrap_text(text, font, max_width):
     words = text.split(' ')
     lines = []
@@ -3872,9 +3874,43 @@ while game:
                         startGame = False
                         card_animating = True
                     if MainMenuButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
+                        GameState = None
+                        round_num = 1
+                        ante = 1
+                        hands = max_hand
+                        discards = max_discard
+                        current_score = 0
+                        total_score = 0
+                        blind_defeated = False
+                        victory = False
+                        money = 10000000
+                        cards_played = 0
+                        cards_discarded = 0
+                        purchases = 0
+                        rerolls = 0
+                        cards_found = 0
+                        highest_hand = 0
+                        most_played = 0
+                        hand_plays = {k: 0 for k in hand_plays}
+                        
+                        # Clear all card lists
+                        hand.clear()
+                        deck.clear()
+                        deck = perm_deck.copy()
+                        random.shuffle(deck)
+                        Active_Jokers.clear()
+                        Shop_Cards.clear()
+                        ShopPacks.clear()
+                        Held_Consumables.clear()
+                        
+                        # Reset flags
+                        scoring_in_progress = False
+                        calculating = False
+                        discarding = False
+                        
+                        # Return to main menu
                         running = False
                         startGame = False
-                        card_animating = False
                     if CopyButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
                         pyperclip.copy(seed)
                 if event.button == 3:
@@ -4290,7 +4326,13 @@ while game:
             screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
         screen.blit(JokerBG_img,(WIDTH/2.7, HEIGHT/30))
+        text = PixelFontXS.render(f"{len(Active_Jokers)} / {maxJokerCount}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/2.545, HEIGHT/3.7))
+        screen.blit(text, text_rect)
         screen.blit(ConsBG_img,(WIDTH/1.3, HEIGHT/30))
+        text = PixelFontXS.render(f"{len(Held_Consumables)} / {maxConsCount}", True, white)
+        text_rect = text.get_rect(center=(WIDTH/1.27, HEIGHT/3.7))
+        screen.blit(text, text_rect)
 
         if Atttention_helper.toggle:
             frame = get_video_frame()
@@ -4366,30 +4408,31 @@ while game:
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
 
-        if hovered_joker and hovered_joker.description and GameState == "Shop":
-            tip_w = int(WIDTH / 8)
-            tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
-            tip_x = max(0, min(tip_x, WIDTH - tip_w))
+        if hovered_joker and hovered_joker.description:
+            if hovered_joker not in Shop_Cards or GameState == "Shop":
+                tip_w = int(WIDTH / 8)
+                tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
+                tip_x = max(0, min(tip_x, WIDTH - tip_w))
 
-            desc = hovered_joker.get_description()
-            words = desc.split()
-            lines, line = [], ''
-            for word in words:
-                test = line + word + ' '
-                if PixelFontXXS.size(test)[0] <= tip_w - 20:
-                    line = test
-                else:
+                desc = hovered_joker.get_description()
+                words = desc.split()
+                lines, line = [], ''
+                for word in words:
+                    test = line + word + ' '
+                    if PixelFontXXS.size(test)[0] <= tip_w - 20:
+                        line = test
+                    else:
+                        lines.append(line)
+                        line = word + ' '
+                if line:
                     lines.append(line)
-                    line = word + ' '
-            if line:
-                lines.append(line)
-            tip_h = len(lines) * PixelFontXXS.get_linesize() + 20
-            if hovered_joker.rect.bottom + tip_h > HEIGHT:
-                tip_y = int(hovered_joker.rect.top - tip_h - 10)
-            else:
-                tip_y = int(hovered_joker.rect.bottom + 10)
-            tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
-            draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30))
+                tip_h = len(lines) * PixelFontXXS.get_linesize() + 20
+                if hovered_joker.rect.bottom + tip_h > HEIGHT:
+                    tip_y = int(hovered_joker.rect.top - tip_h - 10)
+                else:
+                    tip_y = int(hovered_joker.rect.bottom + 10)
+                tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
+                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30))
         
         update_card_animation()
 
