@@ -1,1 +1,1 @@
-Adds x.1 [red]Mult[/red] every time you play a hand that isnt the last hand you played{{break}}[grey](Currently[/grey][red]{{value}}[/red][grey])[/grey]
+Adds [red]x.1 Mult[/red] every time you play a hand that isnt the last hand you played{break}[grey](Currently[/grey][red]{value}[/red][grey])[/grey]
