@@ -5,6 +5,7 @@ last_hand = 0
 last_hand_counter = 0
 YinYang_Active = False
 poolMoney = 0
+
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -353,9 +354,9 @@ def PTSD_effect(context):
     hand = hand_contains(context)
     if hand == last_hand:
         last_hand_counter = 0
-        last_hand = hand
+        
     else:
-        last_hand = hand
+        
         last_hand_counter += 0.1
         context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
     context.setdefault('triggered_jokers', []).append('PTSD Joker')
@@ -565,7 +566,7 @@ JOKER_REGISTRY = {
     },
     'Fountain': {
         'events': [('on_card_scored', Fountain_effect)],
-        'description': 'Cards with special attachments repeat once. Removes 1 Hand',
+        'description': 'Cards with enhancements repeat once. Removes 1 Hand',
         'Oopy Goopy': True
     },
     'Jevil': {
