@@ -861,7 +861,7 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
         'orange': (240, 150, 40),
         'green': (0, 200, 0),
         'white': (255, 255, 255),
-        'gray':(128.128,128),
+        'grey':(128,128,128),
     }
 
     def parse_segments(line):
@@ -2481,7 +2481,7 @@ All_Jokers = []
 Active_Jokers = []
 Shop_Cards = []
 All_Jokers_Name = []
-
+rare_joker = False
 for root, dirs, files in os.walk(JOKERS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -3510,7 +3510,14 @@ while game:
                         for i in range(ShopCount):
                             rarity_choice = random.randint(1, 100)
                             while True:
-                                if rarity_choice <= 28:
+                                if rare_joker:
+                                    card = random.choice(Rare_Jokers)
+                                    if card not in Shop_Cards and card not in Active_Jokers:
+                                        rare_joker = False
+                                        print("added joker")
+                                        break
+
+                                elif rarity_choice <= 28:
                                     card = random.choice(TarotCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
                                         break
@@ -3746,6 +3753,9 @@ while game:
                                     JokerEffects.poolMoney = 0
                                 if card.name == "Rules Card":
                                     RulesHand = None
+                                if card.name == "Getting An Upgrade":
+                                    rare_joker = True
+
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -3777,7 +3787,15 @@ while game:
                             rerollCost += 1
                             for i in range(ShopCount):
                                 rarity_choice = random.randint(1, 100)
+                            
                                 while True:
+                                    
+                                    if rare_joker:
+                                        card = random.choice(Rare_Jokers)
+                                        if card not in Shop_Cards and card not in Active_Jokers:
+                                            rare_joker = False
+                                            print("added joker")
+                                            break
                                     if rarity_choice <= 28:
                                         card = random.choice(TarotCards)
                                         if card not in Shop_Cards and card not in Held_Consumables:
@@ -3790,7 +3808,7 @@ while game:
                                         card = random.choice(Common_Jokers)
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             break
-                                    elif rarity_choice <= 95:
+                                    elif rarity_choice <= 99:
                                         card = random.choice(get_available_jokers(Uncommon_Jokers))
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             break

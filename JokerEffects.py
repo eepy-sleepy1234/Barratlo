@@ -5,6 +5,7 @@ last_hand = 0
 last_hand_counter = 0
 YinYang_Active = False
 poolMoney = 0
+
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -565,7 +566,7 @@ JOKER_REGISTRY = {
     },
     'Fountain': {
         'events': [('on_card_scored', Fountain_effect)],
-        'description': 'Cards with special attachments repeat once. Removes 1 Hand',
+        'description': 'Cards with enhancements repeat once. Removes 1 Hand',
         'Oopy Goopy': True
     },
     'Jevil': {
