@@ -4679,6 +4679,8 @@ while game:
                 'card_play_counts': card_play_counts,
                 'money': money,
                 'rulesHand': RulesHand,
+                'blind': current_blind,
+                'bosses': boss_blinds,
                 
 
 

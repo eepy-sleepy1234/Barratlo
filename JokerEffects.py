@@ -336,6 +336,16 @@ def GettingAnUpgrade_effect(context):
     return context
 
 def FlyDeity_effect(context):
+    blind = context.get("blind")
+    boss = context.get("bosses")
+    if blind in boss:
+        context['mult'] = context.get("mult") + 50
+    else:
+        context['mult'] = context.get("mult") + 5
+
+
+    context.setdefault('triggered_jokers', []).append('Fly Deity')
+
     return context
 
 def Yin_effect(context):
