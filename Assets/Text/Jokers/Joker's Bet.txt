@@ -1,1 +1,0 @@
-Halves all [yellow]listed[/yellow] [green]probabilities[/green], but doubles the rewards
