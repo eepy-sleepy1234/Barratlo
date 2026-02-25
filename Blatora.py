@@ -274,7 +274,7 @@ RoundBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DI
 SideBar_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (HEIGHT/2.86, HEIGHT/1.33))
 CashOutBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutBackground.png")), (HEIGHT/1.3, HEIGHT))
 ShopBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBackground.png")), (HEIGHT/1.14, HEIGHT))
-GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "bg.png")), (WIDTH, HEIGHT))
+GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DefaultBG.png")), (WIDTH, HEIGHT))
 JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "JokerBG.png")), (HEIGHT/1.5, HEIGHT/4.5))
 ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
 BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (WIDTH/6, HEIGHT*2))
@@ -1696,92 +1696,116 @@ class Card:
                 self.x = self.target_x
                 self.y = self.target_y
         if self.scaling:
-            if self.scaling_delay < 10:
-                self.scaling_delay += 1
+            if self.is_contributing:
+                global saved_base_chips, saved_base_mult, invincibleActive
+                card_play_counts[self.card_id] = card_play_counts.get(self.card_id, 0) + 1
+                saved_base_chips += self.chip_value
+                self.trigger("Chips", self.chip_value)
+                scoring_count += 1
+                match self.enhancement:
+                    case "Mult":
+                        saved_base_mult += 4
+                        self.trigger("Mult", 4)
+                    case "Bonus":
+                        saved_base_chips += 30
+                        self.trigger("Chips", 30)
+                    case "Lucky":
+                        num = random.randint(1, 15)
+                        num1 = random.randint(1, 15)
+                        if num <= 5:
+                            saved_base_mult += 20
+                            self.trigger("Mult", 20)
+                        if num1 == 1:
+                            money += 20
+                            self.trigger("Money", 20)
+                    case "Glass":
+                        num = random.randint(1, 4)
+                        saved_base_mult *= 2
+                        self.trigger("XMult", 2)
+                        if num == 1:
+                            perm_deck.remove(self)
+                        self.trigger("Break", 0)
+                self.state = "scored"
+                self.scoring_complete = True
+
+                context = {
+                    'card': self,
+                    'chips': saved_base_chips,
+                    'mult': saved_base_mult,
+                    'active_jokers': Active_Jokers,
+                    'hand_type': saved_hand,
+                    'deck': deck,
+                    'card_play_counts': card_play_counts, 
+                }
+                context = joker_manager.trigger('on_card_scored', context)
+                saved_base_chips = context['chips']
+                saved_base_mult = context['mult']
+                
+                if 'triggered_jokers' in context:
+                    for joker_name in context['triggered_jokers']:
+                        if joker_name == "Jevil":
+                            jevilActive = True
             else:
-                if not self.growing:
-                    if self.scale > 0.51:
-                        self.scale -= 0.1
-                        self.rotation_speed = 5
-                    else:
-                        self.scale = 0.5
-                        self.rotation_speed = -5
-                        self.growing = True
-                else:
-                    if self.scale < 1.0:
-                        self.scale += 0.1
-                    else:
-                        self.scale = 1.0
-                        self.rotation_speed = 0
-                        self.scaling = False
-                        self.growing = False
-                        self.scaling_done = True
-                        self.scoring_animating = False
-                        self.scaling_delay = 10
-                        self.angle = 0
-                        scoring_count += 1
-                        if self.is_contributing:
-                            global saved_base_chips, saved_base_mult, invincibleActive
-                            card_play_counts[self.card_id] = card_play_counts.get(self.card_id, 0) + 1
-                            saved_base_chips += self.chip_value
-                            indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
-                            chip_indicators.append(indicator)
-                            match self.enhancement:
-                                case "Mult":
-                                    saved_base_mult += 4
-                                case "Bonus":
-                                    saved_base_chips += 30
-                                case "Lucky":
-                                    num = random.randint(1, 15)
-                                    num1 = random.randint(1, 15)
-                                    if num <= 5:
-                                        saved_base_mult += 20
-                                    if num1 == 1:
-                                        money += 20
-                                case "Glass":
-                                    num = random.randint(1, 4)
-                                    saved_base_mult *= 2
-                                    if num == 1:
-                                        perm_deck.remove(self)
-                            self.state = "scored"
-                            self.scoring_complete = True
-
-                            context = {
-                                'card': self,
-                                'chips': saved_base_chips,
-                                'mult': saved_base_mult,
-                                'active_jokers': Active_Jokers,
-                                'hand_type': saved_hand,
-                                'deck': deck,
-                                'card_play_counts': card_play_counts, 
-                            }
-                            context = joker_manager.trigger('on_card_scored', context)
-                            saved_base_chips = context['chips']
-                            saved_base_mult = context['mult']
-                            for x, y, value in context.get('retrigger_indicators', []):
-                                indicator = ChipIndicator(int(x + 30), int(y - 130), value)
-                                chip_indicators.append(indicator)
-                            if 'triggered_jokers' in context:
-                                for joker_name in context['triggered_jokers']:
-                                    if joker_name == "Jevil":
-                                        jevilActive = True
-                                    
-
-                        else:
-                            self.state = "discarded"
+                self.state = "discarded"
         self.angle += self.rotation_speed
         return scoring_count
+    def trigger(self, type, amount):
+        match type:
+            case "Mult":
+                color = red
+            case "Chips":
+                color = blue
+            case "Retrigger":
+                color = red
+            case "Money":
+                color = yellow
+            case "XMult":
+                color = red
+            case "Break":
+                color = None
+            case _:
+                color = black
+        if self.scaling_delay < 10:
+            self.scaling_delay += 1
+        else:
+            if not self.growing:
+                if self.scale < 1.4:
+                    self.scale += 0.1
+                    self.rotation_speed = -3
+                else:
+                    self.scale = 1.4
+                    self.rotation_speed = 3
+                    self.growing = True
+                    if type != "Break":
+                        for x, y, amount in context.get('retrigger_indicators', []):
+                            indicator = ChipIndicator(int(x + 30), int(y - 130), amount, color)
+                            chip_indicators.append(indicator)
+            else:
+                if self.scale > 1.0:
+                    self.scale -= 0.1
+                else:
+                    self.scale = 1.0
+                    self.rotation_speed = 0
+                    self.scaling = False
+                    self.growing = False
+                    self.scaling_done = True
+                    self.scoring_animating = False
+                    self.scaling_delay = 10
+                    self.angle = 0
+
+
 
 chip_indicators = []
 class ChipIndicator:
-    def __init__(self, x, y, chip_value):
+    def __init__(self, x, y, value, color):
         self.x = x
         self.y = y
         self.start_y = y
-        self.chip_value = chip_value
+        self.value = value
         self.alpha = 255
         self.lifetime = 60
         self.age = 0
+        self.color = color
     def update(self):
         self.age += 1
         self.y = self.start_y - (self.age * 0.1)
@@ -1806,10 +1830,11 @@ class ChipIndicator:
             rotated_points.append((new_x + self.x, new_y + self.y))
         diamond_surface = pygame.Surface((diamond_size * 2, diamond_size * 2), pygame.SRCALPHA)
         adjusted_points = [(p[0] - self.x + diamond_size, p[1] - self.y + diamond_size) for p in rotated_points]
-        pygame.draw.polygon(diamond_surface, (0, 100, 255, self.alpha), adjusted_points)
+        r, g, b = self.color
+        pygame.draw.polygon(diamond_surface, (r, g, b, self.alpha), adjusted_points)
         diamond_surface.set_alpha(self.alpha)
         surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
-        text = PixelFont.render(f"+{self.chip_value}", True, (255, 255, 255))
+        text = PixelFont.render(f"+{self.value}", True, (255, 255, 255))
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
         surface.blit(text, text_rect)
