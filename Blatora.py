@@ -1765,6 +1765,10 @@ class Card:
                 color = None
             case _:
                 color = black
+        if type != "Break":
+            for x, y, amount in context.get('retrigger_indicators', []):
+                indicator = ChipIndicator(int(x + 30), int(y - 130), amount, color)
+                chip_indicators.append(indicator)
         if self.scaling_delay < 10:
             self.scaling_delay += 1
         else:
@@ -1776,10 +1780,6 @@ class Card:
                     self.scale = 1.4
                     self.rotation_speed = 3
                     self.growing = True
-                    if type != "Break":
-                        for x, y, amount in context.get('retrigger_indicators', []):
-                            indicator = ChipIndicator(int(x + 30), int(y - 130), amount, color)
-                            chip_indicators.append(indicator)
             else:
                 if self.scale > 1.0:
                     self.scale -= 0.1
