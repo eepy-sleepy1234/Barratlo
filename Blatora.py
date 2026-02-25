@@ -1496,6 +1496,21 @@ Hand_Chips = {
     "Flush House": 140,
     "Flush Five": 160,
     }
+
+hand_plays = {
+    "High Card": 0,
+    "Pair": 0,
+    "Two Pair": 0,
+    "Three of a Kind": 0,
+    "Straight": 0,
+    "Flush": 0,
+    "Full House": 0,
+    "Four of a Kind": 0,
+    "Straight Flush": 0,
+    "Five of a Kind": 0,
+    "Flush House": 0,
+    "Flush Five": 0
+}
 scored = False
 scoring_in_progress = False
 calculating = False
@@ -1589,21 +1604,6 @@ BOSS_DESC = {
     "The ": "",
     "The ": "",
     }
-
-hand_plays = {
-    "High Card": 0,
-    "Pair": 0,
-    "Two Pair": 0,
-    "Three of a Kind": 0,
-    "Straight": 0,
-    "Flush": 0,
-    "Full House": 0,
-    "Four of a Kind": 0,
-    "Straight Flush": 0,
-    "Five of a Kind": 0,
-    "Flush House": 0,
-    "Flush Five": 0
-}
 invincibleActive = False
 class Card:
     card_id_counter = 0
@@ -2383,17 +2383,8 @@ class Joker:
         self.scoring_animating = False
         self.description = ""
         self.idx = 0
-        match rarity:
-            case 'C':
-                self.price = 3
-            case 'U':
-                self.price = 6
-            case 'R':
-                self.price = 8
-            case 'L':
-                self.price = 20
-            case 'S':
-                self.price = 15
+        prices = {'C': 3, 'U': 6, 'R': 8, 'L': 20, 'S': 15}
+        self.price = prices.get(self.rarity, 0) 
         self.sound = jokerSound.get(self.name)
         def playsound(self, loop):   
             if self.sound:
@@ -2804,7 +2795,94 @@ def change_notation(number):
         number = f"{saved_number}e{place}"
     return number
 
+def reset_game_variables():
+    GameState = None
+    round_num = 1
+    ante = 1
+    hands = max_hand
+    discards = max_discard
+    current_score = 0
+    total_score = 0
+    blind_defeated = False
+    victory = False
+    money = 10000000
+    cards_played = 0
+    cards_discarded = 0
+    purchases = 0
+    rerolls = 0
+    cards_found = 0
+    highest_hand = 0
+    most_played = 0
+    hand_plays = {k: 0 for k in hand_plays}
 
+    hand.clear()
+    deck.clear()
+    deck = perm_deck.copy()
+    random.shuffle(deck)
+    Active_Jokers.clear()
+    Shop_Cards.clear()
+    ShopPacks.clear()
+    Held_Consumables.clear()
+
+    Hand_levels = {
+    "High Card": 1,
+    "Pair": 1,
+    "Two Pair": 1,
+    "Three of a Kind": 1,
+    "Straight": 1,
+    "Flush": 1,
+    "Full House": 1,
+    "Four of a Kind": 1,
+    "Straight Flush": 1,
+    "Five of a Kind": 1,
+    "Flush House": 1,
+    "Flush Five": 1,
+    }
+
+    Hand_Mult = {
+        "High Card": 1,
+        "Pair": 2,
+        "Two Pair": 2,
+        "Three of a Kind": 3,
+        "Straight": 4,
+        "Flush": 4,
+        "Full House": 4,
+        "Four of a Kind": 7,
+        "Straight Flush": 8,
+        "Five of a Kind": 12,
+        "Flush House": 14,
+        "Flush Five": 16,
+        }
+
+    Hand_Chips = {
+        "High Card": 5,
+        "Pair": 10,
+        "Two Pair": 20,
+        "Three of a Kind": 30,
+        "Straight": 30,
+        "Flush": 35,
+        "Full House": 40,
+        "Four of a Kind": 60,
+        "Straight Flush": 100,
+        "Five of a Kind": 120,
+        "Flush House": 140,
+        "Flush Five": 160,
+        }
+        
+    hand_plays = {
+        "High Card": 0,
+        "Pair": 0,
+        "Two Pair": 0,
+        "Three of a Kind": 0,
+        "Straight": 0,
+        "Flush": 0,
+        "Full House": 0,
+        "Four of a Kind": 0,
+        "Straight Flush": 0,
+        "Five of a Kind": 0,
+        "Flush House": 0,
+        "Flush Five": 0
+    }
 
 def wrap_text(text, font, max_width):
     words = text.split(' ')
@@ -3287,6 +3365,7 @@ while game:
                             num = str(num)
                             seed += num
                         random.seed(seed)
+                        running = True
                     elif settings:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
@@ -3870,47 +3949,29 @@ while game:
                         get_current_blind()
                         break
                     if NewRunButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
-                        running = False
                         startGame = False
                         card_animating = True
+                        joker_manager = initialize_joker_effects(Active_Jokers)
+                        GameState = "Blinds"
+                        seed = ''
+                        for i in range(8):
+                            num = random.randint(0, 35)
+                            if num > 9:
+                                num -= 9
+                                num = chr(ord('`')+num)
+                            num = str(num)
+                            seed += num
+                        random.seed(seed)
+                        running = True
+                        reset_game_variables()
                     if MainMenuButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
-                        GameState = None
-                        round_num = 1
-                        ante = 1
-                        hands = max_hand
-                        discards = max_discard
-                        current_score = 0
-                        total_score = 0
-                        blind_defeated = False
-                        victory = False
-                        money = 10000000
-                        cards_played = 0
-                        cards_discarded = 0
-                        purchases = 0
-                        rerolls = 0
-                        cards_found = 0
-                        highest_hand = 0
-                        most_played = 0
-                        hand_plays = {k: 0 for k in hand_plays}
-                        
-                        # Clear all card lists
-                        hand.clear()
-                        deck.clear()
-                        deck = perm_deck.copy()
-                        random.shuffle(deck)
-                        Active_Jokers.clear()
-                        Shop_Cards.clear()
-                        ShopPacks.clear()
-                        Held_Consumables.clear()
-                        
-                        # Reset flags
                         scoring_in_progress = False
                         calculating = False
                         discarding = False
-                        
-                        # Return to main menu
+                        endBG = False
                         running = False
                         startGame = False
+                        reset_game_variables()
                     if CopyButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
                         pyperclip.copy(seed)
                 if event.button == 3:
