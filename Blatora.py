@@ -1409,14 +1409,13 @@ mainMusic.set_volume(0.1)
 mainMusic.play(-1)
 mainMusicPlaying = True
 
-    
-    
+
 perm_deck = []
+perm_perm_deck = []
 Active_Jokers = []
 packHand = []
 joker_manager = None
 shopJokerSelected = False
-ActiveJokerSelected = False
 ActiveJokerSelected = False
 max_handsize = 8
 handsize = max_handsize
@@ -1803,8 +1802,9 @@ for root, dirs, files in os.walk(SUITS_DIR):
             name, _ = os.path.splitext(filename)
             rank, suit = name.split("Of")
             card = Card(rank, suit, image)
-            perm_deck.append(card)
+            perm_perm_deck.append(card)
 
+perm_deck = perm_perm_deck.copy()
 deck = perm_deck.copy()
 random.shuffle(deck)
 
@@ -2946,7 +2946,154 @@ def get_selected_Shop_Cards(joker):
         return (joker.x, joker.y)
     else:
         return (-100, -100)
-    
+
+def reset_game_variables():
+    global perm_deck, deck, hand, Active_Jokers, Held_Consumables
+    global max_handsize, max_hand, max_discard, hands, discards
+    global scored, scoring_in_progress, calculating, discarding
+    global round_num, ante, money, blind_defeated, victory
+    global target_score, contributing, BLIND_X, BLIND_Y
+    global total_score, saved_total_score, is_straight, is_flush
+    global ShopCount, totalReward, joker_manager
+    global shopJokerSelected, ActiveJokerSelected
+    global handsize, chips, mult, current_score
+    global round_score, scored_counter, total_scoring_count
+    global DRAG_THRESHOLD, calc_progress
+    global saved_base_chips, saved_base_mult, saved_level
+    global blind_reward, saved_hand, sort_mode
+    global current_scoring_card, discard_timer, mouth_triggered
+    global GameState, maxJokerCount, rerollCost
+    global highest_hand, most_played, cards_played
+    global cards_discarded, purchases, rerolls, cards_found, lastFool
+    global hand_plays, Hand_levels, Hand_Mult, Hand_Chips
+    perm_deck = perm_perm_deck.copy()
+    deck = perm_deck.copy()
+    hand.clear()
+    Active_Jokers.clear()
+    Held_Consumables.clear()
+
+    max_handsize = 8
+    max_hand = 4
+    max_discard = 4
+    hands = max_hand
+    discards = max_discard
+    scored = False
+    scoring_in_progress = False
+    calculating = False
+    discarding = False
+    round_num = 1
+    ante = 1
+    money = 10000000
+    blind_defeated = False
+    victory = False
+    target_score = 300
+    contributing = []
+    BLIND_X = -500
+    BLIND_Y = -500
+    total_score = 0
+    saved_total_score = 0
+    is_straight = False
+    is_flush = False
+    ShopCount = 2
+    totalReward = 0
+    joker_manager = None
+    shopJokerSelected = False
+    ActiveJokerSelected = False
+    ActiveJokerSelected = False
+    max_handsize = 8
+    handsize = max_handsize
+    chips = 0
+    mult = 0
+    current_score = 0
+    round_score = 0
+    scored_counter = 0
+    total_scoring_count = 0
+    max_hand = 4
+    max_discard = 4
+    hands = max_hand
+    discards = max_discard
+    DRAG_THRESHOLD = 20
+    calc_progress = 0.0
+    saved_base_chips  = 0
+    saved_base_mult = 0
+    saved_level = 0
+    blind_reward = 0
+    saved_hand = None
+    sort_mode = "rank"
+    current_scoring_card = None
+    discard_timer = 0
+    mouth_triggered = False
+    GameState = None
+    maxJokerCount = 5
+    rerollCost = 3
+    highest_hand = 0
+    most_played = 0
+    cards_played = 0
+    cards_discarded = 0
+    purchases = 0
+    rerolls = 0
+    cards_found = 0
+    lastFool = None
+
+    hand_plays = {
+    "High Card": 0,
+    "Pair": 0,
+    "Two Pair": 0,
+    "Three of a Kind": 0,
+    "Straight": 0,
+    "Flush": 0,
+    "Full House": 0,
+    "Four of a Kind": 0,
+    "Straight Flush": 0,
+    "Five of a Kind": 0,
+    "Flush House": 0,
+    "Flush Five": 0
+    }
+    Hand_levels = {
+    "High Card": 1,
+    "Pair": 1,
+    "Two Pair": 1,
+    "Three of a Kind": 1,
+    "Straight": 1,
+    "Flush": 1,
+    "Full House": 1,
+    "Four of a Kind": 1,
+    "Straight Flush": 1,
+    "Five of a Kind": 1,
+    "Flush House": 1,
+    "Flush Five": 1,
+    }
+    Hand_Mult = {
+        "High Card": 1,
+        "Pair": 2,
+        "Two Pair": 2,
+        "Three of a Kind": 3,
+        "Straight": 4,
+        "Flush": 4,
+        "Full House": 4,
+        "Four of a Kind": 7,
+        "Straight Flush": 8,
+        "Five of a Kind": 12,
+        "Flush House": 14,
+        "Flush Five": 16,
+        }
+
+    Hand_Chips = {
+        "High Card": 5,
+        "Pair": 10,
+        "Two Pair": 20,
+        "Three of a Kind": 30,
+        "Straight": 30,
+        "Flush": 35,
+        "Full House": 40,
+        "Four of a Kind": 60,
+        "Straight Flush": 100,
+        "Five of a Kind": 120,
+        "Flush House": 140,
+        "Flush Five": 160,
+        }
+
+
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
     if name == "Hermit":
@@ -3276,6 +3423,7 @@ while game:
                     if start_button_rect.collidepoint(event.pos):
                         buttonClick.play(0)
                         card_animating = True
+                        running = True
                         joker_manager = initialize_joker_effects(Active_Jokers)
                         GameState = "Blinds"
                         seed = ''
@@ -3855,44 +4003,14 @@ while game:
                         running = False
                         startGame = False
                         card_animating = True
+                        endBG = False
+                        reset_game_variables()
                     if MainMenuButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
-                        GameState = None
-                        round_num = 1
-                        ante = 1
-                        hands = max_hand
-                        discards = max_discard
-                        current_score = 0
-                        total_score = 0
-                        blind_defeated = False
-                        victory = False
-                        money = 10000000
-                        cards_played = 0
-                        cards_discarded = 0
-                        purchases = 0
-                        rerolls = 0
-                        cards_found = 0
-                        highest_hand = 0
-                        most_played = 0
-                        hand_plays = {k: 0 for k in hand_plays}
-                        
-                        # Clear all card lists
-                        hand.clear()
-                        deck.clear()
-                        deck = perm_deck.copy()
-                        random.shuffle(deck)
-                        Active_Jokers.clear()
-                        Shop_Cards.clear()
-                        ShopPacks.clear()
-                        Held_Consumables.clear()
-                        
-                        # Reset flags
-                        scoring_in_progress = False
-                        calculating = False
-                        discarding = False
-                        
-                        # Return to main menu
                         running = False
                         startGame = False
+                        card_animating = False
+                        endBG = False
+                        reset_game_variables()
                     if CopyButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
                         pyperclip.copy(seed)
                 if event.button == 3:
