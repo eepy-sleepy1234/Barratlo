@@ -1,1 +1,1 @@
-+1 [red]Mult[/red] for every consecutive hand played without a number card{{break}}[grey](Currently[/grey][red]{{value}}[/red][grey])[/grey]
+[red]+1[/red] Mult for every consecutive hand played without a number card{break}[grey](Currently[/grey][red]+{value}[/red][grey])[/grey]
