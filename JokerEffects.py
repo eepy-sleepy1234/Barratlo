@@ -5,6 +5,7 @@ last_hand = 0
 last_hand_counter = 0
 YinYang_Active = False
 poolMoney = 0
+
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -335,6 +336,16 @@ def GettingAnUpgrade_effect(context):
     return context
 
 def FlyDeity_effect(context):
+    blind = context.get("blind")
+    boss = context.get("bosses")
+    if blind in boss:
+        context['mult'] = context.get("mult") + 50
+    else:
+        context['mult'] = context.get("mult") + 5
+
+
+    context.setdefault('triggered_jokers', []).append('Fly Deity')
+
     return context
 
 def Yin_effect(context):
@@ -350,12 +361,12 @@ def Yang_effect(context):
 def PTSD_effect(context):
     global last_hand
     global last_hand_counter
-    hand = hand_contains(context)
+    hand = context.get("hand_type", 0)
     if hand == last_hand:
         last_hand_counter = 0
-        last_hand = hand
+        
     else:
-        last_hand = hand
+        
         last_hand_counter += 0.1
         context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
     context.setdefault('triggered_jokers', []).append('PTSD Joker')
@@ -565,7 +576,7 @@ JOKER_REGISTRY = {
     },
     'Fountain': {
         'events': [('on_card_scored', Fountain_effect)],
-        'description': 'Cards with special attachments repeat once. Removes 1 Hand',
+        'description': 'Cards with enhancements repeat once. Removes 1 Hand',
         'Oopy Goopy': True
     },
     'Jevil': {

@@ -1,1 +1,1 @@
-Gives +50 [red]Mult[/red] if current Blind is a Showdown Blind{break}Otherwise gives +5 [blue]Chips[/blue]
+Gives [red]+50[/red] Mult if current Blind is a Showdown Blind{break}Otherwise gives +5 [blue]Chips[/blue]
