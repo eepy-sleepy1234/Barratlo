@@ -1412,6 +1412,7 @@ mainMusicPlaying = True
     
     
 perm_deck = []
+default_deck = []
 Active_Jokers = []
 packHand = []
 joker_manager = None
@@ -1496,6 +1497,21 @@ Hand_Chips = {
     "Flush House": 140,
     "Flush Five": 160,
     }
+
+hand_plays = {
+    "High Card": 0,
+    "Pair": 0,
+    "Two Pair": 0,
+    "Three of a Kind": 0,
+    "Straight": 0,
+    "Flush": 0,
+    "Full House": 0,
+    "Four of a Kind": 0,
+    "Straight Flush": 0,
+    "Five of a Kind": 0,
+    "Flush House": 0,
+    "Flush Five": 0
+}
 scored = False
 scoring_in_progress = False
 calculating = False
@@ -1589,21 +1605,6 @@ BOSS_DESC = {
     "The ": "",
     "The ": "",
     }
-
-hand_plays = {
-    "High Card": 0,
-    "Pair": 0,
-    "Two Pair": 0,
-    "Three of a Kind": 0,
-    "Straight": 0,
-    "Flush": 0,
-    "Full House": 0,
-    "Four of a Kind": 0,
-    "Straight Flush": 0,
-    "Five of a Kind": 0,
-    "Flush House": 0,
-    "Flush Five": 0
-}
 invincibleActive = False
 class Card:
     card_id_counter = 0
@@ -1672,6 +1673,7 @@ class Card:
         self.rect = self.image.get_rect()
 
     def update(self):
+        global money
         scoring_count = 0
         stiffness = 0.3
         damping = 0.7
@@ -1725,6 +1727,23 @@ class Card:
                             saved_base_chips += self.chip_value
                             indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
                             chip_indicators.append(indicator)
+                            match self.enhancement:
+                                case "Mult":
+                                    saved_base_mult += 4
+                                case "Bonus":
+                                    saved_base_chips += 30
+                                case "Lucky":
+                                    num = random.randint(1, 15)
+                                    num1 = random.randint(1, 15)
+                                    if num <= 5:
+                                        saved_base_mult += 20
+                                    if num1 == 1:
+                                        money += 20
+                                case "Glass":
+                                    num = random.randint(1, 4)
+                                    saved_base_mult *= 2
+                                    if num == 1:
+                                        perm_deck.remove(self)
                             self.state = "scored"
                             self.scoring_complete = True
 
@@ -1803,8 +1822,8 @@ for root, dirs, files in os.walk(SUITS_DIR):
             name, _ = os.path.splitext(filename)
             rank, suit = name.split("Of")
             card = Card(rank, suit, image)
-            perm_deck.append(card)
-
+            default_deck.append(card)
+perm_deck = default_deck.copy()
 deck = perm_deck.copy()
 random.shuffle(deck)
 
@@ -2044,7 +2063,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
         rotated_base = pygame.transform.rotate(scaled_base, angle)
         rect = rotated.get_rect(center=(card.x, card.y))
         surface.blit(rotated_base, rect.topleft)
-        if card.enhancement != "Stone":
+        if card.enhancement != "Glitched":
             surface.blit(rotated, rect.topleft)
         else:
             scaled_glitch = pygame.transform.smoothscale(glitchimage, (scaled_w, scaled_h))
@@ -2383,17 +2402,8 @@ class Joker:
         self.scoring_animating = False
         self.description = ""
         self.idx = 0
-        match rarity:
-            case 'C':
-                self.price = 3
-            case 'U':
-                self.price = 6
-            case 'R':
-                self.price = 8
-            case 'L':
-                self.price = 20
-            case 'S':
-                self.price = 15
+        prices = {'C': 3, 'U': 6, 'R': 8, 'L': 20, 'S': 15}
+        self.price = prices.get(self.rarity, 0) 
         self.sound = jokerSound.get(self.name)
         def playsound(self, loop):   
             if self.sound:
@@ -2794,7 +2804,7 @@ for root, dirs, files in os.walk(PACKS_DIR):
                 TarotPacks.append(cardpack)
 
 def change_notation(number):
-    if number > 999999999999:
+    if number > 999999999:
         saved_number = number
         place = 0
         while saved_number > 9:
@@ -2804,7 +2814,96 @@ def change_notation(number):
         number = f"{saved_number}e{place}"
     return number
 
+def reset_game_variables():
+    global round_num, ante, hands, discards, current_score, total_score, blind_defeated, victory, money, cards_played, cards_discarded, purchases, rerolls, cards_found, highest_hand, most_played, hand_plays, hand, deck, perm_deck, default_deck, Active_Jokers, Shop_Cards, ShopPacks, Held_Consumables, Hand_levels, Hand_Mult, Hand_Chips
+    round_num = 1
+    ante = 1
+    hands = max_hand
+    discards = max_discard
+    current_score = 0
+    total_score = 0
+    blind_defeated = False
+    victory = False
+    money = 4
+    cards_played = 0
+    cards_discarded = 0
+    purchases = 0
+    rerolls = 0
+    cards_found = 0
+    highest_hand = 0
+    most_played = 0
+    hand_plays = {k: 0 for k in hand_plays}
 
+    hand.clear()
+    deck.clear()
+    perm_deck.clear()
+    perm_deck = default_deck.copy()
+    deck = perm_deck.copy()
+    random.shuffle(deck)
+    Active_Jokers.clear()
+    Shop_Cards.clear()
+    ShopPacks.clear()
+    Held_Consumables.clear()
+
+    Hand_levels = {
+    "High Card": 1,
+    "Pair": 1,
+    "Two Pair": 1,
+    "Three of a Kind": 1,
+    "Straight": 1,
+    "Flush": 1,
+    "Full House": 1,
+    "Four of a Kind": 1,
+    "Straight Flush": 1,
+    "Five of a Kind": 1,
+    "Flush House": 1,
+    "Flush Five": 1,
+    }
+
+    Hand_Mult = {
+        "High Card": 1,
+        "Pair": 2,
+        "Two Pair": 2,
+        "Three of a Kind": 3,
+        "Straight": 4,
+        "Flush": 4,
+        "Full House": 4,
+        "Four of a Kind": 7,
+        "Straight Flush": 8,
+        "Five of a Kind": 12,
+        "Flush House": 14,
+        "Flush Five": 16,
+        }
+
+    Hand_Chips = {
+        "High Card": 5,
+        "Pair": 10,
+        "Two Pair": 20,
+        "Three of a Kind": 30,
+        "Straight": 30,
+        "Flush": 35,
+        "Full House": 40,
+        "Four of a Kind": 60,
+        "Straight Flush": 100,
+        "Five of a Kind": 120,
+        "Flush House": 140,
+        "Flush Five": 160,
+        }
+        
+    hand_plays = {
+        "High Card": 0,
+        "Pair": 0,
+        "Two Pair": 0,
+        "Three of a Kind": 0,
+        "Straight": 0,
+        "Flush": 0,
+        "Full House": 0,
+        "Four of a Kind": 0,
+        "Straight Flush": 0,
+        "Five of a Kind": 0,
+        "Flush House": 0,
+        "Flush Five": 0
+    }
 
 def wrap_text(text, font, max_width):
     words = text.split(' ')
@@ -2830,9 +2929,9 @@ def detect_hand(cards):
     n = len(cards)
     if n == 0:
         return "", []
-    s = len([c for c in cards if c.enhancement == "Stone"])
-    values = sorted([c.value for c in cards if c.enhancement != "Stone"])
-    suits = [c.suit for c in cards if c.enhancement != "Stone"]
+    s = len([c for c in cards if c.enhancement == "Glitched"])
+    values = sorted([c.value for c in cards if c.enhancement != "Glitched"])
+    suits = [c.suit for c in cards if c.enhancement != "Glitched"]
     value_counts = Counter(values)
     suits_counts = Counter(suits)
     is_flush = n == 5 and max(suits_counts.values()) == 5
@@ -2860,7 +2959,7 @@ def detect_hand(cards):
         four_value = [val for val, count in value_counts.items() if count == 4][0]
         contributing = [c for c in cards if c.value == four_value]
         for c in cards:
-            if c.enhancement == "Stone":
+            if c.enhancement == "Glitched":
                 contributing.append(c)
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
@@ -2876,21 +2975,21 @@ def detect_hand(cards):
         three_value = [val for val, count in value_counts.items() if count == 3][0]
         contributing = [c for c in cards if c.value == three_value]
         for c in cards:
-            if c.enhancement == "Stone":
+            if c.enhancement == "Glitched":
                 contributing.append(c)
         return "Three of a Kind", contributing
     elif list(value_counts.values()).count(2) == 2:
         pair_values = [val for val, count in value_counts.items() if count == 2]
         contributing = [c for c in cards if c.value in pair_values]
         for c in cards:
-            if c.enhancement == "Stone":
+            if c.enhancement == "Glitched":
                 contributing.append(c)
         return "Two Pair", contributing
     elif 2 in value_counts.values():
         pair_value = [val for val, count in value_counts.items() if count == 2][0]
         contributing = [c for c in cards if c.value == pair_value]
         for c in cards:
-            if c.enhancement == "Stone":
+            if c.enhancement == "Glitched":
                 contributing.append(c)
         return "Pair", contributing
     else:
@@ -2900,7 +2999,7 @@ def detect_hand(cards):
             high_value = 0
         contributing = [c for c in cards if c.value == high_value]
         for c in cards:
-            if c.enhancement == "Stone":
+            if c.enhancement == "Glitched":
                 contributing.append(c)
         return "High Card", contributing
 
@@ -2926,7 +3025,7 @@ def sort_hand():
     if sort_mode == "rank":
         hand.sort(key=lambda c: c.value, reverse=True)
     elif sort_mode == "suit":
-        suit_order = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1, "Stone": 0}
+        suit_order = {"Spades": 4, "Hearts": 3, "Diamonds": 2, "Clubs": 1, "Glitched": 0}
         hand.sort(key=lambda c: (suit_order[c.suit], c.value), reverse = True)
     for scoring_sequence_index, c in enumerate(hand):
         c.slot = scoring_sequence_index
@@ -3153,14 +3252,14 @@ def get_tarot_effect(name):
     if name == "Tower":
        if len(selected_cards) < 2:
             for card in selected_cards:
-                card.enhancement = "Stone"
+                card.enhancement = "Glitched"
                 card.rank = 0
                 card.value = 0
                 card.chip_value = 50
-                card.suit = "Stone"
+                card.suit = "Glitched"
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
-                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Stone", 0, 0, "Stone"
+                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Glitched", 0, 0, "Glitched"
                         break
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
@@ -3287,6 +3386,7 @@ while game:
                             num = str(num)
                             seed += num
                         random.seed(seed)
+                        running = True
                     elif settings:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
@@ -3870,47 +3970,29 @@ while game:
                         get_current_blind()
                         break
                     if NewRunButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
-                        running = False
                         startGame = False
                         card_animating = True
+                        joker_manager = initialize_joker_effects(Active_Jokers)
+                        GameState = "Blinds"
+                        seed = ''
+                        for i in range(8):
+                            num = random.randint(0, 35)
+                            if num > 9:
+                                num -= 9
+                                num = chr(ord('`')+num)
+                            num = str(num)
+                            seed += num
+                        random.seed(seed)
+                        running = True
+                        reset_game_variables()
                     if MainMenuButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
-                        GameState = None
-                        round_num = 1
-                        ante = 1
-                        hands = max_hand
-                        discards = max_discard
-                        current_score = 0
-                        total_score = 0
-                        blind_defeated = False
-                        victory = False
-                        money = 10000000
-                        cards_played = 0
-                        cards_discarded = 0
-                        purchases = 0
-                        rerolls = 0
-                        cards_found = 0
-                        highest_hand = 0
-                        most_played = 0
-                        hand_plays = {k: 0 for k in hand_plays}
-                        
-                        # Clear all card lists
-                        hand.clear()
-                        deck.clear()
-                        deck = perm_deck.copy()
-                        random.shuffle(deck)
-                        Active_Jokers.clear()
-                        Shop_Cards.clear()
-                        ShopPacks.clear()
-                        Held_Consumables.clear()
-                        
-                        # Reset flags
                         scoring_in_progress = False
                         calculating = False
                         discarding = False
-                        
-                        # Return to main menu
+                        endBG = False
                         running = False
                         startGame = False
+                        reset_game_variables()
                     if CopyButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
                         pyperclip.copy(seed)
                 if event.button == 3:
@@ -4679,6 +4761,8 @@ while game:
                 'card_play_counts': card_play_counts,
                 'money': money,
                 'rulesHand': RulesHand,
+                'blind': current_blind,
+                'bosses': boss_blinds,
                 
 
 
@@ -4700,6 +4784,9 @@ while game:
                 c.state = "scored"
             
             print(hand_type_temp)
+            for card in hand:
+                if card.enhancement == "Steel":
+                    saved_base_mult *= 1.5
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             print(JokerEffects.last_hand)
@@ -4745,6 +4832,9 @@ while game:
                     discarding = True
                     victory = check_blind_defeated()
                     if victory:
+                        for card in hand:
+                            if card.enhancement == "Gold":
+                                money += 3
                         GameState = "Cashing"
                         context = {
                             'active_jokers': Active_Jokers,
