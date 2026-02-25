@@ -274,7 +274,7 @@ RoundBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DI
 SideBar_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SideBar.png")), (HEIGHT/2.86, HEIGHT/1.33))
 CashOutBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutBackground.png")), (HEIGHT/1.3, HEIGHT))
 ShopBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBackground.png")), (HEIGHT/1.14, HEIGHT))
-GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "bg.png")), (WIDTH, HEIGHT))
+GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DefaultBackground.png")), (WIDTH, HEIGHT))
 JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "JokerBG.png")), (HEIGHT/1.5, HEIGHT/4.5))
 ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
 BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (WIDTH/6, HEIGHT*2))
@@ -1418,7 +1418,6 @@ packHand = []
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
-ActiveJokerSelected = False
 max_handsize = 8
 handsize = max_handsize
 chips = 0
@@ -1697,92 +1696,116 @@ class Card:
                 self.x = self.target_x
                 self.y = self.target_y
         if self.scaling:
-            if self.scaling_delay < 10:
-                self.scaling_delay += 1
+            if self.is_contributing:
+                global saved_base_chips, saved_base_mult, invincibleActive
+                card_play_counts[self.card_id] = card_play_counts.get(self.card_id, 0) + 1
+                saved_base_chips += self.chip_value
+                self.trigger("Chips", self.chip_value)
+                scoring_count += 1
+                match self.enhancement:
+                    case "Mult":
+                        saved_base_mult += 4
+                        self.trigger("Mult", 4)
+                    case "Bonus":
+                        saved_base_chips += 30
+                        self.trigger("Chips", 30)
+                    case "Lucky":
+                        num = random.randint(1, 15)
+                        num1 = random.randint(1, 15)
+                        if num <= 5:
+                            saved_base_mult += 20
+                            self.trigger("Mult", 20)
+                        if num1 == 1:
+                            money += 20
+                            self.trigger("Money", 20)
+                    case "Glass":
+                        num = random.randint(1, 4)
+                        saved_base_mult *= 2
+                        self.trigger("XMult", 2)
+                        if num == 1:
+                            perm_deck.remove(self)
+                        self.trigger("Break", 0)
+                self.state = "scored"
+                self.scoring_complete = True
+
+                context = {
+                    'card': self,
+                    'chips': saved_base_chips,
+                    'mult': saved_base_mult,
+                    'active_jokers': Active_Jokers,
+                    'hand_type': saved_hand,
+                    'deck': deck,
+                    'card_play_counts': card_play_counts, 
+                }
+                context = joker_manager.trigger('on_card_scored', context)
+                saved_base_chips = context['chips']
+                saved_base_mult = context['mult']
+                
+                if 'triggered_jokers' in context:
+                    for joker_name in context['triggered_jokers']:
+                        if joker_name == "Jevil":
+                            jevilActive = True
             else:
-                if not self.growing:
-                    if self.scale > 0.51:
-                        self.scale -= 0.1
-                        self.rotation_speed = 5
-                    else:
-                        self.scale = 0.5
-                        self.rotation_speed = -5
-                        self.growing = True
-                else:
-                    if self.scale < 1.0:
-                        self.scale += 0.1
-                    else:
-                        self.scale = 1.0
-                        self.rotation_speed = 0
-                        self.scaling = False
-                        self.growing = False
-                        self.scaling_done = True
-                        self.scoring_animating = False
-                        self.scaling_delay = 10
-                        self.angle = 0
-                        scoring_count += 1
-                        if self.is_contributing:
-                            global saved_base_chips, saved_base_mult, invincibleActive
-                            card_play_counts[self.card_id] = card_play_counts.get(self.card_id, 0) + 1
-                            saved_base_chips += self.chip_value
-                            indicator = ChipIndicator(int(self.x - 50), int(self.y - 100), self.chip_value)
-                            chip_indicators.append(indicator)
-                            match self.enhancement:
-                                case "Mult":
-                                    saved_base_mult += 4
-                                case "Bonus":
-                                    saved_base_chips += 30
-                                case "Lucky":
-                                    num = random.randint(1, 15)
-                                    num1 = random.randint(1, 15)
-                                    if num <= 5:
-                                        saved_base_mult += 20
-                                    if num1 == 1:
-                                        money += 20
-                                case "Glass":
-                                    num = random.randint(1, 4)
-                                    saved_base_mult *= 2
-                                    if num == 1:
-                                        perm_deck.remove(self)
-                            self.state = "scored"
-                            self.scoring_complete = True
-
-                            context = {
-                                'card': self,
-                                'chips': saved_base_chips,
-                                'mult': saved_base_mult,
-                                'active_jokers': Active_Jokers,
-                                'hand_type': saved_hand,
-                                'deck': deck,
-                                'card_play_counts': card_play_counts, 
-                            }
-                            context = joker_manager.trigger('on_card_scored', context)
-                            saved_base_chips = context['chips']
-                            saved_base_mult = context['mult']
-                            for x, y, value in context.get('retrigger_indicators', []):
-                                indicator = ChipIndicator(int(x + 30), int(y - 130), value)
-                                chip_indicators.append(indicator)
-                            if 'triggered_jokers' in context:
-                                for joker_name in context['triggered_jokers']:
-                                    if joker_name == "Jevil":
-                                        jevilActive = True
-                                    
-
-                        else:
-                            self.state = "discarded"
+                self.state = "discarded"
         self.angle += self.rotation_speed
         return scoring_count
+    def trigger(self, type, amount):
+        match type:
+            case "Mult":
+                color = red
+            case "Chips":
+                color = blue
+            case "Retrigger":
+                color = red
+            case "Money":
+                color = yellow
+            case "XMult":
+                color = red
+            case "Break":
+                color = None
+            case _:
+                color = black
+        if type != "Break":
+            for x, y, amount in context.get('retrigger_indicators', []):
+                indicator = ChipIndicator(int(x + 30), int(y - 130), amount, color)
+                chip_indicators.append(indicator)
+        if self.scaling_delay < 10:
+            self.scaling_delay += 1
+        else:
+            if not self.growing:
+                if self.scale < 1.4:
+                    self.scale += 0.1
+                    self.rotation_speed = -3
+                else:
+                    self.scale = 1.4
+                    self.rotation_speed = 3
+                    self.growing = True
+            else:
+                if self.scale > 1.0:
+                    self.scale -= 0.1
+                else:
+                    self.scale = 1.0
+                    self.rotation_speed = 0
+                    self.scaling = False
+                    self.growing = False
+                    self.scaling_done = True
+                    self.scoring_animating = False
+                    self.scaling_delay = 10
+                    self.angle = 0
+
+
 
 chip_indicators = []
 class ChipIndicator:
-    def __init__(self, x, y, chip_value):
+    def __init__(self, x, y, value, color):
         self.x = x
         self.y = y
         self.start_y = y
-        self.chip_value = chip_value
+        self.value = value
         self.alpha = 255
         self.lifetime = 60
         self.age = 0
+        self.color = color
     def update(self):
         self.age += 1
         self.y = self.start_y - (self.age * 0.1)
@@ -1807,10 +1830,11 @@ class ChipIndicator:
             rotated_points.append((new_x + self.x, new_y + self.y))
         diamond_surface = pygame.Surface((diamond_size * 2, diamond_size * 2), pygame.SRCALPHA)
         adjusted_points = [(p[0] - self.x + diamond_size, p[1] - self.y + diamond_size) for p in rotated_points]
-        pygame.draw.polygon(diamond_surface, (0, 100, 255, self.alpha), adjusted_points)
+        r, g, b = self.color
+        pygame.draw.polygon(diamond_surface, (r, g, b, self.alpha), adjusted_points)
         diamond_surface.set_alpha(self.alpha)
         surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
-        text = PixelFont.render(f"+{self.chip_value}", True, (255, 255, 255))
+        text = PixelFont.render(f"+{self.value}", True, (255, 255, 255))
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
         surface.blit(text, text_rect)
@@ -3045,7 +3069,154 @@ def get_selected_Shop_Cards(joker):
         return (joker.x, joker.y)
     else:
         return (-100, -100)
-    
+
+def reset_game_variables():
+    global perm_deck, deck, hand, Active_Jokers, Held_Consumables
+    global max_handsize, max_hand, max_discard, hands, discards
+    global scored, scoring_in_progress, calculating, discarding
+    global round_num, ante, money, blind_defeated, victory
+    global target_score, contributing, BLIND_X, BLIND_Y
+    global total_score, saved_total_score, is_straight, is_flush
+    global ShopCount, totalReward, joker_manager
+    global shopJokerSelected, ActiveJokerSelected
+    global handsize, chips, mult, current_score
+    global round_score, scored_counter, total_scoring_count
+    global DRAG_THRESHOLD, calc_progress
+    global saved_base_chips, saved_base_mult, saved_level
+    global blind_reward, saved_hand, sort_mode
+    global current_scoring_card, discard_timer, mouth_triggered
+    global GameState, maxJokerCount, rerollCost
+    global highest_hand, most_played, cards_played
+    global cards_discarded, purchases, rerolls, cards_found, lastFool
+    global hand_plays, Hand_levels, Hand_Mult, Hand_Chips
+    perm_deck = perm_perm_deck.copy()
+    deck = perm_deck.copy()
+    hand.clear()
+    Active_Jokers.clear()
+    Held_Consumables.clear()
+
+    max_handsize = 8
+    max_hand = 4
+    max_discard = 4
+    hands = max_hand
+    discards = max_discard
+    scored = False
+    scoring_in_progress = False
+    calculating = False
+    discarding = False
+    round_num = 1
+    ante = 1
+    money = 10000000
+    blind_defeated = False
+    victory = False
+    target_score = 300
+    contributing = []
+    BLIND_X = -500
+    BLIND_Y = -500
+    total_score = 0
+    saved_total_score = 0
+    is_straight = False
+    is_flush = False
+    ShopCount = 2
+    totalReward = 0
+    joker_manager = None
+    shopJokerSelected = False
+    ActiveJokerSelected = False
+    ActiveJokerSelected = False
+    max_handsize = 8
+    handsize = max_handsize
+    chips = 0
+    mult = 0
+    current_score = 0
+    round_score = 0
+    scored_counter = 0
+    total_scoring_count = 0
+    max_hand = 4
+    max_discard = 4
+    hands = max_hand
+    discards = max_discard
+    DRAG_THRESHOLD = 20
+    calc_progress = 0.0
+    saved_base_chips  = 0
+    saved_base_mult = 0
+    saved_level = 0
+    blind_reward = 0
+    saved_hand = None
+    sort_mode = "rank"
+    current_scoring_card = None
+    discard_timer = 0
+    mouth_triggered = False
+    GameState = None
+    maxJokerCount = 5
+    rerollCost = 3
+    highest_hand = 0
+    most_played = 0
+    cards_played = 0
+    cards_discarded = 0
+    purchases = 0
+    rerolls = 0
+    cards_found = 0
+    lastFool = None
+
+    hand_plays = {
+    "High Card": 0,
+    "Pair": 0,
+    "Two Pair": 0,
+    "Three of a Kind": 0,
+    "Straight": 0,
+    "Flush": 0,
+    "Full House": 0,
+    "Four of a Kind": 0,
+    "Straight Flush": 0,
+    "Five of a Kind": 0,
+    "Flush House": 0,
+    "Flush Five": 0
+    }
+    Hand_levels = {
+    "High Card": 1,
+    "Pair": 1,
+    "Two Pair": 1,
+    "Three of a Kind": 1,
+    "Straight": 1,
+    "Flush": 1,
+    "Full House": 1,
+    "Four of a Kind": 1,
+    "Straight Flush": 1,
+    "Five of a Kind": 1,
+    "Flush House": 1,
+    "Flush Five": 1,
+    }
+    Hand_Mult = {
+        "High Card": 1,
+        "Pair": 2,
+        "Two Pair": 2,
+        "Three of a Kind": 3,
+        "Straight": 4,
+        "Flush": 4,
+        "Full House": 4,
+        "Four of a Kind": 7,
+        "Straight Flush": 8,
+        "Five of a Kind": 12,
+        "Flush House": 14,
+        "Flush Five": 16,
+        }
+
+    Hand_Chips = {
+        "High Card": 5,
+        "Pair": 10,
+        "Two Pair": 20,
+        "Three of a Kind": 30,
+        "Straight": 30,
+        "Flush": 35,
+        "Full House": 40,
+        "Four of a Kind": 60,
+        "Straight Flush": 100,
+        "Five of a Kind": 120,
+        "Flush House": 140,
+        "Flush Five": 160,
+        }
+
+
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
     if name == "Hermit":
@@ -3375,6 +3546,7 @@ while game:
                     if start_button_rect.collidepoint(event.pos):
                         buttonClick.play(0)
                         card_animating = True
+                        running = True
                         joker_manager = initialize_joker_effects(Active_Jokers)
                         GameState = "Blinds"
                         seed = ''
