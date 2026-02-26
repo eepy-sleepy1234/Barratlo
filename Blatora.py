@@ -1454,6 +1454,8 @@ purchases = 0
 rerolls = 0
 cards_found = 0
 lastFool = None
+locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
+locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1467,6 +1469,7 @@ Hand_levels = {
     "Five of a Kind": 1,
     "Flush House": 1,
     "Flush Five": 1,
+    "Huh of a What": 1
     }
 
 Hand_Mult = {
@@ -1482,6 +1485,7 @@ Hand_Mult = {
     "Five of a Kind": 12,
     "Flush House": 14,
     "Flush Five": 16,
+    "Huh of a What": 10
     }
 
 Hand_Chips = {
@@ -1497,6 +1501,7 @@ Hand_Chips = {
     "Five of a Kind": 120,
     "Flush House": 140,
     "Flush Five": 160,
+    "Huh of a What": 100
     }
 
 hand_plays = {
@@ -1511,7 +1516,8 @@ hand_plays = {
     "Straight Flush": 0,
     "Five of a Kind": 0,
     "Flush House": 0,
-    "Flush Five": 0
+    "Flush Five": 0,
+    "Huh of a What": 0
 }
 scored = False
 scoring_in_progress = False
@@ -1687,14 +1693,6 @@ class Card:
                 self.x += self.vx
             if abs(self.vy) > 0.1:
                 self.y += self.vy
-        elif self.scoring_animating:
-            lerp_t = 0.18
-            self.x += (self.target_x - self.x) * lerp_t
-            self.y += (self.target_y - self.y) * lerp_t
-            self.angle += (0 - self.angle) * 0.15
-            if abs(self.x - self.target_x) < 2 and abs(self.y - self.target_y) < 2:
-                self.x = self.target_x
-                self.y = self.target_y
         self.angle += self.rotation_speed
     def trigger(self, type, amount):
         match type:
@@ -1712,10 +1710,10 @@ class Card:
                 color = None
             case _:
                 color = black
-        if self.scaling_delay < 10:
-            self.scaling_delay += 1
-        else:
-            if not self.growing:
+        while card.scoring_animating:
+            if self.scaling_delay < 10:
+                self.scaling_delay += 1
+            elif not self.growing:
                 if self.scale < 1.4:
                     self.scale += 0.1
                     self.rotation_speed = -3
@@ -1738,6 +1736,7 @@ class Card:
                     if type != "Break":
                         indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
                         chip_indicators.append(indicator)
+            self.angle += self.rotation_speed
 
 
 
@@ -1973,8 +1972,8 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= HEIGHT/20
         elif card.state == "played":
             if card.scoring_x == 0:
-                if scoring_sequence_index < len(SCORED_POSITIONS):
-                    card.scoring_x, card.scoring_y = SCORED_POSITIONS[scoring_sequence_index]
+                if len(scoring_queue) < len(SCORED_POSITIONS):
+                    card.scoring_x, card.scoring_y = SCORED_POSITIONS[selected_cards.index(card)]
                     scoring_sequence_index += 1
                     card.angle = 0
             if card.is_contributing:
@@ -2603,7 +2602,7 @@ TarotCards = []
 ShadowCards = []
 SpectralCards = []
 Held_Consumables = []
-maxConsCount = 2
+maxConsCount = 30
 for root, dirs, files in os.walk(CONS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2803,6 +2802,7 @@ def reset_game_variables():
     highest_hand = 0
     most_played = 0
     hand_plays = {k: 0 for k in hand_plays}
+    locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
 
     hand.clear()
     deck.clear()
@@ -2906,6 +2906,10 @@ def detect_hand(cards):
     suits_counts = Counter(suits)
     is_flush = n == 5 and max(suits_counts.values()) == 5
     is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
+    is_glitched = s == 5
+    if is_glitched:
+        contributing = cards[:]
+        return "Huh of a What", contributing
     if values == [2, 3, 4, 5, 14]:
         is_straight = True
         values = [1, 2, 3, 4, 5]
@@ -3741,7 +3745,7 @@ while game:
                                         break
                                 elif rarity_choice <= 50:
                                     card = random.choice(ShadowCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables:
+                                    if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
                                         break
                                 elif rarity_choice <= 75:
                                     card = random.choice(Common_Jokers)
@@ -3757,7 +3761,7 @@ while game:
                                         break
                             Shop_Cards.append(card)
                         for i in range(2):
-                            rarity_choice = random.randint(1, 100)
+                            rarity_choice = random.randint(68, 68)
                             while True:
                                 if rarity_choice <= 5:
                                     pack = random.choice(SpectralPacks)
@@ -3869,6 +3873,17 @@ while game:
                                     saved_base_chips = (Hand_Chips.get("Straight Flush", 0) * Hand_levels.get("Straight Flush", 1))
                                     saved_base_mult = Hand_Mult.get("Straight Flush", 1)
                                     saved_level = Hand_levels.get("Straight Flush", 1)
+                                if hand_type in locked_hands:
+                                    locked_hands.remove(hand_type)
+                                    match hand_type:
+                                        case "Five of a Kind":
+                                            locked_cards.remove("The Reaper")
+                                        case "Flush Five":
+                                            locked_cards.remove("King Shadow")
+                                        case "Flush House":
+                                            locked_cards.remove("Tag Team")
+                                        case "Huh of a What":
+                                            locked_cards.remove("Glitch")
                                 dev_selection = False
                                 scoring_queue = contributing.copy()
                                 for card in selected_cards:
@@ -4005,7 +4020,7 @@ while game:
                             money -= rerollCost
                             rerollCost += 1
                             for i in range(ShopCount):
-                                rarity_choice = random.randint(1, 100)
+                                rarity_choice = random.randint(50, 50)
                             
                                 while True:
                                     
@@ -4021,7 +4036,7 @@ while game:
                                             break
                                     elif rarity_choice <= 50:
                                         card = random.choice(ShadowCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                        if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
                                             break
                                     elif rarity_choice <= 75:
                                         card = random.choice(Common_Jokers)
@@ -4358,6 +4373,9 @@ while game:
                 if card.is_contributing:
                     card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
                     if scoring_queue[0] == card:
+                        scoring_queue.pop(0)
+                        if len(scoring_queue) > 0:
+                            scoring_queue[0].scaling = True
                         saved_base_chips += card.chip_value
                         card.trigger("Chips", card.chip_value)
                         match card.enhancement:
@@ -4901,13 +4919,6 @@ while game:
                         c.vy = 0
                 scoring_in_progress = False
                 scored = True
-
-        if scoring_in_progress and scoring_queue:
-            current_card = scoring_queue[0]
-            if current_card.scoring_complete:
-                scoring_queue.pop(0)
-                if len(scoring_queue) > 0:
-                    scoring_queue[0].scaling = True
 
         if scored:
             for joker in Active_Jokers:
