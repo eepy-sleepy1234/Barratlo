@@ -5,7 +5,7 @@ last_hand = 0
 last_hand_counter = 0
 YinYang_Active = False
 poolMoney = 0
-
+skipMult = 1
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -403,6 +403,11 @@ def YinYang_effect(context):
     return context
 
 def Fountain_effect(context):
+
+    return context
+
+def Skip_effect(context):
+    context['mult'] = round((context.get('mult',0) * skipMult),2)
     return context
 
 def OopyGoopy_effect(context):
@@ -587,6 +592,11 @@ JOKER_REGISTRY = {
     'Oopy Goopy': {
         'events': [('on_hand_played', OopyGoopy_effect)],
         'description': 'Duplicates the joker to the right of it and double its effect',
+        'Oopy Goopy': True 
+    },
+    'Skip Joker': {
+        'events': [('on_hand_played', Skip_effect)],
+        'description': 'Gains X0.25 Mult For Every Skipped Blind',
         'Oopy Goopy': True 
     },
 }

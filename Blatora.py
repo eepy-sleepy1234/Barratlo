@@ -2401,6 +2401,8 @@ class Joker:
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
         elif self.name == "Pool Table":
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
+        elif self.name == "Skip Joker":
+            desc = desc.replace("{value}", str(round(JokerEffects.skipMult,2)))
         elif self.name == "Rules Card":
             if RulesHand is None:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
@@ -4087,6 +4089,7 @@ while game:
                         break
                     if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         buttonClick.play(0)
+                        JokerEffects.skipMult += 0.25
                         round_num += 1
                         current_blind = None
                         victory = False
