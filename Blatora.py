@@ -2005,11 +2005,16 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             enhancement = "Default"
         else:
             enhancement = card.enhancement
-        filepath = enhancement + "Base.png"
-        filepath = os.path.join(BASES_DIR, filepath)
-        card_base = pygame.image.load(filepath).convert_alpha()
+        if card.enhancement == "Glitched":
+            card_base = glitchimage
+        else:
+
+            filepath = enhancement + "Base.png"
+            filepath = os.path.join(BASES_DIR, filepath)
+            
+            card_base = pygame.image.load(filepath).convert_alpha()
     
-        scaled_base = pygame.transform.smoothscale(card_base, (scaled_w, scaled_h))
+        scaled_base = pygame.transform.scale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
             card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
@@ -2395,6 +2400,8 @@ class Joker:
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
         elif self.name == "Pool Table":
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
+        elif self.name == "Skip Joker":
+            desc = desc.replace("{value}", str(round(JokerEffects.skipMult,2)))
         elif self.name == "Rules Card":
             if RulesHand is None:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
@@ -4097,6 +4104,7 @@ while game:
                         break
                     if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         buttonClick.play(0)
+                        JokerEffects.skipMult += 0.25
                         round_num += 1
                         current_blind = None
                         victory = False

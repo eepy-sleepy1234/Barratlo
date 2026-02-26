@@ -1,0 +1,1 @@
+Gains [red]X0.25[/red] Mult for every blind skipped{break}[grey](Currently [/grey][red]X{value}[/red][grey])[/grey]
