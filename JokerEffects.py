@@ -27,65 +27,30 @@ class JokerEffectsManager:
             self.effects[event_type].append({
                 'name': joker_name,
                 'function': effect_function,
-            })
-            print(f"✓ Registered {joker_name} for {event_type}")  
+            }) 
     
     def trigger(self, event_type, context):
         if event_type not in self.effects:
-            print(f"⚠ No effects registered for {event_type}")
             return context
-        
-        print(f"\n=== TRIGGERING {event_type} ===")
-        print(f"Number of effects: {len(self.effects[event_type])}")
-        print(f"Context keys: {context.keys()}")
-        print(f"Hand type: {context.get('hand_type')}")
-        print(f"Chips before: {context.get('chips')}")
-        print(f"Mult before: {context.get('mult')}")
         
         context['current_event'] = event_type
         
         for effect in self.effects[event_type]:
-            print(f"\n  → Running {effect['name']}...")
             old_chips = context.get('chips', 0)
             old_mult = context.get('mult', 0)
             context = effect['function'](context)
             new_chips = context.get('chips', 0)
             new_mult = context.get('mult', 0)
-            
-            if new_chips != old_chips:
-                print(f"    Chips changed: {old_chips} → {new_chips} (+{new_chips - old_chips})")
-            if new_mult != old_mult:
-                print(f"    Mult changed: {old_mult} → {new_mult} (+{new_mult - old_mult})")
-        
-        print(f"\nChips after: {context.get('chips')}")
-        print(f"Mult after: {context.get('mult')}")
-        print(f"=== END {event_type} ===\n")
         return context
     
 def hand_contains(context):
-    """
-    FIX: This function now properly checks hand_played instead of requiring hand_type.
-    It determines what poker hands are present in the cards that were played.
-    """
-    print(f"\n  [hand_contains] Checking context...")
-    
-    
     cards = context.get('hand_played')
-    print(f"  [hand_contains] hand_played: {cards}")
-    
     if not cards:
-        print(f"  [hand_contains] No cards in hand_played!")
         return []
-    
-    print(f"  [hand_contains] Number of cards: {len(cards)}")
     n = len(cards)
     values = sorted([c.value for c in cards])
     suits = [c.suit for c in cards]
-    print(f"  [hand_contains] Values: {values}")
-    print(f"  [hand_contains] Suits: {suits}")
-    
     value_counts = Counter(values)
-    print(f"  [hand_contains] Value counts: {dict(value_counts)}")
     suits_counts = Counter(suits)
     is_flush = n == 5 and max(suits_counts.values()) == 5
     is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
@@ -117,7 +82,6 @@ def hand_contains(context):
         hand_contains.append('Flush House')
     hand_contains.append('High Card')
     
-    print(f"  [hand_contains] Result: {hand_contains}")
     return hand_contains
     
 def Bald_effect(context):
@@ -128,37 +92,19 @@ def Bald_effect(context):
     return context
 
 def Clever_effect(context):
-    """
-    FIX: Now properly checks if hand_played exists and contains Two Pair
-    """
-    print(f"\n  [Clever_effect] Starting...")
-    print(f"  [Clever_effect] Context hand_type: {context.get('hand_type')}")
-    
-    # FIX #2: Make sure we have cards to analyze
     if 'hand_played' not in context or not context.get('hand_played'):
-        print(f"  [Clever_effect] No hand_played in context!")
         return context
-    
     hand = hand_contains(context)
-    print(f"  [Clever_effect] hand_contains returned: {hand}")
-    
     if "Two Pair" in hand:
-        print(f"  [Clever_effect] ✓✓✓ TWO PAIR FOUND! Adding 80 chips!")
         old_chips = context.get('chips', 0)
         context['chips'] = context.get('chips', 0) + 80 
-        print(f"  [Clever_effect] Chips: {old_chips} → {context['chips']}")
         context.setdefault('triggered_jokers', []).append('Clever Joker')
-    else:
-        print(f"  [Clever_effect] Two Pair NOT in hand_contains result")
     return context
 
 def Disguised_effect(context):
     return context
 
 def Crafty_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Flush
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -169,9 +115,6 @@ def Crafty_effect(context):
     return context
 
 def Crazy_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Straight
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -182,9 +125,6 @@ def Crazy_effect(context):
     return context
 
 def Devious_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Straight
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -195,9 +135,6 @@ def Devious_effect(context):
     return context
 
 def Droll_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Flush
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -208,9 +145,6 @@ def Droll_effect(context):
     return context
 
 def Jolly_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Pair
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -221,9 +155,6 @@ def Jolly_effect(context):
     return context
 
 def Mad_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Four of a Kind
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -234,9 +165,6 @@ def Mad_effect(context):
     return context
 
 def Sly_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Pair
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -247,9 +175,6 @@ def Sly_effect(context):
     return context
 
 def Wily_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Straight
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -260,9 +185,6 @@ def Wily_effect(context):
     return context
 
 def Zany_effect(context):
-    """
-    FIX: Now uses hand_contains to properly detect Three of a Kind
-    """
     if 'hand_played' not in context or not context.get('hand_played'):
         return context
     
@@ -293,7 +215,6 @@ def Hacked_effect(context):
     if card.card_id in top_5:
         context['chips'] = context.get('chips', 0) + card.chip_value
         context.setdefault('triggered_jokers', []).append('Hacked Joker')
-        print("Retriggered")
     
     return context
 def Exponent_effect(context):
@@ -383,7 +304,6 @@ def PTSD_effect(context):
         last_hand_counter += 0.1
         context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
     context.setdefault('triggered_jokers', []).append('PTSD Joker')
-    print("PTSD effect = " + str(last_hand_counter))
     return context
 
 
@@ -400,7 +320,6 @@ def WetFloor_effect(context):
         wetFloorValue += 1
     context.setdefault('triggered_jokers', []).append('Wet Floor Joker')
     context['mult'] = context.get('mult', 0) + wetFloorValue
-    print("Wet Floor Value = " + str(wetFloorValue))
     return context
 
 def YinYang_effect(context):
@@ -620,11 +539,6 @@ JOKER_REGISTRY = {
 }
 
 def initialize_joker_effects(active_jokers):
-    print(f"\n=== INITIALIZING JOKER EFFECTS ===")
-    print(f"Number of active jokers: {len(active_jokers)}")
-    for joker in active_jokers:
-        print(f"  - {joker.name}")
-    
     manager = JokerEffectsManager()
     for joker in active_jokers:
         joker_name = joker.name
@@ -632,8 +546,4 @@ def initialize_joker_effects(active_jokers):
             joker_data = JOKER_REGISTRY[joker_name]
             for event_type, effect_function in joker_data['events']:
                 manager.register_joker(joker_name, event_type, effect_function)
-        else:
-            print(f"⚠ WARNING: {joker_name} not found in JOKER_REGISTRY!")
-    
-    print(f"=== INITIALIZATION COMPLETE ===\n")
     return manager
