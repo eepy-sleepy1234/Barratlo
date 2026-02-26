@@ -1626,6 +1626,7 @@ class Card:
         self.scaling_done = False
         self.scoring_complete = False
         self.rank = rank
+        print(self.rank)
         self.suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
@@ -2403,6 +2404,8 @@ class Joker:
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
         elif self.name == "Skip Joker":
             desc = desc.replace("{value}", str(round(JokerEffects.skipMult,2)))
+        elif self.name == "Exponent Joker":
+            desc = desc.replace("{value}", str(round(JokerEffects.exponentJoker,1)))
         elif self.name == "Rules Card":
             if RulesHand is None:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
