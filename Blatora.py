@@ -18,7 +18,6 @@ from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_e
 pygame.init()
 pygame.font.init()
 
-
     
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
@@ -436,6 +435,8 @@ def reset_deck_for_new_round():
     hand.clear()
     deck.clear()
     for card in perm_deck:
+        card.retriggers = 0
+        card.retriggers_remaining = 0
         card.state = "hand"
         card.is_debuffed = False
         card.debuff_assigned = False
@@ -1398,6 +1399,29 @@ def loadAudio(file):
         return sound
     except:
         return quackplay
+    
+def pop_and_check_retrigger(card, scoring_queue):
+    if not scoring_queue:
+        return
+    scoring_queue.pop(0)
+    if card.retriggers_remaining > 0:
+        card.retriggers_remaining -= 1
+        card.scoring_complete      = False
+        card.base_scoring_complete = False
+        card.scaling               = True
+        card.scaling_done          = False
+        card.growing               = False
+        card.scale                 = 1.0
+        card.scaling_delay         = 0
+        card.rotation_speed        = 0
+        card.angle                 = 0
+        card.lucky_triggered       = False
+        card.lucky_mult            = False
+        card.state                 = "played"
+
+        scoring_queue.insert(0, card)
+    else:
+        card.state = "scored"
 
 buttonClick = loadAudio('Button.wav')
 buttonClick.set_volume(0.5)
@@ -1454,6 +1478,8 @@ purchases = 0
 rerolls = 0
 cards_found = 0
 lastFool = None
+locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
+locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
 Hand_levels = {
     "High Card": 1,
     "Pair": 1,
@@ -1467,6 +1493,7 @@ Hand_levels = {
     "Five of a Kind": 1,
     "Flush House": 1,
     "Flush Five": 1,
+    "Huh of a What": 1
     }
 
 Hand_Mult = {
@@ -1482,6 +1509,7 @@ Hand_Mult = {
     "Five of a Kind": 12,
     "Flush House": 14,
     "Flush Five": 16,
+    "Huh of a What": 10
     }
 
 Hand_Chips = {
@@ -1497,6 +1525,7 @@ Hand_Chips = {
     "Five of a Kind": 120,
     "Flush House": 140,
     "Flush Five": 160,
+    "Huh of a What": 100
     }
 
 hand_plays = {
@@ -1511,7 +1540,8 @@ hand_plays = {
     "Straight Flush": 0,
     "Five of a Kind": 0,
     "Flush House": 0,
-    "Flush Five": 0
+    "Flush Five": 0,
+    "Huh of a What": 0
 }
 scored = False
 scoring_in_progress = False
@@ -1614,6 +1644,7 @@ class Card:
         self.scale= 1.0
         self.rotation_speed = 0
         self.scaling_delay = 0
+        self.enhancement_timer = 10
         self.is_debuffed = debuff
         self.debuff_assigned = False
         self.is_frozen = False
@@ -1629,6 +1660,12 @@ class Card:
         self.suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
+        self.lucky_triggered = False
+        self.lucky_mult = False
+        self.retriggers = 0 
+        self.remaining = 0
+        
+        self.base_scoring_complete = False
         Card.card_id_counter += 1
         if self.is_debuffed:
             self.chip_value = 0
@@ -1687,14 +1724,6 @@ class Card:
                 self.x += self.vx
             if abs(self.vy) > 0.1:
                 self.y += self.vy
-        elif self.scoring_animating:
-            lerp_t = 0.18
-            self.x += (self.target_x - self.x) * lerp_t
-            self.y += (self.target_y - self.y) * lerp_t
-            self.angle += (0 - self.angle) * 0.15
-            if abs(self.x - self.target_x) < 2 and abs(self.y - self.target_y) < 2:
-                self.x = self.target_x
-                self.y = self.target_y
         self.angle += self.rotation_speed
     def trigger(self, type, amount):
         match type:
@@ -1710,12 +1739,14 @@ class Card:
                 color = red
             case "Break":
                 color = None
+            case "Debuff":
+                color = red
             case _:
                 color = black
-        if self.scaling_delay < 10:
-            self.scaling_delay += 1
-        else:
-            if not self.growing:
+        if card.scoring_animating:
+            if self.scaling_delay < 10:
+                self.scaling_delay += 1
+            elif not self.growing:
                 if self.scale < 1.4:
                     self.scale += 0.1
                     self.rotation_speed = -3
@@ -1732,12 +1763,17 @@ class Card:
                     self.scaling = False
                     self.growing = False
                     self.scaling_done = True
+                    self.scoring_complete = True
                     self.scoring_animating = False
                     self.scaling_delay = 10
                     self.angle = 0
                     if type != "Break":
-                        indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
+                        if type != "Debuff":
+                            indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
+                        else:
+                            indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), "Debuffed", color)
                         chip_indicators.append(indicator)
+            self.angle += self.rotation_speed
 
 
 
@@ -1973,8 +2009,8 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= HEIGHT/20
         elif card.state == "played":
             if card.scoring_x == 0:
-                if scoring_sequence_index < len(SCORED_POSITIONS):
-                    card.scoring_x, card.scoring_y = SCORED_POSITIONS[scoring_sequence_index]
+                if len(scoring_queue) <= len(SCORED_POSITIONS):
+                    card.scoring_x, card.scoring_y = SCORED_POSITIONS[selected_cards.index(card)]
                     scoring_sequence_index += 1
                     card.angle = 0
             if card.is_contributing:
@@ -2017,7 +2053,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     
         scaled_base = pygame.transform.scale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
-            card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
             scaled_img = scaled_img.copy()
             scaled_img.blit(scaled_overlay, (0, 0))
@@ -2401,6 +2436,10 @@ class Joker:
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
         elif self.name == "Pool Table":
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
+        elif self.name == "Skip Joker":
+            desc = desc.replace("{value}", str(round(JokerEffects.skipMult,2)))
+        elif self.name == "Exponent Joker":
+            desc = desc.replace("{value}", str(round(JokerEffects.exponentJoker,1)))
         elif self.name == "Rules Card":
             if RulesHand is None:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
@@ -2608,7 +2647,7 @@ TarotCards = []
 ShadowCards = []
 SpectralCards = []
 Held_Consumables = []
-maxConsCount = 2
+maxConsCount = 30
 for root, dirs, files in os.walk(CONS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2808,6 +2847,7 @@ def reset_game_variables():
     highest_hand = 0
     most_played = 0
     hand_plays = {k: 0 for k in hand_plays}
+    locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
 
     hand.clear()
     deck.clear()
@@ -2909,26 +2949,33 @@ def detect_hand(cards):
     suits = [c.suit for c in cards if c.enhancement != "Glitched"]
     value_counts = Counter(values)
     suits_counts = Counter(suits)
-    is_flush = n == 5 and max(suits_counts.values()) == 5
-    is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
+    if s == 0:
+        is_flush = n == 5 and max(suits_counts.values()) == 5
+        is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
+    else:
+        is_flush, is_straight = False, False
+    is_glitched = s == 5
+    if is_glitched:
+        contributing = selected_cards.copy()
+        return "Huh of a What", contributing
     if values == [2, 3, 4, 5, 14]:
         is_straight = True
         values = [1, 2, 3, 4, 5]
     contributing = []
     if is_flush and 5 in value_counts.values():
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Flush Five", contributing
     elif is_flush and sorted(value_counts.values()) == [2, 3]:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Flush House", contributing
     elif 5 in value_counts.values():
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Five of a Kind", contributing
     elif is_flush and is_straight and values[-1] == 14:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Royal Flush", contributing
     elif is_flush and is_straight:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Straight Flush", contributing
     elif 4 in value_counts.values():
         four_value = [val for val, count in value_counts.items() if count == 4][0]
@@ -2938,13 +2985,13 @@ def detect_hand(cards):
                 contributing.append(c)
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Full House", contributing
     elif is_flush:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Flush", contributing
     elif is_straight:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Straight", contributing
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
@@ -3737,7 +3784,6 @@ while game:
                                     card = random.choice(Rare_Jokers)
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         rare_joker = False
-                                        print("added joker")
                                         break
 
                                 elif rarity_choice <= 28:
@@ -3746,7 +3792,7 @@ while game:
                                         break
                                 elif rarity_choice <= 50:
                                     card = random.choice(ShadowCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables:
+                                    if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
                                         break
                                 elif rarity_choice <= 75:
                                     card = random.choice(Common_Jokers)
@@ -3762,7 +3808,7 @@ while game:
                                         break
                             Shop_Cards.append(card)
                         for i in range(2):
-                            rarity_choice = random.randint(1, 100)
+                            rarity_choice = random.randint(68, 68)
                             while True:
                                 if rarity_choice <= 5:
                                     pack = random.choice(SpectralPacks)
@@ -3874,8 +3920,33 @@ while game:
                                     saved_base_chips = (Hand_Chips.get("Straight Flush", 0) * Hand_levels.get("Straight Flush", 1))
                                     saved_base_mult = Hand_Mult.get("Straight Flush", 1)
                                     saved_level = Hand_levels.get("Straight Flush", 1)
+                                if hand_type in locked_hands:
+                                    locked_hands.remove(hand_type)
+                                    match hand_type:
+                                        case "Five of a Kind":
+                                            locked_cards.remove("The Reaper")
+                                        case "Flush Five":
+                                            locked_cards.remove("King Shadow")
+                                        case "Flush House":
+                                            locked_cards.remove("Tag Team")
+                                        case "Huh of a What":
+                                            locked_cards.remove("Glitch")
                                 dev_selection = False
                                 scoring_queue = contributing.copy()
+                                for card in contributing:
+                                    card.retriggers = 0
+                                    card.retriggers_remaining = 0
+
+                                context = {
+                                    'active_jokers': Active_Jokers,
+                                    'hand_type': saved_hand,
+                                    'hand_played': selected_cards,
+                                    'contributing': contributing,
+                                    'deck': deck,
+                                }
+                                context = joker_manager.trigger('on_scoring_start', context)
+                                for card in contributing:
+                                    card.retriggers_remaining = card.retriggers
                                 for card in selected_cards:
                                     card.state = "played"
                                     card.play_timer = 0
@@ -4004,8 +4075,8 @@ while game:
                         if rerollCost <= money:
                             rerolls += 1
                             for joker in Shop_Cards:
-                                joker.x = -100
-                                joker.y = -100
+                                joker.x = WIDTH/1.6
+                                joker.y = HEIGHT/1.565
                             Shop_Cards.clear()
                             money -= rerollCost
                             rerollCost += 1
@@ -4018,7 +4089,6 @@ while game:
                                         card = random.choice(Rare_Jokers)
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             rare_joker = False
-                                            print("added joker")
                                             break
                                     if rarity_choice <= 28:
                                         card = random.choice(TarotCards)
@@ -4026,7 +4096,7 @@ while game:
                                             break
                                     elif rarity_choice <= 50:
                                         card = random.choice(ShadowCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                        if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
                                             break
                                     elif rarity_choice <= 75:
                                         card = random.choice(Common_Jokers)
@@ -4047,6 +4117,8 @@ while game:
                         Shop_Cards.clear()
                         ShopPacks.clear()
                         shopJokerSelected = False
+                        for card in deck:
+                            card.is_debuffed = False
                         context = {
                             'active_jokers': Active_Jokers,
                             'deck': deck,
@@ -4087,6 +4159,7 @@ while game:
                         break
                     if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         buttonClick.play(0)
+                        JokerEffects.skipMult += 0.25
                         round_num += 1
                         current_blind = None
                         victory = False
@@ -4363,33 +4436,70 @@ while game:
                 if card.is_contributing:
                     card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
                     if scoring_queue[0] == card:
-                        saved_base_chips += card.chip_value
-                        card.trigger("Chips", card.chip_value)
-                        match card.enhancement:
-                            case "Mult":
-                                saved_base_mult += 4
-                                card.trigger("Mult", 4)
-                            case "Bonus":
-                                saved_base_chips += 30
-                                card.trigger("Chips", 30)
-                            case "Lucky":
-                                num = random.randint(1, 15)
-                                num1 = random.randint(1, 15)
-                                if num <= 5:
-                                    saved_base_mult += 20
-                                    card.trigger("Mult", 20)
-                                if num1 == 1:
-                                    money += 20
-                                    card.trigger("Money", 20)
-                            case "Glass":
-                                num = random.randint(1, 4)
-                                saved_base_mult *= 2
-                                card.trigger("XMult", 2)
-                                if num == 1:
-                                    perm_deck.remove(card)
-                                card.trigger("Break", 0)
-                        card.state = "scored"
-                        card.scoring_complete = True
+                        if len(scoring_queue) > 0:
+                            scoring_queue[0].scaling = True
+                        if not card.is_debuffed:
+                            card.trigger("Chips", card.chip_value)
+                        else:
+                            card.trigger("Debuff", 0)
+                        if card.scoring_complete:
+                            if not card.base_scoring_complete:
+                                if not card.is_debuffed:
+                                    saved_base_chips += card.chip_value
+                                card.rotation_speed = 0
+                                card.angle = 0
+                            match card.enhancement:
+                                case "Mult":
+                                    saved_base_mult += 4
+                                case "Bonus":
+                                    saved_base_chips += 30
+                                case "Lucky":
+                                    if card.lucky_triggered:
+                                        if num <= 5:
+                                            saved_base_mult += 20
+                                        if num1 <= 15:
+                                            money += 20
+                                case "Glass":
+                                    num = random.randint(1, 4)
+                                    saved_base_mult *= 2
+                                    if num == 1:
+                                        perm_deck.remove(card)
+                                        card.trigger("Break", 0)
+                            card.base_scoring_complete = True
+                            card.scoring_complete = False
+                        elif card.base_scoring_complete:
+                            if card.enhancement_timer > 0:
+                                card.enhancement_timer -= 1
+                            else:
+                                match card.enhancement:
+                                    case "Mult":
+                                        card.trigger("Mult", 4)
+                                    case "Bonus":
+                                        card.trigger("Chips", 30)
+                                    case "Lucky":
+                                        if not card.lucky_triggered:
+                                            num = random.randint(1, 5)
+                                            card.lucky_triggered = True
+                                        if num == 1:
+                                            card.trigger("Mult", 20)
+                                    case "Glass":
+                                        card.trigger("XMult", 2)
+                                if card.enhancement == "Lucky" and not card.lucky_mult:
+                                    if not card.lucky_triggered:
+                                        num1 = random.randint(1, 15)
+                                    if num1 == 1: 
+                                        card.trigger("Money", 20)
+                        if card.base_scoring_complete:
+                            if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
+                                if card.scoring_complete:
+                                    pop_and_check_retrigger(card, scoring_queue)
+                            else:
+                                pop_and_check_retrigger(card, scoring_queue)
+                                card.enhancement_timer = 10
+                                card.base_scoring_complete = False
+                                card.scoring_complete = False
+                                card.scoring_animating = False
+
 
                         context = {
                             'card': card,
@@ -4907,13 +5017,6 @@ while game:
                 scoring_in_progress = False
                 scored = True
 
-        if scoring_in_progress and scoring_queue:
-            current_card = scoring_queue[0]
-            if current_card.scoring_complete:
-                scoring_queue.pop(0)
-                if len(scoring_queue) > 0:
-                    scoring_queue[0].scaling = True
-
         if scored:
             for joker in Active_Jokers:
                 if joker.name == "Pool Table":
@@ -4959,13 +5062,11 @@ while game:
             for c in selected_cards:
                 c.state = "scored"
             
-            print(hand_type_temp)
             for card in hand:
                 if card.enhancement == "Steel":
                     saved_base_mult *= 1.5
             calculating = True
             JokerEffects.last_hand = hand_type_temp
-            print(JokerEffects.last_hand)
             scored = False
             calc_progress = 0.0
             add_progress = 0.0

@@ -1,0 +1,1 @@
+Gains ^0.1 each time a Full House is played that contains a four and a two or  a three and a nine{break}[grey](Currently:[/grey] [red]^{value}[/red][grey] )[/grey]
