@@ -4381,9 +4381,8 @@ while game:
                 if card.is_contributing:
                     card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
                     if scoring_queue[0] == card:
+                        scoring_queue[0].scaling = True
                         scoring_queue.pop(0)
-                        if len(scoring_queue) > 0:
-                            scoring_queue[0].scaling = True
                         saved_base_chips += card.chip_value
                         card.trigger("Chips", card.chip_value)
                         match card.enhancement:
