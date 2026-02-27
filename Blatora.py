@@ -1635,6 +1635,9 @@ class Card:
         self.suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
+        self.lucky_triggered = False
+        self.lucky_mult = False
+        self.base_scoring_complete = False
         Card.card_id_counter += 1
         if self.is_debuffed:
             self.chip_value = 0
@@ -1710,7 +1713,7 @@ class Card:
                 color = None
             case _:
                 color = black
-        while card.scoring_animating:
+        if card.scoring_animating:
             if self.scaling_delay < 10:
                 self.scaling_delay += 1
             elif not self.growing:
@@ -1730,6 +1733,7 @@ class Card:
                     self.scaling = False
                     self.growing = False
                     self.scaling_done = True
+                    self.scoring_complete = True
                     self.scoring_animating = False
                     self.scaling_delay = 10
                     self.angle = 0
@@ -1972,7 +1976,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             target_y -= HEIGHT/20
         elif card.state == "played":
             if card.scoring_x == 0:
-                if len(scoring_queue) < len(SCORED_POSITIONS):
+                if len(scoring_queue) <= len(SCORED_POSITIONS):
                     card.scoring_x, card.scoring_y = SCORED_POSITIONS[selected_cards.index(card)]
                     scoring_sequence_index += 1
                     card.angle = 0
@@ -2402,6 +2406,8 @@ class Joker:
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
         elif self.name == "Skip Joker":
             desc = desc.replace("{value}", str(round(JokerEffects.skipMult,2)))
+        elif self.name == "Exponent Joker":
+            desc = desc.replace("{value}", str(round(JokerEffects.exponentJoker,1)))
         elif self.name == "Rules Card":
             if RulesHand is None:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
@@ -2911,30 +2917,33 @@ def detect_hand(cards):
     suits = [c.suit for c in cards if c.enhancement != "Glitched"]
     value_counts = Counter(values)
     suits_counts = Counter(suits)
-    is_flush = n == 5 and max(suits_counts.values()) == 5
-    is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
+    if s == 0:
+        is_flush = n == 5 and max(suits_counts.values()) == 5
+        is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
+    else:
+        is_flush, is_straight = False, False
     is_glitched = s == 5
     if is_glitched:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Huh of a What", contributing
     if values == [2, 3, 4, 5, 14]:
         is_straight = True
         values = [1, 2, 3, 4, 5]
     contributing = []
     if is_flush and 5 in value_counts.values():
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Flush Five", contributing
     elif is_flush and sorted(value_counts.values()) == [2, 3]:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Flush House", contributing
     elif 5 in value_counts.values():
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Five of a Kind", contributing
     elif is_flush and is_straight and values[-1] == 14:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Royal Flush", contributing
     elif is_flush and is_straight:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Straight Flush", contributing
     elif 4 in value_counts.values():
         four_value = [val for val, count in value_counts.items() if count == 4][0]
@@ -2944,13 +2953,13 @@ def detect_hand(cards):
                 contributing.append(c)
         return "Four of a Kind", contributing
     elif sorted(value_counts.values()) == [2, 3]:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Full House", contributing
     elif is_flush:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Flush", contributing
     elif is_straight:
-        contributing = cards[:]
+        contributing = selected_cards.copy()
         return "Straight", contributing
     elif 3 in value_counts.values():
         three_value = [val for val, count in value_counts.items() if count == 3][0]
@@ -3743,7 +3752,6 @@ while game:
                                     card = random.choice(Rare_Jokers)
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         rare_joker = False
-                                        print("added joker")
                                         break
 
                                 elif rarity_choice <= 28:
@@ -4035,7 +4043,6 @@ while game:
                                         card = random.choice(Rare_Jokers)
                                         if card not in Shop_Cards and card not in Active_Jokers:
                                             rare_joker = False
-                                            print("added joker")
                                             break
                                     if rarity_choice <= 28:
                                         card = random.choice(TarotCards)
@@ -4381,35 +4388,57 @@ while game:
                 if card.is_contributing:
                     card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
                     if scoring_queue[0] == card:
-                        scoring_queue[0].scaling = True
-                        scoring_queue.pop(0)
-                        saved_base_chips += card.chip_value
+                        if len(scoring_queue) > 0:
+                            scoring_queue[0].scaling = True
                         card.trigger("Chips", card.chip_value)
-                        match card.enhancement:
-                            case "Mult":
-                                saved_base_mult += 4
-                                card.trigger("Mult", 4)
-                            case "Bonus":
-                                saved_base_chips += 30
-                                card.trigger("Chips", 30)
-                            case "Lucky":
-                                num = random.randint(1, 15)
-                                num1 = random.randint(1, 15)
-                                if num <= 5:
-                                    saved_base_mult += 20
-                                    card.trigger("Mult", 20)
-                                if num1 == 1:
-                                    money += 20
+                        if card.scoring_complete:
+                            if not card.base_scoring_complete:
+                                saved_base_chips += card.chip_value
+                            match card.enhancement:
+                                case "Mult":
+                                    saved_base_mult += 4
+                                case "Bonus":
+                                    saved_base_chips += 30
+                                case "Lucky":
+                                    if num <= 5:
+                                        saved_base_mult += 20
+                                    if num1 <= 15:
+                                        money += 20
+                                case "Glass":
+                                    num = random.randint(1, 4)
+                                    saved_base_mult *= 2
+                                    if num == 1:
+                                        perm_deck.remove(card)
+                                        card.trigger("Break", 0)
+                            card.base_scoring_complete = True
+                            card.scoring_complete = False
+                        elif card.base_scoring_complete:
+                            match card.enhancement:
+                                case "Mult":
+                                    card.trigger("Mult", 4)
+                                case "Bonus":
+                                    card.trigger("Chips", 30)
+                                case "Lucky":
+                                    if not card.lucky_triggered:
+                                        num = random.randint(1, 5)
+                                        card.lucky_triggered = False
+                                    if num == 1:
+                                        card.trigger("Mult", 20)
+                                case "Glass":
+                                    card.trigger("XMult", 2)
+                            if card.enhancement == "Lucky" and not card.lucky_mult:
+                                if not card.lucky_triggered:
+                                    num1 = random.randint(1, 15)
+                                if num1 == 1: 
                                     card.trigger("Money", 20)
-                            case "Glass":
-                                num = random.randint(1, 4)
-                                saved_base_mult *= 2
-                                card.trigger("XMult", 2)
-                                if num == 1:
-                                    perm_deck.remove(card)
-                                card.trigger("Break", 0)
-                        card.state = "scored"
-                        card.scoring_complete = True
+                        if card.base_scoring_complete:
+                            if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
+                                if card.scoring_complete:
+                                    card.state = "scored"
+                                    scoring_queue.pop(0)
+                            else:
+                                card.state = "scored"
+                                scoring_queue.pop(0)
 
                         context = {
                             'card': card,
@@ -4972,13 +5001,11 @@ while game:
             for c in selected_cards:
                 c.state = "scored"
             
-            print(hand_type_temp)
             for card in hand:
                 if card.enhancement == "Steel":
                     saved_base_mult *= 1.5
             calculating = True
             JokerEffects.last_hand = hand_type_temp
-            print(JokerEffects.last_hand)
             scored = False
             calc_progress = 0.0
             add_progress = 0.0

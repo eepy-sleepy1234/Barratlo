@@ -6,6 +6,7 @@ last_hand_counter = 0
 YinYang_Active = False
 poolMoney = 0
 skipMult = 1
+exponentJoker = 1
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -216,7 +217,19 @@ def Hacked_effect(context):
         context.setdefault('triggered_jokers', []).append('Hacked Joker')
     
     return context
-
+def Exponent_effect(context):
+    global exponentJoker
+    hand = hand_contains(context)
+    cards = context.get('hand_played', [])
+    
+    if "Full House" in hand:
+        card_values = [c.value for c in cards]
+        if (2 in card_values and 4 in card_values) or (3 in card_values and 9 in card_values):
+            exponentJoker += 0.1
+    context["mult"] = pow(context.get('mult', 0), exponentJoker)
+            
+    
+    return context
 def Invincible_effect(context):
     return context
 
@@ -516,6 +529,11 @@ JOKER_REGISTRY = {
     'Skip Joker': {
         'events': [('on_hand_played', Skip_effect)],
         'description': 'Gains X0.25 Mult For Every Skipped Blind',
+        'Oopy Goopy': True 
+    },
+    'Exponent Joker': {
+        'events': [('on_hand_played', Exponent_effect)],
+        'description': 'Gains ^0.1 each time a Full House is played that contains a four and a two',
         'Oopy Goopy': True 
     },
 }
