@@ -1710,7 +1710,7 @@ class Card:
             case "XMult":
                 color = red
             case "Break":
-                color = None
+                color = black
             case "Debuff":
                 color = red
             case _:
@@ -1744,7 +1744,10 @@ class Card:
                             indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
                         else:
                             indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), "Debuffed", color)
-                        chip_indicators.append(indicator)
+                    else:
+                        perm_deck.remove(self)
+                        indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), "Broken", color)
+                    chip_indicators.append(indicator)
             self.angle += self.rotation_speed
 
 
@@ -4421,7 +4424,6 @@ while game:
                                     num = random.randint(1, 4)
                                     saved_base_mult *= 2
                                     if num == 1:
-                                        perm_deck.remove(card)
                                         card.trigger("Break", 0)
                             card.base_scoring_complete = True
                             card.scoring_complete = False
