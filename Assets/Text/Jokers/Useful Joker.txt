@@ -1,0 +1,1 @@
+Gives [red]+1 Mult[/red] if hand contains [orange]A Card[/orange]
