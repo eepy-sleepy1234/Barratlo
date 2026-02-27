@@ -435,6 +435,8 @@ def reset_deck_for_new_round():
     hand.clear()
     deck.clear()
     for card in perm_deck:
+        card.retriggers = 0
+        card.retriggers_remaining = 0
         card.state = "hand"
         card.is_debuffed = False
         card.debuff_assigned = False
@@ -1397,6 +1399,29 @@ def loadAudio(file):
         return sound
     except:
         return quackplay
+    
+def pop_and_check_retrigger(card, scoring_queue):
+    if not scoring_queue:
+        return
+    scoring_queue.pop(0)
+    if card.retriggers_remaining > 0:
+        card.retriggers_remaining -= 1
+        card.scoring_complete      = False
+        card.base_scoring_complete = False
+        card.scaling               = True
+        card.scaling_done          = False
+        card.growing               = False
+        card.scale                 = 1.0
+        card.scaling_delay         = 0
+        card.rotation_speed        = 0
+        card.angle                 = 0
+        card.lucky_triggered       = False
+        card.lucky_mult            = False
+        card.state                 = "played"
+
+        scoring_queue.insert(0, card)
+    else:
+        card.state = "scored"
 
 buttonClick = loadAudio('Button.wav')
 buttonClick.set_volume(0.5)
@@ -1637,6 +1662,9 @@ class Card:
         self.card_id = Card.card_id_counter
         self.lucky_triggered = False
         self.lucky_mult = False
+        self.retriggers = 0 
+        self.remaining = 0
+        
         self.base_scoring_complete = False
         Card.card_id_counter += 1
         if self.is_debuffed:
@@ -3908,6 +3936,20 @@ while game:
                                             locked_cards.remove("Glitch")
                                 dev_selection = False
                                 scoring_queue = contributing.copy()
+                                for card in contributing:
+                                    card.retriggers = 0
+                                    card.retriggers_remaining = 0
+
+                                context = {
+                                    'active_jokers': Active_Jokers,
+                                    'hand_type': saved_hand,
+                                    'hand_played': selected_cards,
+                                    'contributing': contributing,
+                                    'deck': deck,
+                                }
+                                context = joker_manager.trigger('on_scoring_start', context)
+                                for card in contributing:
+                                    card.retriggers_remaining = card.retriggers
                                 for card in selected_cards:
                                     card.state = "played"
                                     card.play_timer = 0
@@ -4452,11 +4494,9 @@ while game:
                         if card.base_scoring_complete:
                             if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                 if card.scoring_complete:
-                                    card.state = "scored"
-                                    scoring_queue.pop(0)
+                                    pop_and_check_retrigger(card, scoring_queue)
                             else:
-                                card.state = "scored"
-                                scoring_queue.pop(0)
+                                pop_and_check_retrigger(card, scoring_queue)
                                 card.enhancement_timer = 10
                                 card.base_scoring_complete = False
                                 card.scoring_complete = False
