@@ -4400,10 +4400,11 @@ while game:
                                 case "Bonus":
                                     saved_base_chips += 30
                                 case "Lucky":
-                                    if num <= 5:
-                                        saved_base_mult += 20
-                                    if num1 <= 15:
-                                        money += 20
+                                    if card.lucky_triggered:
+                                        if num <= 5:
+                                            saved_base_mult += 20
+                                        if num1 <= 15:
+                                            money += 20
                                 case "Glass":
                                     num = random.randint(1, 4)
                                     saved_base_mult *= 2
@@ -4421,7 +4422,7 @@ while game:
                                 case "Lucky":
                                     if not card.lucky_triggered:
                                         num = random.randint(1, 5)
-                                        card.lucky_triggered = False
+                                        card.lucky_triggered = True
                                     if num == 1:
                                         card.trigger("Mult", 20)
                                 case "Glass":
