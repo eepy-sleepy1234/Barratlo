@@ -362,9 +362,16 @@ def YinYang_effect(context):
     return context
 
 def Fountain_effect(context):
-
+    hand_played = context.get('hand_played', [])
+    contributing = context.get('contributing', [])
+    has_enhancement = any(card.enhancement is not None for card in hand_played)
+    if has_enhancement:
+        for card in contributing:
+            if card.enhancement is not None:
+                card.retriggers += 1
+        context['fountain_remove_hand'] = True
+        context.setdefault('triggered_jokers', []).append('Fountain')
     return context
-
 def Skip_effect(context):
     context['mult'] = round((context.get('mult',0) * skipMult),2)
     return context
@@ -539,7 +546,7 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True
     },
     'Fountain': {
-        'events': [('on_card_scored', Fountain_effect)],
+        'events': [('on_scoring_start', Fountain_effect)],
         'description': 'Cards with enhancements repeat once. Removes 1 Hand',
         'Oopy Goopy': True
     },

@@ -1418,7 +1418,9 @@ def pop_and_check_retrigger(card, scoring_queue):
         card.lucky_triggered       = False
         card.lucky_mult            = False
         card.state                 = "played"
-
+        card.scoring_animating     = True
+        card.scoring_y             = 0 
+        card.scoring_x             = 0
         scoring_queue.insert(0, card)
     else:
         card.state = "scored"
@@ -2025,7 +2027,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
-        if card.scoring_x != 0:
+        if card.scoring_x != 0 and card.state in ("played", "scored"):
             if card.is_contributing:
                 if card.scoring_y == HEIGHT//2.29:
                     card.scoring_y -= HEIGHT/32
@@ -3945,6 +3947,9 @@ while game:
                                     'deck': deck,
                                 }
                                 context = joker_manager.trigger('on_scoring_start', context)
+                               
+                                if context.get('fountain_remove_hand'):
+                                    hands -= 1
                                 for card in contributing:
                                     card.retriggers_remaining = card.retriggers
                                 for card in selected_cards:
