@@ -1401,8 +1401,9 @@ def loadAudio(file):
         return quackplay
     
 def pop_and_check_retrigger(card, scoring_queue):
+    if not scoring_queue:
+        return
     scoring_queue.pop(0)
-
     if card.retriggers_remaining > 0:
         card.retriggers_remaining -= 1
         card.scoring_complete      = False
@@ -4491,11 +4492,9 @@ while game:
                         if card.base_scoring_complete:
                             if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                 if card.scoring_complete:
-                                    card.state = "scored"
-                                    scoring_queue.pop(0)
+                                    pop_and_check_retrigger(card, scoring_queue)
                             else:
-                                card.state = "scored"
-                                scoring_queue.pop(0)
+                                pop_and_check_retrigger(card, scoring_queue)
                                 card.enhancement_timer = 10
                                 card.base_scoring_complete = False
                                 card.scoring_complete = False

@@ -238,6 +238,17 @@ def Lucky_effect(context):
     return context
 
 def Michigan_effect(context):
+    hand_played = context.get('hand_played', [])
+    contributing = context.get('contributing', [])
+    suits = {c.suit for c in hand_played}
+    has_heart  = 'Hearts' in suits
+    has_spade  = 'Spades' in suits
+
+    if (has_heart or has_spade) and not (has_heart and has_spade):
+        for card in contributing:
+            card.retriggers += 1
+        context.setdefault('triggered_jokers', []).append('Michigan Joker')
+
     return context
 
 def PoolTable_effect(context):
@@ -453,7 +464,7 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True
     },
     'Michigan Joker': {
-        'events': [('on_card_scored', Michigan_effect)],
+        'events': [('on_scoring_start', Michigan_effect)],
         'description': 'If the hand includes a Heart or a Spade, retrigger all scored cards once. Do not retrigger if hand has both',
         'Oopy Goopy': True
     },
