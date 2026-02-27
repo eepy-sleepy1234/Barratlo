@@ -18,7 +18,6 @@ from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_e
 pygame.init()
 pygame.font.init()
 
-
     
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
@@ -1620,6 +1619,7 @@ class Card:
         self.scale= 1.0
         self.rotation_speed = 0
         self.scaling_delay = 0
+        self.enhancement_timer = 10
         self.is_debuffed = debuff
         self.debuff_assigned = False
         self.is_frozen = False
@@ -1711,6 +1711,8 @@ class Card:
                 color = red
             case "Break":
                 color = None
+            case "Debuff":
+                color = red
             case _:
                 color = black
         if card.scoring_animating:
@@ -1738,7 +1740,10 @@ class Card:
                     self.scaling_delay = 10
                     self.angle = 0
                     if type != "Break":
-                        indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
+                        if type != "Debuff":
+                            indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
+                        else:
+                            indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), "Debuffed", color)
                         chip_indicators.append(indicator)
             self.angle += self.rotation_speed
 
@@ -2020,7 +2025,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
     
         scaled_base = pygame.transform.scale(card_base, (scaled_w, scaled_h))
         if card.is_debuffed:
-            card.chip_value = 0
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
             scaled_img = scaled_img.copy()
             scaled_img.blit(scaled_overlay, (0, 0))
@@ -4029,13 +4033,13 @@ while game:
                         if rerollCost <= money:
                             rerolls += 1
                             for joker in Shop_Cards:
-                                joker.x = -100
-                                joker.y = -100
+                                joker.x = WIDTH/1.6
+                                joker.y = HEIGHT/1.565
                             Shop_Cards.clear()
                             money -= rerollCost
                             rerollCost += 1
                             for i in range(ShopCount):
-                                rarity_choice = random.randint(50, 50)
+                                rarity_choice = random.randint(1, 100)
                             
                                 while True:
                                     
@@ -4071,6 +4075,8 @@ while game:
                         Shop_Cards.clear()
                         ShopPacks.clear()
                         shopJokerSelected = False
+                        for card in deck:
+                            card.is_debuffed = False
                         context = {
                             'active_jokers': Active_Jokers,
                             'deck': deck,
@@ -4390,10 +4396,16 @@ while game:
                     if scoring_queue[0] == card:
                         if len(scoring_queue) > 0:
                             scoring_queue[0].scaling = True
-                        card.trigger("Chips", card.chip_value)
+                        if not card.is_debuffed:
+                            card.trigger("Chips", card.chip_value)
+                        else:
+                            card.trigger("Debuff", 0)
                         if card.scoring_complete:
                             if not card.base_scoring_complete:
-                                saved_base_chips += card.chip_value
+                                if not card.is_debuffed:
+                                    saved_base_chips += card.chip_value
+                                card.rotation_speed = 0
+                                card.angle = 0
                             match card.enhancement:
                                 case "Mult":
                                     saved_base_mult += 4
@@ -4414,24 +4426,27 @@ while game:
                             card.base_scoring_complete = True
                             card.scoring_complete = False
                         elif card.base_scoring_complete:
-                            match card.enhancement:
-                                case "Mult":
-                                    card.trigger("Mult", 4)
-                                case "Bonus":
-                                    card.trigger("Chips", 30)
-                                case "Lucky":
+                            if card.enhancement_timer > 0:
+                                card.enhancement_timer -= 1
+                            else:
+                                match card.enhancement:
+                                    case "Mult":
+                                        card.trigger("Mult", 4)
+                                    case "Bonus":
+                                        card.trigger("Chips", 30)
+                                    case "Lucky":
+                                        if not card.lucky_triggered:
+                                            num = random.randint(1, 5)
+                                            card.lucky_triggered = True
+                                        if num == 1:
+                                            card.trigger("Mult", 20)
+                                    case "Glass":
+                                        card.trigger("XMult", 2)
+                                if card.enhancement == "Lucky" and not card.lucky_mult:
                                     if not card.lucky_triggered:
-                                        num = random.randint(1, 5)
-                                        card.lucky_triggered = True
-                                    if num == 1:
-                                        card.trigger("Mult", 20)
-                                case "Glass":
-                                    card.trigger("XMult", 2)
-                            if card.enhancement == "Lucky" and not card.lucky_mult:
-                                if not card.lucky_triggered:
-                                    num1 = random.randint(1, 15)
-                                if num1 == 1: 
-                                    card.trigger("Money", 20)
+                                        num1 = random.randint(1, 15)
+                                    if num1 == 1: 
+                                        card.trigger("Money", 20)
                         if card.base_scoring_complete:
                             if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                 if card.scoring_complete:
@@ -4440,6 +4455,11 @@ while game:
                             else:
                                 card.state = "scored"
                                 scoring_queue.pop(0)
+                                card.enhancement_timer = 10
+                                card.base_scoring_complete = False
+                                card.scoring_complete = False
+                                card.scoring_animating = False
+
 
                         context = {
                             'card': card,
