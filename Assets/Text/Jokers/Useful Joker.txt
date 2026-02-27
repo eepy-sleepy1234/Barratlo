@@ -1,1 +1,1 @@
-Gives [red]+1 Mult[/red] if hand contains [orange]A Card[/orange]
+[red]+1 Mult[/red] if the played hand contains a[orange] Card[/orange]
