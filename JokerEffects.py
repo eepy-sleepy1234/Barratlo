@@ -281,6 +281,16 @@ def TheJonklerBaby_effect(context):
     return context
 
 def UpsideDown_effect(context):
+    contributing = context.get('contributing', [])
+    
+    has_six_or_nine = any(c.value in (6, 9) for c in contributing)
+    
+    if has_six_or_nine:
+        for card in contributing:
+            if card.value == 6 or card.value == 9:
+                card.retriggers += 1
+        context.setdefault('triggered_jokers', []).append('UpsideDown Joker')
+   
     return context
 
 def GettingAnUpgrade_effect(context):
@@ -489,8 +499,8 @@ JOKER_REGISTRY = {
         'Oopy Goopy': False
     },
     'Upside Down Joker': {
-        'events': [('on_card_scored', UpsideDown_effect)],
-        'description': 'counts 6\'s and 9\'s as the same card, retrigger both',
+        'events': [('on_scoring_start', UpsideDown_effect)],
+        'description': 'counts 6\'s and 9\'s as the same card, retrigger both', #Temporarly only retriggers them
         'Oopy Goopy': True
     },
     'Getting An Upgrade': {
