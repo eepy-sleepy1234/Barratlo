@@ -20,6 +20,7 @@ class JokerEffectsManager:
             'retrigger': [],
             'copy': [],
             'on_joker_sell': [],
+            'on_scoring_start': [],
         }
 
     def register_joker(self, joker_name, event_type, effect_function):
