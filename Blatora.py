@@ -3810,7 +3810,7 @@ while game:
                                         break
                             Shop_Cards.append(card)
                         for i in range(2):
-                            rarity_choice = random.randint(68, 68)
+                            rarity_choice = random.randint(0, 100)
                             while True:
                                 if rarity_choice <= 5:
                                     pack = random.choice(SpectralPacks)
@@ -4443,57 +4443,62 @@ while game:
                     if scoring_queue[0] == card:
                         if len(scoring_queue) > 0:
                             scoring_queue[0].scaling = True
-                        if not card.is_debuffed:
-                            card.trigger("Chips", card.chip_value)
-                        else:
-                            card.trigger("Debuff", 0)
+                        if not card.base_scoring_complete:
+                            if not card.is_debuffed:
+                                card.trigger("Chips", card.chip_value)
+                            else:
+                                card.trigger("Debuff", 0)
                         if card.scoring_complete:
                             if not card.base_scoring_complete:
                                 if not card.is_debuffed:
                                     saved_base_chips += card.chip_value
                                 card.rotation_speed = 0
                                 card.angle = 0
-                            match card.enhancement:
-                                case "Mult":
-                                    saved_base_mult += 4
-                                case "Bonus":
-                                    saved_base_chips += 30
-                                case "Lucky":
-                                    if card.lucky_triggered:
-                                        if num <= 5:
-                                            saved_base_mult += 20
-                                        if num1 <= 15:
-                                            money += 20
-                                case "Glass":
-                                    num = random.randint(1, 4)
-                                    saved_base_mult *= 2
-                                    if num == 1:
-                                        perm_deck.remove(card)
-                                        card.trigger("Break", 0)
+                            if not card.is_debuffed:
+                                match card.enhancement:
+                                    case "Mult":
+                                        saved_base_mult += 4
+                                    case "Bonus":
+                                        saved_base_chips += 30
+                                    case "Lucky":
+                                        if card.lucky_triggered:
+                                            if num <= 5:
+                                                saved_base_mult += 20
+                                            if num1 <= 15:
+                                                money += 20
+                                    case "Glass":
+                                        num = random.randint(1, 4)
+                                        saved_base_mult *= 2
+                                        if num == 1:
+                                            perm_deck.remove(card)
+                                            card.trigger("Break", 0)
                             card.base_scoring_complete = True
                             card.scoring_complete = False
                         elif card.base_scoring_complete:
                             if card.enhancement_timer > 0:
                                 card.enhancement_timer -= 1
                             else:
-                                match card.enhancement:
-                                    case "Mult":
-                                        card.trigger("Mult", 4)
-                                    case "Bonus":
-                                        card.trigger("Chips", 30)
-                                    case "Lucky":
+                                if not card.is_debuffed:
+                                    match card.enhancement:
+                                        case "Mult":
+                                            card.trigger("Mult", 4)
+                                        case "Bonus":
+                                            card.trigger("Chips", 30)
+                                        case "Lucky":
+                                            if not card.lucky_triggered:
+                                                num = random.randint(1, 5)
+                                                card.lucky_triggered = True
+                                            if num == 1:
+                                                card.trigger("Mult", 20)
+                                        case "Glass":
+                                            card.trigger("XMult", 2)
+                                    if card.enhancement == "Lucky" and not card.lucky_mult:
                                         if not card.lucky_triggered:
-                                            num = random.randint(1, 5)
-                                            card.lucky_triggered = True
-                                        if num == 1:
-                                            card.trigger("Mult", 20)
-                                    case "Glass":
-                                        card.trigger("XMult", 2)
-                                if card.enhancement == "Lucky" and not card.lucky_mult:
-                                    if not card.lucky_triggered:
-                                        num1 = random.randint(1, 15)
-                                    if num1 == 1: 
-                                        card.trigger("Money", 20)
+                                            num1 = random.randint(1, 15)
+                                        if num1 == 1: 
+                                            card.trigger("Money", 20)
+                                else:
+                                    card.trigger("Debuff", 0)
                         if card.base_scoring_complete:
                             if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                 if card.scoring_complete:
