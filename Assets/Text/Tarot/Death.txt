@@ -1,0 +1,1 @@
+Select [orange]2[/orange] cards,{{break}}convert the [orange]left[/orange] card into the [orange]right[/orange] card

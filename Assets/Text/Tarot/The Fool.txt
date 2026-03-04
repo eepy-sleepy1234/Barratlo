@@ -1,0 +1,1 @@
+Creates the last [purple]Tarot[/purple] or [teal]Planet[/teal] card you used this run{break}[grey]([/grey][purple]The Fool[/purple][grey] excluded)[/grey]

@@ -1,0 +1,1 @@
+Gives the total sell value of all current Jokers{break}[grey](Max of $50)[/grey]{break}[grey](Currently[/grey] [yellow]{value}[/yellow][grey])[/grey]
