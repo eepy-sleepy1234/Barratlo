@@ -95,6 +95,8 @@ blue = (50, 50, 230)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
 black = (0, 0, 0)
+purple = (153, 102, 204)
+teal = (0, 149, 182)
 
 RulesHand = None
 with open((os.path.join(TEXT_PATH,"HelpMenu.md")), "r", encoding="utf-8") as file:
@@ -5151,4 +5153,5 @@ while game:
                 discarding = False
         
 close_video()
+
 pygame.quit()
