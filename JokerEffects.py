@@ -281,6 +281,16 @@ def TheJonklerBaby_effect(context):
     return context
 
 def UpsideDown_effect(context):
+    contributing = context.get('contributing', [])
+    
+    has_six_or_nine = any(c.value in (6, 9) for c in contributing)
+    
+    if has_six_or_nine:
+        for card in contributing:
+            if card.value == 6 or card.value == 9:
+                card.retriggers += 1
+        context.setdefault('triggered_jokers', []).append('UpsideDown Joker')
+   
     return context
 
 def GettingAnUpgrade_effect(context):
@@ -352,9 +362,16 @@ def YinYang_effect(context):
     return context
 
 def Fountain_effect(context):
-
+    hand_played = context.get('hand_played', [])
+    contributing = context.get('contributing', [])
+    has_enhancement = any(card.enhancement is not None for card in hand_played)
+    if has_enhancement:
+        for card in contributing:
+            if card.enhancement is not None:
+                card.retriggers += 1
+        context['fountain_remove_hand'] = True
+        context.setdefault('triggered_jokers', []).append('Fountain')
     return context
-
 def Skip_effect(context):
     context['mult'] = round((context.get('mult',0) * skipMult),2)
     return context
@@ -489,8 +506,8 @@ JOKER_REGISTRY = {
         'Oopy Goopy': False
     },
     'Upside Down Joker': {
-        'events': [('on_card_scored', UpsideDown_effect)],
-        'description': 'counts 6\'s and 9\'s as the same card, retrigger both',
+        'events': [('on_scoring_start', UpsideDown_effect)],
+        'description': 'counts 6\'s and 9\'s as the same card, retrigger both', #Temporarly only retriggers them
         'Oopy Goopy': True
     },
     'Getting An Upgrade': {
@@ -529,7 +546,7 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True
     },
     'Fountain': {
-        'events': [('on_card_scored', Fountain_effect)],
+        'events': [('on_scoring_start', Fountain_effect)],
         'description': 'Cards with enhancements repeat once. Removes 1 Hand',
         'Oopy Goopy': True
     },

@@ -95,6 +95,8 @@ blue = (50, 50, 230)
 yellow = (250, 220, 80)
 orange = (240, 150, 40)
 black = (0, 0, 0)
+purple = (153, 102, 204)
+teal = (0, 149, 182)
 
 RulesHand = None
 with open((os.path.join(TEXT_PATH,"HelpMenu.md")), "r", encoding="utf-8") as file:
@@ -260,6 +262,7 @@ RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, 
 NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
 SelectBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/6.8, HEIGHT/20))
 SkipBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SkipBlind.png")), (WIDTH/12, HEIGHT/18))
+PackDesc_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PackDesc.png")), (WIDTH/5, HEIGHT/6))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -1418,7 +1421,9 @@ def pop_and_check_retrigger(card, scoring_queue):
         card.lucky_triggered       = False
         card.lucky_mult            = False
         card.state                 = "played"
-
+        card.scoring_animating     = True
+        card.scoring_y             = 0 
+        card.scoring_x             = 0
         scoring_queue.insert(0, card)
     else:
         card.state = "scored"
@@ -2025,7 +2030,7 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 
         if card.state == "hand":
             card.angle = (t - 0.5) * -2 * angle_range
-        if card.scoring_x != 0:
+        if card.scoring_x != 0 and card.state in ("played", "scored"):
             if card.is_contributing:
                 if card.scoring_y == HEIGHT//2.29:
                     card.scoring_y -= HEIGHT/32
@@ -3808,7 +3813,7 @@ while game:
                                         break
                             Shop_Cards.append(card)
                         for i in range(2):
-                            rarity_choice = random.randint(68, 68)
+                            rarity_choice = random.randint(0, 100)
                             while True:
                                 if rarity_choice <= 5:
                                     pack = random.choice(SpectralPacks)
@@ -3945,6 +3950,9 @@ while game:
                                     'deck': deck,
                                 }
                                 context = joker_manager.trigger('on_scoring_start', context)
+                               
+                                if context.get('fountain_remove_hand'):
+                                    hands -= 1
                                 for card in contributing:
                                     card.retriggers_remaining = card.retriggers
                                 for card in selected_cards:
@@ -4438,57 +4446,62 @@ while game:
                     if scoring_queue[0] == card:
                         if len(scoring_queue) > 0:
                             scoring_queue[0].scaling = True
-                        if not card.is_debuffed:
-                            card.trigger("Chips", card.chip_value)
-                        else:
-                            card.trigger("Debuff", 0)
+                        if not card.base_scoring_complete:
+                            if not card.is_debuffed:
+                                card.trigger("Chips", card.chip_value)
+                            else:
+                                card.trigger("Debuff", 0)
                         if card.scoring_complete:
                             if not card.base_scoring_complete:
                                 if not card.is_debuffed:
                                     saved_base_chips += card.chip_value
                                 card.rotation_speed = 0
                                 card.angle = 0
-                            match card.enhancement:
-                                case "Mult":
-                                    saved_base_mult += 4
-                                case "Bonus":
-                                    saved_base_chips += 30
-                                case "Lucky":
-                                    if card.lucky_triggered:
-                                        if num <= 5:
-                                            saved_base_mult += 20
-                                        if num1 <= 15:
-                                            money += 20
-                                case "Glass":
-                                    num = random.randint(1, 4)
-                                    saved_base_mult *= 2
-                                    if num == 1:
-                                        perm_deck.remove(card)
-                                        card.trigger("Break", 0)
+                            if not card.is_debuffed:
+                                match card.enhancement:
+                                    case "Mult":
+                                        saved_base_mult += 4
+                                    case "Bonus":
+                                        saved_base_chips += 30
+                                    case "Lucky":
+                                        if card.lucky_triggered:
+                                            if num <= 5:
+                                                saved_base_mult += 20
+                                            if num1 <= 15:
+                                                money += 20
+                                    case "Glass":
+                                        num = random.randint(1, 4)
+                                        saved_base_mult *= 2
+                                        if num == 1:
+                                            perm_deck.remove(card)
+                                            card.trigger("Break", 0)
                             card.base_scoring_complete = True
                             card.scoring_complete = False
                         elif card.base_scoring_complete:
                             if card.enhancement_timer > 0:
                                 card.enhancement_timer -= 1
                             else:
-                                match card.enhancement:
-                                    case "Mult":
-                                        card.trigger("Mult", 4)
-                                    case "Bonus":
-                                        card.trigger("Chips", 30)
-                                    case "Lucky":
+                                if not card.is_debuffed:
+                                    match card.enhancement:
+                                        case "Mult":
+                                            card.trigger("Mult", 4)
+                                        case "Bonus":
+                                            card.trigger("Chips", 30)
+                                        case "Lucky":
+                                            if not card.lucky_triggered:
+                                                num = random.randint(1, 5)
+                                                card.lucky_triggered = True
+                                            if num == 1:
+                                                card.trigger("Mult", 20)
+                                        case "Glass":
+                                            card.trigger("XMult", 2)
+                                    if card.enhancement == "Lucky" and not card.lucky_mult:
                                         if not card.lucky_triggered:
-                                            num = random.randint(1, 5)
-                                            card.lucky_triggered = True
-                                        if num == 1:
-                                            card.trigger("Mult", 20)
-                                    case "Glass":
-                                        card.trigger("XMult", 2)
-                                if card.enhancement == "Lucky" and not card.lucky_mult:
-                                    if not card.lucky_triggered:
-                                        num1 = random.randint(1, 15)
-                                    if num1 == 1: 
-                                        card.trigger("Money", 20)
+                                            num1 = random.randint(1, 15)
+                                        if num1 == 1: 
+                                            card.trigger("Money", 20)
+                                else:
+                                    card.trigger("Debuff", 0)
                         if card.base_scoring_complete:
                             if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                 if card.scoring_complete:
@@ -4771,6 +4784,7 @@ while game:
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
         if GameState in ("TarotPack", "SpectralPack"):
             draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
+            screen.blit(PackDesc_img, (WIDTH/2.4, HEIGHT/1.15))
         if GameState == "Shop":
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
@@ -5139,4 +5153,5 @@ while game:
                 discarding = False
         
 close_video()
+
 pygame.quit()
