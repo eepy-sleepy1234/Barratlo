@@ -1,0 +1,1 @@
+Converts up to [orange]3[/orange] selected cards to Spades
