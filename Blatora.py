@@ -1699,7 +1699,10 @@ class Card:
         self.idx = 0
     def refresh_image(self):
         filename = f"{self.rank}Of{self.suit}.png"
-        filepath = os.path.join(SUITS_DIR, self.suit, filename)
+        if self.enhancement == "Glitched":
+            filepath = os.path.join(BASES_DIR, "StoneBase.png")
+        else:
+            filepath = os.path.join(SUITS_DIR, self.suit, filename)
 
         raw_image = pygame.image.load(filepath).convert_alpha()
 
@@ -2258,6 +2261,7 @@ class Blind:
 small_blind = None
 big_blind = None
 boss_blinds = []
+showdown_blinds = []
 for root, dirs, files in os.walk(BLINDS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2270,10 +2274,15 @@ for root, dirs, files in os.walk(BLINDS_DIR):
                 small_blind = Blind(blind_name, image, -150, -150, "small")
             elif "Big" in blind_name:
                 big_blind = Blind(blind_name, image, -150, -150, "big")
+            elif "_" in blind_name:
+                blind_name = blind_name.replace("_", "")
+                blind_obj = Blind(blind_name, image, -150, -150, "showdown")
+                showdown_blinds.append(blind_obj)
             else:
                 blind_obj = Blind(blind_name, image, -150, -150, "boss")
                 boss_blinds.append(blind_obj)
 boss_blind = random.choice(boss_blinds)
+showdown_blind = random.choice(showdown_blinds)
 current_blind = None
 def calculate_target_score(ante, round_num):
     base_score = ANTE_SCALING[ante]
@@ -2306,6 +2315,11 @@ def get_current_blind():
                 blind_reward = 4
                 current_blind.blind_type = "big"
         elif round_num % 3 == 0:
+            if ante % 8 == 0:
+                if showdown_blinds:
+                    current_blind = showdown_blinds
+                    blind_reward = 5
+                    current_blind_type = "showdown"
             if boss_blinds:
                 current_blind = boss_blind
                 blind_reward = 5
@@ -2343,6 +2357,7 @@ def advance_to_next_blind():
     if round_num % 3 == 0:
         ante += 1
         boss_blind = random.choice(boss_blinds)
+        showdown_blind = random.choice(showdown_blinds)
         current_blind = None
     round_num += 1
     current_score = 0
