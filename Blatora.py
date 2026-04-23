@@ -14,6 +14,7 @@ import cv2
 import pyperclip
 import colorsys
 import JokerEffects
+import copy
 from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_effects
 pygame.init()
 pygame.font.init()
@@ -1702,6 +1703,17 @@ class Card:
         self.is_contributing = False
         self.scoring_animating = False
         self.idx = 0
+    
+    def __deepcopy__(self, memo):
+        new_card = Card.__new__(Card)
+        memo[id(self)] = new_card
+        for k, v in self.__dict__.items():
+            if k == 'image':
+                setattr(new_card, k, v)
+            else:
+                setattr(new_card, k, copy.deepcopy(v, memo))
+        return new_card
+
     def refresh_image(self):
         if self.enhancement == "Glitched":
             filename = f"GlitchBaseSpriteSheet.png"
@@ -1781,7 +1793,10 @@ class Card:
                             indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
                         else:
                             indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), "Debuffed", color)
-                        chip_indicators.append(indicator)
+                    else:
+                        perm_deck.remove(self)
+                        indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), "Broken", color)
+                    chip_indicators.append(indicator)
             self.angle += self.rotation_speed
 
 
@@ -1838,10 +1853,9 @@ for root, dirs, files in os.walk(SUITS_DIR):
             rank, suit = name.split("Of")
             card = Card(rank, suit, image)
             default_deck.append(card)
-perm_deck = default_deck.copy()
+perm_deck = copy.deepcopy(default_deck)
 deck = perm_deck.copy()
 random.shuffle(deck)
-
 hand = []
 
 currentFrame = 0
@@ -2158,8 +2172,6 @@ setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 focy_scare = Animation(FOXYSCARE,200, 150, 18, 14, 0, 0,  WIDTH, HEIGHT)
 shopAnimation = Animation(SHOPANIMATIONIMG, 476, 1600, 24, 87, 0 + ((HEIGHT/2.86 - HEIGHT/3.3)/2),0, int(HEIGHT/3.3), (HEIGHT/3.3 * 3.36134453782))
 
-import pygame
-
 class SpriteSheet:
     def __init__(self, filename):
         self.sheet = filename
@@ -2264,6 +2276,7 @@ class Blind:
 small_blind = None
 big_blind = None
 boss_blinds = []
+showdown_blinds = []
 for root, dirs, files in os.walk(BLINDS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2276,10 +2289,15 @@ for root, dirs, files in os.walk(BLINDS_DIR):
                 small_blind = Blind(blind_name, image, -150, -150, "small")
             elif "Big" in blind_name:
                 big_blind = Blind(blind_name, image, -150, -150, "big")
+            elif "_" in blind_name:
+                blind_name = blind_name.replace("_", "")
+                blind_obj = Blind(blind_name, image, -150, -150, "showdown")
+                showdown_blinds.append(blind_obj)
             else:
                 blind_obj = Blind(blind_name, image, -150, -150, "boss")
                 boss_blinds.append(blind_obj)
 boss_blind = random.choice(boss_blinds)
+showdown_blind = random.choice(showdown_blinds)
 current_blind = None
 def calculate_target_score(ante, round_num):
     base_score = ANTE_SCALING[ante]
@@ -2312,6 +2330,11 @@ def get_current_blind():
                 blind_reward = 4
                 current_blind.blind_type = "big"
         elif round_num % 3 == 0:
+            if ante % 8 == 0:
+                if showdown_blinds:
+                    current_blind = showdown_blinds
+                    blind_reward = 5
+                    current_blind_type = "showdown"
             if boss_blinds:
                 current_blind = boss_blind
                 blind_reward = 5
@@ -2349,6 +2372,7 @@ def advance_to_next_blind():
     if round_num % 3 == 0:
         ante += 1
         boss_blind = random.choice(boss_blinds)
+        showdown_blind = random.choice(showdown_blinds)
         current_blind = None
     round_num += 1
     current_score = 0
@@ -2700,7 +2724,7 @@ def draw_consumables(surface, cards, center_x, center_y, spread=20):
 
 class Cardpack:
     card_id_counter = 0
-    def __init__(self, image, name, slot=None, state="hand"):
+    def __init__(self, image, name, size, slot=None, state="hand"):
         self.image = image
         self.scale= 1.0
         self.rotation_speed = 0
@@ -2731,6 +2755,13 @@ class Cardpack:
         self.scoring_animating = False
         self.idx = 0
         self.price = 3
+        self.cardNum = 3
+        if size == "Jumbo":
+            self.price = 5
+            self.cardNum = 5
+        elif size == "Mega":
+            self.price = 8
+            self.cardNum = 5
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -2808,6 +2839,7 @@ TarotPacks = []
 SpectralPacks = []
 ShadowPacks = []
 ShopPacks = []
+PackCards = []
 for root, dirs, files in os.walk(PACKS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -2815,8 +2847,15 @@ for root, dirs, files in os.walk(PACKS_DIR):
             Pack_name_raw = filename
             Pack_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', Pack_name_raw)
             Pack_name = Pack_name.title()
+            size = "Normal"
+            if "Jumbo" in Pack_name:
+                size = "Jumbo"
+                Pack_name = Pack_name.replace("Jumbo", "")
+            elif "Mega" in Pack_name:
+                size = "Mega"
+                Pack_name = Pack_name.replace("Mega", "")
             image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
-            cardpack = Cardpack(image, Pack_name)
+            cardpack = Cardpack(image, Pack_name, size)
             if "Standard" in Pack_name:
                 StandardPacks.append(cardpack)
             elif "Shadow" in Pack_name:
@@ -3003,8 +3042,12 @@ def reset_game_variables():
     global highest_hand, most_played, cards_played
     global cards_discarded, purchases, rerolls, cards_found, lastFool
     global hand_plays, Hand_levels, Hand_Mult, Hand_Chips
-    perm_deck = default_deck.copy()
+    perm_deck.clear()
+    perm_deck = copy.deepcopy(default_deck)
+    deck.clear()
     deck = perm_deck.copy()
+    for c in deck:
+        print(c.enhancement if c.enhancement != None else "")
     hand.clear()
     Active_Jokers.clear()
     Held_Consumables.clear()
@@ -3046,6 +3089,7 @@ def reset_game_variables():
     scored_counter = 0
     total_scoring_count = 0
     max_hand = 4
+    MaxConsCount = 2
     max_discard = 4
     hands = max_hand
     discards = max_discard
@@ -3864,10 +3908,9 @@ while game:
                                     'contributing': contributing,
                                     'deck': deck,
                                 }
-                                context = joker_manager.trigger('on_scoring_start', context)
-                               
                                 if context.get('fountain_remove_hand'):
                                     hands -= 1
+                                context = joker_manager.trigger('on_scoring_start', context)
                                 for card in contributing:
                                     card.retriggers_remaining = card.retriggers
                                 for card in selected_cards:
@@ -3944,8 +3987,23 @@ while game:
                                         GameState = "ShadowPack"
                                     if "Spectral" in pack.name:
                                         GameState = "SpectralPack"
+                                        
+                                        reset_deck_for_new_round()
+                                        for i in range(max_handsize):
+                                            if deck:
+                                                card = deck.pop()
+                                                card.slot = i
+                                                card.x, card.y = WIDTH + 100, HEIGHT - 170
+                                                card.state = "hand"
+                                                hand.append(card)
                                     if "Tarot" in pack.name:
                                         GameState = "TarotPack"
+                                        for i in range(pack.cardNum):
+                                            while True:
+                                                newcard = random.choice(TarotCards)
+                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                    PackCards.append(newcard)
+                                                    break
                                         reset_deck_for_new_round()
                                         for i in range(max_handsize):
                                             if deck:
@@ -4096,7 +4154,6 @@ while game:
                         running = False
                         startGame = True
                         reset_game_variables()
-                        """
                         card_x = -WIDTH
                         card_animating = True
                         joker_manager = initialize_joker_effects(Active_Jokers)
@@ -4111,7 +4168,6 @@ while game:
                             seed += num
                         random.seed(seed)
                         running = True
-                        """
                     if MainMenuButton_rect.collidepoint(mouse_pos) and GameState == "Dead":
                         scoring_in_progress = False
                         calculating = False
@@ -4363,100 +4419,99 @@ while game:
         screen.blit(SideBar_img, (0, 0))
         
         if scoring_queue and not calculating:
-            for card in scoring_queue:
-                if card.is_contributing:
-                    card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
-                    if scoring_queue[0] == card:
-                        if len(scoring_queue) > 0:
-                            scoring_queue[0].scaling = True
-                        if not card.base_scoring_complete:
-                            if not card.is_debuffed:
-                                card.trigger("Chips", card.chip_value)
-                            else:
-                                card.trigger("Debuff", 0)
-                        if card.scoring_complete:
-                            if not card.base_scoring_complete:
-                                if not card.is_debuffed:
-                                    saved_base_chips += card.chip_value
-                                card.rotation_speed = 0
-                                card.angle = 0
-                            if not card.is_debuffed:
-                                match card.enhancement:
-                                    case "Mult":
-                                        saved_base_mult += 4
-                                    case "Bonus":
-                                        saved_base_chips += 30
-                                    case "Lucky":
-                                        if card.lucky_triggered:
-                                            if num <= 5:
-                                                saved_base_mult += 20
-                                            if num1 <= 15:
-                                                money += 20
-                                    case "Glass":
-                                        num = random.randint(1, 4)
-                                        saved_base_mult *= 2
-                                        if num == 1:
-                                            perm_deck.remove(card)
-                                            card.trigger("Break", 0)
-                            card.base_scoring_complete = True
-                            card.scoring_complete = False
-                        elif card.base_scoring_complete:
-                            if card.enhancement_timer > 0:
-                                card.enhancement_timer -= 1
-                            else:
-                                if not card.is_debuffed:
-                                    match card.enhancement:
-                                        case "Mult":
-                                            card.trigger("Mult", 4)
-                                        case "Bonus":
-                                            card.trigger("Chips", 30)
-                                        case "Lucky":
-                                            if not card.lucky_triggered:
-                                                num = random.randint(1, 5)
-                                                card.lucky_triggered = True
-                                            if num == 1:
-                                                card.trigger("Mult", 20)
-                                        case "Glass":
-                                            card.trigger("XMult", 2)
-                                    if card.enhancement == "Lucky" and not card.lucky_mult:
-                                        if not card.lucky_triggered:
-                                            num1 = random.randint(1, 15)
-                                        if num1 == 1: 
-                                            card.trigger("Money", 20)
-                                else:
-                                    card.trigger("Debuff", 0)
-                        if card.base_scoring_complete:
-                            if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
+                    for card in scoring_queue:
+                        if card.is_contributing:
+                            card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
+                            if scoring_queue[0] == card:
+                                if len(scoring_queue) > 0:
+                                    scoring_queue[0].scaling = True
+                                if not card.base_scoring_complete:
+                                    if not card.is_debuffed:
+                                        card.trigger("Chips", card.chip_value)
+                                    else:
+                                        card.trigger("Debuff", 0)
                                 if card.scoring_complete:
-                                    pop_and_check_retrigger(card, scoring_queue)
-                            else:
-                                pop_and_check_retrigger(card, scoring_queue)
-                                card.enhancement_timer = 10
-                                card.base_scoring_complete = False
-                                card.scoring_complete = False
-                                card.scoring_animating = False
+                                    if not card.base_scoring_complete:
+                                        if not card.is_debuffed:
+                                            saved_base_chips += card.chip_value
+                                        card.rotation_speed = 0
+                                        card.angle = 0
+                                    if not card.is_debuffed:
+                                        match card.enhancement:
+                                            case "Mult":
+                                                saved_base_mult += 4
+                                            case "Bonus":
+                                                saved_base_chips += 30
+                                            case "Lucky":
+                                                if card.lucky_triggered:
+                                                    if num <= 5:
+                                                        saved_base_mult += 20
+                                                    if num1 <= 15:
+                                                        money += 20
+                                            case "Glass":
+                                                num = random.randint(1, 4)
+                                                saved_base_mult *= 2
+                                                if num == 1:
+                                                    perm_deck.remove(card)
+                                                    card.trigger("Break", 0)
+                                    card.base_scoring_complete = True
+                                    card.scoring_complete = False
+                                elif card.base_scoring_complete:
+                                    if card.enhancement_timer > 0:
+                                        card.enhancement_timer -= 1
+                                    else:
+                                        if not card.is_debuffed:
+                                            match card.enhancement:
+                                                case "Mult":
+                                                    card.trigger("Mult", 4)
+                                                case "Bonus":
+                                                    card.trigger("Chips", 30)
+                                                case "Lucky":
+                                                    if not card.lucky_triggered:
+                                                        num = random.randint(1, 5)
+                                                        card.lucky_triggered = True
+                                                    if num == 1:
+                                                        card.trigger("Mult", 20)
+                                                case "Glass":
+                                                    card.trigger("XMult", 2)
+                                            if card.enhancement == "Lucky" and not card.lucky_mult:
+                                                if not card.lucky_triggered:
+                                                    num1 = random.randint(1, 15)
+                                                if num1 == 1: 
+                                                    card.trigger("Money", 20)
+                                        else:
+                                            card.trigger("Debuff", 0)
+                                if card.base_scoring_complete:
+                                    if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
+                                        if card.scoring_complete:
+                                            pop_and_check_retrigger(card, scoring_queue)
+                                    else:
+                                        pop_and_check_retrigger(card, scoring_queue)
+                                        card.enhancement_timer = 10
+                                        card.base_scoring_complete = False
+                                        card.scoring_complete = False
+                                        card.scoring_animating = False
 
 
-                        context = {
-                            'card': card,
-                            'chips': saved_base_chips,
-                            'mult': saved_base_mult,
-                            'active_jokers': Active_Jokers,
-                            'hand_type': saved_hand,
-                            'deck': deck,
-                            'card_play_counts': card_play_counts, 
-                        }
-                        context = joker_manager.trigger('on_card_scored', context)
-                        saved_base_chips = context['chips']
-                        saved_base_mult = context['mult']
-                        
-                        if 'triggered_jokers' in context:
-                            for joker_name in context['triggered_jokers']:
-                                if joker_name == "Jevil":
-                                    jevilActive = True
+                                context = {
+                                    'card': card,
+                                    'chips': saved_base_chips,
+                                    'mult': saved_base_mult,
+                                    'active_jokers': Active_Jokers,
+                                    'hand_type': saved_hand,
+                                    'deck': deck,
+                                    'card_play_counts': card_play_counts, 
+                                }
+                                context = joker_manager.trigger('on_card_scored', context)
+                                saved_base_chips = context['chips']
+                                saved_base_mult = context['mult']
+                                
+                                if 'triggered_jokers' in context:
+                                    for joker_name in context['triggered_jokers']:
+                                        if joker_name == "Jevil":
+                                            jevilActive = True
                                     
                         
-
         if not calculating:
             selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring", "scored")]
             if len(selected_cards) > 0:
@@ -4706,6 +4761,7 @@ while game:
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
         if GameState in ("TarotPack", "SpectralPack"):
             draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
+            draw_consumables(screen, PackCards, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
             screen.blit(PackDesc_img, (WIDTH/2.4, HEIGHT/1.15))
         if GameState == "Shop":
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
@@ -4932,6 +4988,8 @@ while game:
             joker.update()
         for card in Held_Consumables:
             card.update()
+        for card in PackCards:
+            card.update()
         for pack in ShopPacks:
             pack.update()
         if deck and len(hand) < handsize and not dev_selection and GameState == "Playing":
@@ -5076,5 +5134,4 @@ while game:
                 discarding = False
         
 close_video()
-
 pygame.quit()
