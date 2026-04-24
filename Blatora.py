@@ -3865,6 +3865,14 @@ while game:
                             card.drag_start = (mouse_x, mouse_y)
                             card.was_dragged = False
                             break
+                    for card in reversed(PackCards):
+                        if card.rect.collidepoint(mouse_pos):
+                            card.dragging = True
+                            card.drag_offset_x = card.x - mouse_x
+                            card.drag_offset_y = card.y - mouse_y
+                            card.drag_start = (mouse_x, mouse_y)
+                            card.was_dragged = False
+                            break
                     if Playhand_rect.collidepoint(mouse_pos) and GameState == "Playing":
                         buttonClick.play(0)
                         if hands > 0 and not scoring_in_progress:
@@ -4045,6 +4053,17 @@ while game:
                                 ActiveJokerSelected = False
                                 card.state = "normal"
                                 Held_Consumables.remove(card)
+                                for tarot in TarotCards:
+                                    if tarot.name == card.name:
+                                        get_tarot_effect(card.name)
+                                for shadow in ShadowCards:
+                                    if shadow.name == card.name:
+                                        get_shadow_effect(card.name)
+                        for card in PackCards:
+                            if card.state == "selected":
+                                ActiveJokerSelected = False
+                                card.state = "normal"
+                                PackCards.remove(card)
                                 for tarot in TarotCards:
                                     if tarot.name == card.name:
                                         get_tarot_effect(card.name)
@@ -4271,6 +4290,31 @@ while game:
                             card.vx = 0
                             card.vy = 0
                     for card in Held_Consumables:
+                        if getattr(card, "dragging", False):
+                            card.dragging = False
+                            if not card.was_dragged and card.rect.collidepoint(mouse_pos):
+                                if card.state == "selected":
+                                    ActiveJokerSelected = False
+                                    card.state = "normal"
+                                elif not ActiveJokerSelected:
+                                    ActiveJokerSelected = True
+                                    card.state = "selected"
+                                  
+                            n = len(Held_Consumables)
+                            spread_local = card.spread
+                            total_width = (n - 1) * spread_local + 80
+                            start_x = (WIDTH / 2) - total_width / 2
+                            i = card.slot if card.slot else 1
+                            center_y = HEIGHT - 100
+                            max_v_offset = -30
+                            t = i / (n - 1) if n > 1 else 0.5
+                            slot_target_x = start_x + i * spread_local * WIDTH/1000
+                            slot_target_y = center_y - max_v_offset * 2 * (t - 0.5)**2 + max_v_offset * HEIGHT/800
+                            card.target_x = slot_target_x
+                            card.target_y = slot_target_y
+                            card.vx = 0
+                            card.vy = 0
+                    for card in PackCards:
                         if getattr(card, "dragging", False):
                             card.dragging = False
                             if not card.was_dragged and card.rect.collidepoint(mouse_pos):
@@ -4761,8 +4805,9 @@ while game:
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
         if GameState in ("TarotPack", "SpectralPack"):
             draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
-            draw_consumables(screen, PackCards, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
-            screen.blit(PackDesc_img, (WIDTH/2.4, HEIGHT/1.15))
+            consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            draw_consumables(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing)
+            screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
         if GameState == "Shop":
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
