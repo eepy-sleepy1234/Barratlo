@@ -585,7 +585,20 @@ def blit_img():
                             joker_manager = initialize_joker_effects(Active_Jokers) 
                             print(f"Added {joke.name} and reinitialized joker manager!")
             
-
+            if dev_command.lower() == 'addjokers':
+                print(All_Jokers_Name)
+                addedJoker = input("Insert Name Of Joker, number of Jokers")
+                name, number = addedJoker.split(",")
+                name = name.strip()
+                number = int(number.strip())
+                for i in range(number):
+                    if name in All_Jokers_Name:
+                        for joke in All_Jokers:
+                            if joke.name == addedJoker:
+                                new_joka = Joker(joke.image, joke.rarity, joke.name)
+                                Active_Jokers.append(new_joka)
+                                joker_manager = initialize_joker_effects(Active_Jokers) 
+                print(f"Added {number} {name}s and reinitialized joker manager!")
                     
                
               
@@ -983,6 +996,11 @@ def process_dev_command(command):
         dev_current_command = 'addjoker'
         dev_input_prompt = "Joker name"
         return f"Available jokers: {', '.join(All_Jokers_Name)}\n(Type joker name)"
+    elif command_lower == 'addjokers':
+        dev_awaiting_input = True
+        dev_current_command = 'addjokers'
+        dev_input_prompt = "Joker name"
+        return f"Available jokers: {', '.join(All_Jokers_Name)}\n(Type joker name)"
     elif command_lower == 'resetdeck':
         hand.clear()
         deck.clear()
@@ -1058,6 +1076,21 @@ def handle_multi_step_input(input_text):
                 joker_manager = initialize_joker_effects(Active_Jokers)
                 return f"Added {joke.name}!"
         
+        return f"Joker '{joker_name}' not found"
+    
+    if dev_current_command == 'addjokers':
+        dev_awaiting_input = False
+        joker_name = input_text
+        name, number = joker_name.split(",")
+        name = name.strip()
+        number = int(number.strip())
+        for joke in All_Jokers:
+            if joke.name.lower() == name.lower():
+                for i in range(number):
+                    new_joka = Joker(joke.image, joke.rarity, joke.name)
+                    Active_Jokers.append(new_joka)
+                    joker_manager = initialize_joker_effects(Active_Jokers)
+                return f"Added {number} {name}s!"
         return f"Joker '{joker_name}' not found"
  
     elif dev_current_command == 'setresources':
@@ -1603,14 +1636,6 @@ ANTE_SCALING = {
     6: 20000,
     7: 35000,
     8: 50000,
-    9: 110000,
-    10: 560000,
-    11: 7200000,
-    12: 300000000,
-    13: 47000000000,
-    14: 290000000000000,
-    15: 77000000000000000000,
-    16: 860000000000000000000000,
     }
 BOSS_DESC = {
     "The Arrow": "All cards with the Spade suit are debuffed",
@@ -2300,7 +2325,10 @@ boss_blind = random.choice(boss_blinds)
 showdown_blind = random.choice(showdown_blinds)
 current_blind = None
 def calculate_target_score(ante, round_num):
-    base_score = ANTE_SCALING[ante]
+    if ante > 8:
+        base_score = math.pow(ANTE_SCALING[8] * (1.6 + (0.75 * (ante - 8))), (ante - 8))
+    else:
+        base_score = ANTE_SCALING[ante]
     multipliers = {1: 1.0, 2: 1.5, 3: 2.0, 4: 4.0}
     if current_blind.name == "The Ramp":
         return int(base_score * multipliers[4])
@@ -4323,9 +4351,8 @@ while game:
                                     card.state = "normal"
                                 elif not ActiveJokerSelected:
                                     ActiveJokerSelected = True
-                                    card.state = "selected"
-                                  
-                            n = len(Held_Consumables)
+                                    card.state = "selected"  
+                            n = len(PackCards)
                             spread_local = card.spread
                             total_width = (n - 1) * spread_local + 80
                             start_x = (WIDTH / 2) - total_width / 2
@@ -4459,6 +4486,24 @@ while game:
                             n = len(ShopPacks)
                             for idx, c in enumerate(ShopPacks):
                                 c.slot = idx
+                for card in PackCards:
+                    if getattr(card, "dragging", False):
+                        dx = mouse_x - card.drag_start[0]
+                        dy = mouse_y - card.drag_start[1]
+                        if abs(dx) > DRAG_THRESHOLD or abs(dy) > DRAG_THRESHOLD:
+                            card.was_dragged = True
+                            card.x = mouse_x + card.drag_offset_x
+                            card.y = mouse_y + card.drag_offset_y
+                            card.target_x = card.x
+                            card.target_y = card.y
+                            n = len(PackCards)
+                            new_index = get_hand_slot_from_x(card.x, n, spread=spacing, center_x=WIDTH/1.8)
+                            current_index = PackCards.index(card)
+                            if new_index != current_index:
+                                PackCards.pop(current_index)
+                                PackCards.insert(new_index, card)
+                                for idx, c in enumerate(PackCards):
+                                    c.slot = idx
         screen.blit(GameBackground_img, (0, 0))
         screen.blit(SideBar_img, (0, 0))
         
@@ -4576,7 +4621,10 @@ while game:
                 base_mult = Hand_Mult.get("Straight Flush", 1)
             chips = base_chips * level
             mult = base_mult * level
-            final_score = int(round(saved_base_chips * saved_base_mult))
+            if math.isinf(saved_base_chips * saved_base_mult):
+                final_score = math.inf
+            else:
+                final_score = int(round(saved_base_chips * saved_base_mult))
         screen.blit(HandBackground_img, (WIDTH/50, HEIGHT / 2.75))
         if GameState == "Playing":
             screen.blit(ScoreBackground_img, (WIDTH/50, HEIGHT / 3.75))
@@ -4779,6 +4827,12 @@ while game:
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
+            useX, useY = get_selected_Shop_Cards(joker)
+            if useX > 0:
+                screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
+                UseButton_rect = UseButton_img.get_rect()
+                UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+        for joker in PackCards:
             useX, useY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
@@ -5090,7 +5144,10 @@ while game:
             saved_base_chips = context['chips']
             saved_base_mult = context['mult']
             money = context['money']
-            final_score = int(round(saved_base_chips * saved_base_mult))
+            if math.isinf(saved_base_chips * saved_base_mult):
+                final_score = math.inf
+            else:
+                final_score = int(round(saved_base_chips * saved_base_mult))
             for joke in Active_Jokers:
                 if joke.name == "Ptsd Joker":
 
@@ -5112,60 +5169,101 @@ while game:
             add_progress = 0.0
             saved_total_score = total_score
         if calculating:
-            if calc_progress < 1.0:
-                calc_progress += 1.0 / 50
-                ease_progress = 1.0 - (1.0 - calc_progress) ** 2
-                current_score = round(final_score * ease_progress)
-                saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
-                saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
-                if saved_hand != 'Royal Flush':
-                    hand_plays[saved_hand] += 1
-                else:
-                    hand_plays['Straight Flush'] += 1
-                if saved_base_mult * saved_base_chips > highest_hand:
-                    highest_hand = saved_base_mult * saved_base_chips
-                if calc_progress >= 1.0:
-                    calc_progress = 1.0
-                    current_score = final_score
-                    chips = 0
-                    mult = 0
-            if add_progress < 1.0 and calc_progress >= 1.0:
-                add_progress += 1.0 / 50
-                ease_progress = 1.0 - (1.0 - add_progress) ** 2
-                current_score = round(final_score * (1.0 - ease_progress))
-                total_score = saved_total_score + round(final_score * (ease_progress))
-                if add_progress >= 1.0:
-                    add_progress = 1.0
-                    total_score = int(round(saved_total_score + final_score))
-                    calculating = False
-                    discard_queue = []
-                    discard_timer = 0
-                    for c in hand:
-                        if c.state == "scored":
-                            c.scoring_x, c.scoring_y = 0, 0
-                            c.scoring_complete = False
-                            c.is_contributing = False
-                            discard_queue.append(c)
+            if math.isinf(final_score):
+                saved_base_mult = math.inf
+                saved_base_chips = math.inf
+                total_score = math.inf
+                final_score = math.inf
+                calculating = False
+                discard_queue = []
+                discard_timer = 0
+                for c in hand:
+                    if c.state == "scored":
+                        c.scoring_x, c.scoring_y = 0, 0
+                        c.scoring_complete = False
+                        c.is_contributing = False
+                        discard_queue.append(c)
+                discarding = True
+                victory = check_blind_defeated()
+                if victory:
+                    for card in hand:
+                        if card.enhancement == "Gold":
+                            money += 3
+                    GameState = "Cashing"
+                    context = {
+                        'active_jokers': Active_Jokers,
+                        'hands': hands,
+                        'money': money,
+                        'round_num': round_num,
+                    }
+                    context = joker_manager.trigger('on_round_end', context)
+                    money = context.get('money', money)
+                    advance_to_next_blind()
+                    get_current_blind()
+                    for card in hand:
+                        discard_queue.append(card)
                     discarding = True
-                    victory = check_blind_defeated()
-                    if victory:
-                        for card in hand:
-                            if card.enhancement == "Gold":
-                                money += 3
-                        GameState = "Cashing"
-                        context = {
-                            'active_jokers': Active_Jokers,
-                            'hands': hands,
-                            'money': money,
-                            'round_num': round_num,
-                        }
-                        context = joker_manager.trigger('on_round_end', context)
-                        money = context.get('money', money)
-                        advance_to_next_blind()
-                        get_current_blind()
-                        for card in hand:
-                            discard_queue.append(card)
+            else:
+                if calc_progress < 1.0:
+                    calc_progress += 1.0 / 50
+                    ease_progress = 1.0 - (1.0 - calc_progress) ** 2
+                    if math.isinf(final_score):
+                        current_score = math.inf
+                    else:
+                        current_score = round(final_score * ease_progress)
+                    saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
+                    saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
+                    if saved_hand != 'Royal Flush':
+                        hand_plays[saved_hand] += 1
+                    else:
+                        hand_plays['Straight Flush'] += 1
+                    if saved_base_mult * saved_base_chips > highest_hand:
+                        highest_hand = saved_base_mult * saved_base_chips
+                    if calc_progress >= 1.0:
+                        calc_progress = 1.0
+                        current_score = final_score
+                        chips = 0
+                        mult = 0
+                if add_progress < 1.0 and calc_progress >= 1.0:
+                    add_progress += 1.0 / 50
+                    ease_progress = 1.0 - (1.0 - add_progress) ** 2
+                    current_score = round(final_score * (1.0 - ease_progress))
+                    total_score = saved_total_score + round(final_score * (ease_progress))
+                    if add_progress >= 1.0:
+                        add_progress = 1.0
+                        if math.isinf(final_score):
+                            total_score = math.inf
+                        else:
+                            total_score = int(round(saved_total_score + final_score))
+                        calculating = False
+                        discard_queue = []
+                        discard_timer = 0
+                        for c in hand:
+                            if c.state == "scored":
+                                c.scoring_x, c.scoring_y = 0, 0
+                                c.scoring_complete = False
+                                c.is_contributing = False
+                                discard_queue.append(c)
                         discarding = True
+                        victory = check_blind_defeated()
+                        if victory:
+                            for card in hand:
+                                if card.enhancement == "Gold":
+                                    money += 3
+                            GameState = "Cashing"
+                            context = {
+                                'active_jokers': Active_Jokers,
+                                'hands': hands,
+                                'money': money,
+                                'round_num': round_num,
+                            }
+                            context = joker_manager.trigger('on_round_end', context)
+                            money = context.get('money', money)
+                            advance_to_next_blind()
+                            get_current_blind()
+                            for card in hand:
+                                discard_queue.append(card)
+                            discarding = True
 
         if discarding:
             if discard_queue:
