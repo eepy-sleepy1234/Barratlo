@@ -2784,12 +2784,15 @@ class Cardpack:
         self.idx = 0
         self.price = 3
         self.cardNum = 3
+        self.selection = 1
         if size == "Jumbo":
             self.price = 5
             self.cardNum = 5
+            self.selection = 1
         elif size == "Mega":
             self.price = 8
             self.cardNum = 5
+            self.selection = 2
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -3713,6 +3716,7 @@ while game:
                         dev_command_input = ""
                         dev_awaiting_input = False
                         dev_current_command = None
+                        pygame.mouse.set_visible(False)
                         
                     elif event.key == pygame.K_BACKSPACE:
                         dev_command_input = dev_command_input[:-1]
@@ -4017,6 +4021,7 @@ while game:
                             for pack in ShopPacks:
                                 if pack.state == "selected" and money >= pack.price:
                                     money -= pack.price
+                                    selection = pack.selection
                                     if "Standard" in pack.name:
                                         GameState = "StandardPack"
                                     if "Shadow" in pack.name:
@@ -4090,6 +4095,7 @@ while game:
                         for card in PackCards:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
+                                selection -= 1
                                 card.state = "normal"
                                 PackCards.remove(card)
                                 for tarot in TarotCards:
@@ -4098,6 +4104,12 @@ while game:
                                 for shadow in ShadowCards:
                                     if shadow.name == card.name:
                                         get_shadow_effect(card.name)
+                                if selection < 1:
+                                    PackCards.clear()
+                                    hand.clear()
+                                    reset_deck_for_new_round()
+                                    GameState = "Shop"
+                                    ActiveJokerSelected = False
                     if Reroll_rect.collidepoint(mouse_pos) and GameState == 'Shop':
                         buttonClick.play(0)
                         if rerollCost <= money:
