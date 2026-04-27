@@ -1588,7 +1588,7 @@ calculating = False
 discarding = False
 round_num = 1
 ante = 1
-money = 10000000
+money = 4
 blind_defeated = False
 victory = False
 target_score = 300
@@ -1612,6 +1612,7 @@ SCORED_POSITIONS = [
 
 SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"]
 RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+RANKS_WRITTEN = ["Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King", "Ace"]
 RANK_VALUES = {
     "Two": 2,
     "Three": 3,
@@ -1661,8 +1662,8 @@ BOSS_DESC = {
     "The Spear": "Played hand must contain a straight",
     "The Mouth": "The played card with the highest rank is debuffed",
     "The Magnet": "All cards with a red suit are frozen at the start of the round",
-    "The ": "",
-    "The ": "",
+    "Jade Butterfly": "idk bro figure it out",
+    "Korma Burger": "mmmmmmmm burgre",
     "The ": "",
     "The ": "",
     "The ": "",
@@ -3094,7 +3095,7 @@ def reset_game_variables():
     discarding = False
     round_num = 1
     ante = 1
-    money = 10000000
+    money = 4
     blind_defeated = False
     victory = False
     target_score = 300
@@ -4021,14 +4022,72 @@ while game:
                             for pack in ShopPacks:
                                 if pack.state == "selected" and money >= pack.price:
                                     money -= pack.price
+                                    shopJokerSelected = False
                                     selection = pack.selection
                                     if "Standard" in pack.name:
                                         GameState = "StandardPack"
+                                        for i in range(pack.cardNum):
+                                            randrank = random.choice(RANKS_WRITTEN)
+                                            randsuit = random.choice(SUITS)
+                                            num = random.randint(1, 100)
+                                            if num < 3:
+                                                enhancement = "Bonus"
+                                            elif num < 6:
+                                                enhancement = "Glass"
+                                            elif num < 9:
+                                                enhancement = "Gold"
+                                            elif num < 12:
+                                                enhancement = "Lucky"
+                                            elif num < 15:
+                                                enhancement = "Mult"
+                                            elif num < 18:
+                                                enhancement = "Steel"
+                                            elif num < 21:
+                                                enhancement = "Glitched"
+                                            else:
+                                                enhancement = "Default"
+                                            num = random.randint(1, 100)
+                                            if num < 3:
+                                                edition = "Polychrome"
+                                            elif num < 6:
+                                                edition = "Foil"
+                                            elif num < 9:
+                                                edition = "Holographic"
+                                            else:
+                                                edition = None
+                                            num = random.randint(1, 100)
+                                            if num < 3:
+                                                seal = "Red"
+                                            elif num < 6:
+                                                seal = "Gold"
+                                            elif num < 9:
+                                                seal = "Blue"
+                                            elif num < 9:
+                                                seal = "Purple"
+                                            else:
+                                                seal = None
+                                            filename = f"{randrank}Of{randsuit}.png"
+                                            filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                                            image = pygame.image.load(filepath).convert_alpha()
+                                            newcard = Card(randrank, randsuit, image, enhancement=enhancement, edition=edition, seal=seal)
+                                            newcard.refresh_image()
+                                            PackCards.append(newcard)
                                     if "Shadow" in pack.name:
                                         GameState = "ShadowPack"
+                                        for i in range(pack.cardNum):
+                                            while True:
+                                                newcard = random.choice(ShadowCards)
+                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                    PackCards.append(newcard)
+                                                    break
                                     if "Spectral" in pack.name:
                                         GameState = "SpectralPack"
-                                        
+                                        for i in range(pack.cardNum):
+                                            while True:
+                                                newcard = random.choice(SpectralCards)
+                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                    PackCards.append(newcard)
+                                                    break
                                         reset_deck_for_new_round()
                                         for i in range(max_handsize):
                                             if deck:
@@ -4104,6 +4163,8 @@ while game:
                                 for shadow in ShadowCards:
                                     if shadow.name == card.name:
                                         get_shadow_effect(card.name)
+                                if "of" in card.name:
+                                    perm_deck.append(card)
                                 if selection < 1:
                                     PackCards.clear()
                                     hand.clear()
@@ -4365,7 +4426,7 @@ while game:
                                     ActiveJokerSelected = True
                                     card.state = "selected"  
                             n = len(PackCards)
-                            spread_local = card.spread
+                            spread_local = 20
                             total_width = (n - 1) * spread_local + 80
                             start_x = (WIDTH / 2) - total_width / 2
                             i = card.slot if card.slot else 1
@@ -4873,6 +4934,14 @@ while game:
             draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
             consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
             draw_consumables(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing)
+            screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
+        if GameState == "ShadowPack":
+            consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            draw_consumables(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing)
+            screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
+        if GameState == "StandardPack":
+            consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            draw_hand(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing, max_vertical_offset=0, angle_range=0)
             screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
         if GameState == "Shop":
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
