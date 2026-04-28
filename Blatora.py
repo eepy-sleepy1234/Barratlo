@@ -2934,7 +2934,7 @@ def detect_hand(cards):
     value_counts = Counter(values)
     suits_counts = Counter(suits)
     if s == 0:
-        is_flush = n == 5 and max(suits_counts.values()) == len(suits_counts)
+        is_flush = n == 5 and 1 == len(suits_counts)
         is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
     else:
         is_flush, is_straight = False, False
