@@ -1452,8 +1452,6 @@ def pop_and_check_retrigger(card, scoring_queue):
         card.scaling_delay         = 0
         card.rotation_speed        = 0
         card.angle                 = 0
-        card.lucky_triggered       = False
-        card.lucky_mult            = False
         card.state                 = "played"
         card.scoring_animating     = True
         card.scoring_y             = 0 
@@ -1482,6 +1480,7 @@ scoring_queue = []
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
+base_chance = 1
 max_handsize = 8
 handsize = max_handsize
 chips = 0
@@ -1692,8 +1691,6 @@ class Card:
         self.suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
-        self.lucky_triggered = False
-        self.lucky_mult = False
         self.retriggers = 0 
         self.remaining = 0
         
@@ -1943,8 +1940,8 @@ def boss_debuff():
                     card.is_debuffed = False
         if current_blind.name == "The Luck":
             for card in deck:
-                rand = random.randint(1, 5)
-                if rand == 1 and not card.debuff_assigned:
+                rand = random.randint(min(base_chance, 5), 5)
+                if rand == 5 and not card.debuff_assigned:
                     card.is_debuffed = True
         if current_blind.name == "The Fork":
             if hands >= max_hand:
@@ -1984,8 +1981,8 @@ def boss_debuff():
                     card.is_debuffed = False
         if current_blind.name == "The South":
             for card in deck:
-                rand = random.randint(1, 5)
-                if rand == 1 and not card.debuff_assigned:
+                rand = random.randint(min(base_chance, 5), 5)
+                if rand == 5 and not card.debuff_assigned:
                     card.is_frozen = True
                     card.freeze_timer = random.randint(1, 3)
         if current_blind.name == "The Band":
@@ -2933,11 +2930,11 @@ def detect_hand(cards):
         return "", []
     s = len([c for c in cards if c.enhancement == "Glitched"])
     values = sorted([c.value for c in cards if c.enhancement != "Glitched"])
-    suits = [c.suit for c in cards if c.enhancement != "Glitched"]
+    suits = [c.suit for c in cards if c.enhancement not in ("Glitched", "Wild")]
     value_counts = Counter(values)
     suits_counts = Counter(suits)
     if s == 0:
-        is_flush = n == 5 and max(suits_counts.values()) == 5
+        is_flush = n == 5 and max(suits_counts.values()) == len(suits_counts)
         is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
     else:
         is_flush, is_straight = False, False
@@ -3427,8 +3424,8 @@ def get_tarot_effect(name):
                         break
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
-        wheelnum = random.randint(1, 4)
-        if wheelnum == 1:
+        wheelnum = random.randint(min(base_chance, 4), 4)
+        if wheelnum == 4:
             jonker = random.choice(Active_Jokers)
             wheelnum2 = random.randint(1, 3)
             if wheelnum2 == 1:
@@ -3622,7 +3619,7 @@ while game:
             screen.blit(cursor_normal, cursor_pos)   
 
         if Focy.toggle: 
-            if random.randint(1, 20000)  == 1:
+            if random.randint(min(base_chance, 20000), 20000)  == 20000:
                 
                 subprocess.run(['powershell', '-Command', 
                 '$obj = New-Object -ComObject WScript.Shell;'
@@ -3918,7 +3915,7 @@ while game:
                             if len(selected_cards) > 0:
                                 hand_type, contributing = detect_hand(selected_cards)
                                 saved_base_chips = (Hand_Chips.get(hand_type, 0) * Hand_levels.get(hand_type, 1))
-                                saved_base_mult = Hand_Mult.get(hand_type, 1)
+                                saved_base_mult = Hand_Mult.get(hand_type, 1) * Hand_levels.get(hand_type, 1)
                                 saved_level = Hand_levels.get(hand_type, 1)
                                 saved_hand = hand_type
                                 if hand_type == "Royal Flush":
@@ -4029,40 +4026,40 @@ while game:
                                         for i in range(pack.cardNum):
                                             randrank = random.choice(RANKS_WRITTEN)
                                             randsuit = random.choice(SUITS)
-                                            num = random.randint(1, 100)
-                                            if num < 3:
+                                            num = random.randint(min(base_chance, 100), 100)
+                                            if num > 97:
                                                 enhancement = "Bonus"
-                                            elif num < 6:
+                                            elif num > 94:
                                                 enhancement = "Glass"
-                                            elif num < 9:
+                                            elif num > 91:
                                                 enhancement = "Gold"
-                                            elif num < 12:
+                                            elif num > 88:
                                                 enhancement = "Lucky"
-                                            elif num < 15:
+                                            elif num > 85:
                                                 enhancement = "Mult"
-                                            elif num < 18:
+                                            elif num > 82:
                                                 enhancement = "Steel"
-                                            elif num < 21:
+                                            elif num > 79:
                                                 enhancement = "Glitched"
                                             else:
                                                 enhancement = "Default"
-                                            num = random.randint(1, 100)
-                                            if num < 3:
+                                            num = random.randint(min(base_chance, 100), 100)
+                                            if num > 97:
                                                 edition = "Polychrome"
-                                            elif num < 6:
+                                            elif num > 94:
                                                 edition = "Foil"
-                                            elif num < 9:
+                                            elif num > 91:
                                                 edition = "Holographic"
                                             else:
                                                 edition = None
-                                            num = random.randint(1, 100)
-                                            if num < 3:
+                                            num = random.randint(min(base_chance, 100), 100)
+                                            if num > 97:
                                                 seal = "Red"
-                                            elif num < 6:
+                                            elif num > 94:
                                                 seal = "Gold"
-                                            elif num < 9:
+                                            elif num > 91:
                                                 seal = "Blue"
-                                            elif num < 9:
+                                            elif num > 88:
                                                 seal = "Purple"
                                             else:
                                                 seal = None
@@ -4605,15 +4602,16 @@ while game:
                                             case "Bonus":
                                                 saved_base_chips += 30
                                             case "Lucky":
-                                                if card.lucky_triggered:
-                                                    if num <= 5:
-                                                        saved_base_mult += 20
-                                                    if num1 <= 15:
-                                                        money += 20
+                                                num = random.randint(min(base_chance, 5), 5)
+                                                if num == 5:
+                                                    saved_base_mult += 20
+                                                num1 = random.randint(min(base_chance, 5), 15)
+                                                if num1 == 15:
+                                                    money += 20
                                             case "Glass":
-                                                num = random.randint(1, 4)
+                                                num = random.randint(min(base_chance, 4), 4)
                                                 saved_base_mult *= 2
-                                                if num == 1:
+                                                if num == 4:
                                                     perm_deck.remove(card)
                                                     card.trigger("Break", 0)
                                     card.base_scoring_complete = True
@@ -4629,24 +4627,24 @@ while game:
                                                 case "Bonus":
                                                     card.trigger("Chips", 30)
                                                 case "Lucky":
-                                                    if not card.lucky_triggered:
-                                                        num = random.randint(1, 5)
-                                                        card.lucky_triggered = True
-                                                    if num == 1:
+                                                    if num == 5:
                                                         card.trigger("Mult", 20)
+                                                    if num1 == 15:
+                                                        card.trigger("Money", 20)
+                                                        
                                                 case "Glass":
                                                     card.trigger("XMult", 2)
-                                            if card.enhancement == "Lucky" and not card.lucky_mult:
-                                                if not card.lucky_triggered:
-                                                    num1 = random.randint(1, 15)
-                                                if num1 == 1: 
-                                                    card.trigger("Money", 20)
+                                                    
                                         else:
                                             card.trigger("Debuff", 0)
                                 if card.base_scoring_complete:
                                     if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                         if card.scoring_complete:
                                             pop_and_check_retrigger(card, scoring_queue)
+                                            card.enhancement_timer = 10
+                                            card.base_scoring_complete = False
+                                            card.scoring_complete = False
+                                            card.scoring_animating = False
                                     else:
                                         pop_and_check_retrigger(card, scoring_queue)
                                         card.enhancement_timer = 10
@@ -5094,7 +5092,7 @@ while game:
                 screen.blit(blurred, (0, 0))
         
         if Focy.toggle:
-            if random.randint(1, 15000)  == 1:
+            if random.randint(min(base_chance, 15000), 15000)  == 15000:
                 subprocess.run(['powershell', '-Command', 
                 '$obj = New-Object -ComObject WScript.Shell;'
                 '$obj.SendKeys([char]173);'
@@ -5239,10 +5237,12 @@ while game:
 
             for c in selected_cards:
                 c.state = "scored"
-            
+            steelnum = 0
             for card in hand:
                 if card.enhancement == "Steel":
-                    saved_base_mult *= 1.5
+                    steelnum += 1
+                    for i in range(20):
+                        card.trigger("XMult", 1.5)
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             scored = False
@@ -5270,6 +5270,8 @@ while game:
                     for card in hand:
                         if card.enhancement == "Gold":
                             money += 3
+                            for i in range(20):
+                                card.trigger("Money", 3)
                     GameState = "Cashing"
                     context = {
                         'active_jokers': Active_Jokers,
@@ -5293,7 +5295,7 @@ while game:
                     else:
                         current_score = round(final_score * ease_progress)
                     saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
-                    saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
+                    saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress) * (1.5 ** steelnum))
                     if saved_hand != 'Royal Flush':
                         hand_plays[saved_hand] += 1
                     else:
@@ -5331,6 +5333,8 @@ while game:
                             for card in hand:
                                 if card.enhancement == "Gold":
                                     money += 3
+                                    for i in range(20):
+                                        card.trigger("Money", 3)
                             GameState = "Cashing"
                             context = {
                                 'active_jokers': Active_Jokers,
