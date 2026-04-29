@@ -575,6 +575,11 @@ JOKER_REGISTRY = {
         'description': '+1 Mult when hand contains a card',
         'Oopy Goopy': True 
     },
+    'Dead Frog': {
+        'events': [('on_hand_played', Useful_effect)],
+        'description': 'KILL YOURSELF',
+        'Oopy Goopy': True 
+    },
 }
 
 def initialize_joker_effects(active_jokers):

@@ -243,6 +243,7 @@ SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
 ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/14.54))
 UseButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "UseButton.png")), (WIDTH/43.5, HEIGHT/15))
+CantUseButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CantUseButton.png")), (WIDTH/43.5, HEIGHT/15))
 SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
 RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Reroll.png")), (WIDTH/9.1, HEIGHT/12.5))
 NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
@@ -882,7 +883,7 @@ def process_dev_command(command):
     
     command_lower = command.lower()
     if command_lower == 'help':
-        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n addtarot\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
+        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n addtarot - add a tarot card\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
 
     elif command_lower == 'addtarot':
         dev_awaiting_input = True
@@ -1564,10 +1565,11 @@ BOSS_DESC = {
     "The Magnet": "All cards with a red suit are frozen at the start of the round",
     "Jade Butterfly": "idk bro figure it out",
     "Korma Burger": "mmmmmmmm burgre",
-    "The ": "",
-    "The ": "",
-    "The ": "",
+    "Sunset Fridge": "im a fridge",
+    "Wedgewood Log": "you can get my log",
+    "Wisteria Harmony": "[insert angel chorus here]",
     }
+
 invincibleActive = False
 class Card:
     card_id_counter = 0
@@ -3038,33 +3040,35 @@ def reset_game_variables():
     current_blind = None
 
     hand_plays = {
-    "High Card": 0,
-    "Pair": 0,
-    "Two Pair": 0,
-    "Three of a Kind": 0,
-    "Straight": 0,
-    "Flush": 0,
-    "Full House": 0,
-    "Four of a Kind": 0,
-    "Straight Flush": 0,
-    "Five of a Kind": 0,
-    "Flush House": 0,
-    "Flush Five": 0
-    }
+        "High Card": 0,
+        "Pair": 0,
+        "Two Pair": 0,
+        "Three of a Kind": 0,
+        "Straight": 0,
+        "Flush": 0,
+        "Full House": 0,
+        "Four of a Kind": 0,
+        "Straight Flush": 0,
+        "Five of a Kind": 0,
+        "Flush House": 0,
+        "Flush Five": 0,
+        "Huh of a What": 0,
+        }
     Hand_levels = {
-    "High Card": 1,
-    "Pair": 1,
-    "Two Pair": 1,
-    "Three of a Kind": 1,
-    "Straight": 1,
-    "Flush": 1,
-    "Full House": 1,
-    "Four of a Kind": 1,
-    "Straight Flush": 1,
-    "Five of a Kind": 1,
-    "Flush House": 1,
-    "Flush Five": 1,
-    }
+        "High Card": 1,
+        "Pair": 1,
+        "Two Pair": 1,
+        "Three of a Kind": 1,
+        "Straight": 1,
+        "Flush": 1,
+        "Full House": 1,
+        "Four of a Kind": 1,
+        "Straight Flush": 1,
+        "Five of a Kind": 1,
+        "Flush House": 1,
+        "Flush Five": 1,
+        "Huh of a What": 1,
+        }
     Hand_Mult = {
         "High Card": 1,
         "Pair": 2,
@@ -3078,6 +3082,7 @@ def reset_game_variables():
         "Five of a Kind": 12,
         "Flush House": 14,
         "Flush Five": 16,
+        "Huh of a What": 10,
         }
 
     Hand_Chips = {
@@ -3093,8 +3098,46 @@ def reset_game_variables():
         "Five of a Kind": 120,
         "Flush House": 140,
         "Flush Five": 160,
+        "Huh of a What": 100,
         }
 
+def get_card_limit(name):
+    match name:
+        case "Chariot":
+            return 2
+        case "Death":
+            return 2
+        case "Devil":
+            return 2
+        case "Empress":
+            return 2
+        case "Hanged Man":
+            return 2
+        case "Hierophant":
+            return 2
+        case "Justice":
+            return 1
+        case "Lovers":
+            return 1
+        case "Magician":
+            return 2
+        case "World":
+            return 3
+        case "Star":
+            return 3
+        case "Sun":
+            return 3
+        case "Moon":
+            return 3
+        case "Strength":
+            return 2
+        case "Tower":
+            return 1
+        case _:
+            return 6
+
+def get_spectral_effect(name):
+    pass
 
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
@@ -3345,7 +3388,7 @@ def get_shadow_effect(name):
         Hand_levels["Four of a Kind"] += 1
         lastFool = "Fists"
     elif name == "Glitch":
-        Hand_levels["Flush House"] += 1
+        Hand_levels["Huh of a What"] += 1
         lastFool = "Glitch"
     elif name == "Ice":
         Hand_levels["Two Pair"] += 1
@@ -4475,6 +4518,11 @@ while game:
                                                 num1 = random.randint(min(base_chance, 5), 15)
                                                 if num1 == 15:
                                                     money += 20
+                                                if num1 != 15 and num != 5:
+                                                    card.scoring_complete = True
+                                                    scoring_queue.remove(card)
+                                                    if len(scoring_queue) > 0:
+                                                        scoring_queue[0].scaling = True
                                             case "Glass":
                                                 num = random.randint(min(base_chance, 4), 4)
                                                 saved_base_mult *= 2
@@ -4497,10 +4545,11 @@ while game:
                                                     if num == 5:
                                                         card.trigger("Mult", 20)
                                                     if num1 == 15:
-                                                        card.trigger("Money", 20)
-                                                        
+                                                        card.trigger("Money", 20)     
                                                 case "Glass":
-                                                    card.trigger("XMult", 2)       
+                                                    card.trigger("XMult", 2)
+                                                case _:
+                                                    pass       
                                         else:
                                             card.trigger("Debuff", 0)
                                 if card.base_scoring_complete:
@@ -4762,17 +4811,33 @@ while game:
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
-            useX, useY = get_selected_Shop_Cards(joker)
+            limit = get_card_limit(joker.name)
+            if limit >= len(selected_cards):
+                useX, useY = get_selected_Shop_Cards(joker)
+                CuseX, CuseY = -100, -100
+            else:
+                useX, useY = -100, -100
+                CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
-                UseButton_rect = UseButton_img.get_rect()
-                UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+            elif CuseX > 0:
+                screen.blit(CantUseButton_img, (CuseX + WIDTH/30, CuseY - HEIGHT/30))
+            UseButton_rect = UseButton_img.get_rect()
+            UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in PackCards:
-            useX, useY = get_selected_Shop_Cards(joker)
+            limit = get_card_limit(joker.name)
+            if limit >= len(selected_cards):
+                useX, useY = get_selected_Shop_Cards(joker)
+                CuseX, CuseY = -100, -100
+            else:
+                useX, useY = -100, -100
+                CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
-                UseButton_rect = UseButton_img.get_rect()
-                UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+            elif CuseX > 0:
+                screen.blit(CantUseButton_img, (CuseX + WIDTH/30, CuseY - HEIGHT/30))
+            UseButton_rect = UseButton_img.get_rect()
+            UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in ShopPacks:
             buyX, buyY = get_selected_Shop_Cards(joker)
             if buyX > 0:
