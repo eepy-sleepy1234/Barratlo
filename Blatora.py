@@ -1649,7 +1649,8 @@ class Card:
             filepath = os.path.join(SUITS_DIR, self.suit, filename)
 
         raw_image = pygame.image.load(filepath).convert_alpha()
-
+        if current_blind.name in ("The Bridge", "The Chair", "The Splinter", "The Bird", "The Bow", "The Arrow", "The Cone"):
+            boss_debuff()
         self.image = pygame.transform.smoothscale(
             raw_image,
             (HEIGHT/8, HEIGHT/5.82)
@@ -1790,25 +1791,25 @@ def boss_debuff():
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
-                if card.suit == "Hearts":
+                if card.suit == "Hearts" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The Arrow":
             for card in deck:
-                if card.suit == "Spades":
+                if card.suit == "Spades" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The Cone":
             for card in deck:
-                if card.suit == "Clubs":
+                if card.suit == "Clubs" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The Bow":
             for card in deck:
-                if card.suit == "Diamonds":
+                if card.suit == "Diamonds" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
@@ -1872,11 +1873,12 @@ def boss_debuff():
                     card.is_debuffed = True
         if current_blind.name == "The Magnet":
             for card in deck:
-                if card.suit in ("Hearts", "Diamonds"):
+                if card.suit in ("Hearts", "Diamonds") or card.enhancement == "Wild":
+                    card.is_frozen = True
                     card.freeze_timer = 4
         if current_blind.name == "The Splinter":
             for card in deck:
-                if card.suit in ("Spades", "Clubs"):
+                if card.suit in ("Spades", "Clubs") or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
@@ -2386,6 +2388,8 @@ class Joker:
             desc = desc.replace("{value}", str(JokerEffects.wetFloorValue))
         elif self.name == "Ptsd Joker":
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
+        elif self.name == "Dead Frog":
+            desc = desc.replace("{value}", str(round(20 * JokerEffects.FrogCounter)))
         elif self.name == "Pool Table":
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
         elif self.name == "Skip Joker":
@@ -3036,6 +3040,8 @@ def reset_game_variables():
     cards_found = 0
     lastFool = None
 
+    JokerEffects.reset_joker_variables()
+
     boss_blind = random.choice(boss_blinds)
     current_blind = None
 
@@ -3217,6 +3223,10 @@ def get_tarot_effect(name):
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Steel"
                         break
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Steel"
+                        break
         lastFool = "Chariot"
     if name == "Death":
         if len(selected_cards) == 2:
@@ -3229,6 +3239,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Gold"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Gold"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3239,6 +3253,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Mult"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Mult"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3258,6 +3276,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Bonus"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Bonus"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3268,6 +3290,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Glass"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Glass"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3278,6 +3304,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Wild"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Wild"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3288,6 +3318,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Lucky"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Lucky"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3298,6 +3332,10 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Clubs"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Clubs"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3308,6 +3346,10 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Diamonds"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3322,6 +3364,11 @@ def get_tarot_effect(name):
                     idx = keys.index(card.rank)
                     card.rank = keys[idx + 1 if idx < len(RANK_VALUES) else 0]
                 card.value = RANK_VALUES[card.rank]
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.rank = card.rank
+                        perm_card.value = card.value
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3334,12 +3381,16 @@ def get_tarot_effect(name):
             for card in selected_cards:
                 card.suit = "Hearts"
                 card.name = f"{card.rank} of {card.suit}"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Hearts"
+                        perm_card.name = card.name
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
                         perm_card.name = card.name
-                        perm_card.refresh_image()
                         break
             lastFool = "Sun"
     if name == "Tower":
@@ -3350,6 +3401,10 @@ def get_tarot_effect(name):
                 card.value = 0
                 card.chip_value = 50
                 card.suit = "Glitched"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Glitched", 0, 0, "Glitched"
+                        break
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Glitched", 0, 0, "Glitched"
@@ -3370,6 +3425,10 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Spades"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Spades"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3937,6 +3996,7 @@ while game:
                                 if pack.state == "selected" and money >= pack.price:
                                     money -= pack.price
                                     shopJokerSelected = False
+                                    pack.state = "hand"
                                     selection = pack.selection
                                     if "Standard" in pack.name:
                                         GameState = "StandardPack"
@@ -3991,7 +4051,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(ShadowCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
                                                     break
                                     if "Spectral" in pack.name:
@@ -3999,7 +4059,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(SpectralCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
                                                     break
                                         reset_deck_for_new_round()
@@ -4015,7 +4075,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(TarotCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
                                                     break
                                         reset_deck_for_new_round()
@@ -5136,6 +5196,7 @@ while game:
                 'rulesHand': RulesHand,
                 'blind': current_blind,
                 'bosses': boss_blinds,
+                "most_played" : max(hand_plays.items(), key=lambda item: item[1])
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']

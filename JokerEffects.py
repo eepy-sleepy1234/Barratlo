@@ -3,10 +3,23 @@ from collections import Counter
 wetFloorValue = 0
 last_hand = 0
 last_hand_counter = 0
+FrogCounter = 0
 YinYang_Active = False
 poolMoney = 0
 skipMult = 1
 exponentJoker = 1
+
+def reset_joker_variables():
+    global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker
+    wetFloorValue = 0
+    last_hand = 0
+    last_hand_counter = 0
+    FrogCounter = 0
+    YinYang_Active = False
+    poolMoney = 0
+    skipMult = 1
+    exponentJoker = 1
+
 class JokerEffectsManager:
     def __init__(self):
         self.effects = {
@@ -333,10 +346,6 @@ def PTSD_effect(context):
     context.setdefault('triggered_jokers', []).append('PTSD Joker')
     return context
 
-
-
-
-
 def WetFloor_effect(context):
     global wetFloorValue
     hand_played = [c for c in context.get('hand_played', []) if not isinstance(c, str)]
@@ -374,6 +383,16 @@ def Fountain_effect(context):
     return context
 def Skip_effect(context):
     context['mult'] = round((context.get('mult',0) * skipMult),2)
+    return context
+
+def DeadFrog_effect(context):
+    global FrogCounter
+    most_hand = context.get("most_played", 0)
+    hand = context.get("hand_type", 0)
+    if hand != most_hand:
+        FrogCounter += 1
+    context["chips"] = context.get('chips', 0) + (20 * FrogCounter)
+    context.setdefault('triggered_jokers', []).append('Dead Frog')
     return context
 
 def OopyGoopy_effect(context):
@@ -560,7 +579,7 @@ JOKER_REGISTRY = {
         'description': 'Duplicates the joker to the right of it and double its effect',
         'Oopy Goopy': True 
     },
-    'Skip Joker': {
+    'Hopscotch': {
         'events': [('on_hand_played', Skip_effect)],
         'description': 'Gains X0.25 Mult For Every Skipped Blind',
         'Oopy Goopy': True 
@@ -576,8 +595,8 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True 
     },
     'Dead Frog': {
-        'events': [('on_hand_played', Useful_effect)],
-        'description': 'KILL YOURSELF',
+        'events': [('on_hand_played', DeadFrog_effect)],
+        'description': 'This joker gains +20 chips when played hand is not most played hand',
         'Oopy Goopy': True 
     },
 }

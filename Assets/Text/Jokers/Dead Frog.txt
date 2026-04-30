@@ -1,0 +1,1 @@
+This joker gains [blue]+20[/blue] chips when played hand is not most played hand{break}[grey]Currently[/grey][blue]+{value}[/blue]
