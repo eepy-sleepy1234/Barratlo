@@ -209,8 +209,8 @@ cursor_normal = pygame.transform.scale(cursor_normal, (32, 32))
 cursor_hover = pygame.transform.scale(cursor_hover, (32, 32))
 
 # ==================== GUI BUTTONS ====================
-Question_mark = load_image_safe(os.path.join(GUI_DIR, 'QuestionMark.png'))
-Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
+RunInfo = load_image_safe(os.path.join(GUI_DIR, 'RunInfoButton.png'))
+RunInfo = pygame.transform.scale(RunInfo, (WIDTH/20, WIDTH/12))
 
 Settings_2 = load_image_safe(os.path.join(GUI_DIR, 'Settings2.png'))
 Settings_2 = pygame.transform.scale(Settings_2, (int(HEIGHT/5), int(HEIGHT/10.5)))
@@ -250,6 +250,7 @@ NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DI
 SelectBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/6.8, HEIGHT/20))
 SkipBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SkipBlind.png")), (WIDTH/12, HEIGHT/18))
 PackDesc_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PackDesc.png")), (WIDTH/5, HEIGHT/6))
+Pointer_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "pointer.png")), (WIDTH/21, HEIGHT/17.875))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -275,8 +276,10 @@ Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyBut
 Invincible_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "InvincibleSplash.png")), (WIDTH,HEIGHT))
 GameMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GameMenu.png")), (WIDTH/1.68, HEIGHT/1.1))
 MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBlinds.png")), (WIDTH/6.462, HEIGHT/9.533))
-MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuVouchers.png")), (WIDTH/6.462, HEIGHT/9.533))
-MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuHandType.png")), (WIDTH/6.462, HEIGHT/9.533))
+MenuVouchers_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuVouchers.png")), (WIDTH/6.462, HEIGHT/9.533))
+MenuPokerHands_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuPokerHands.png")), (WIDTH/6.462, HEIGHT/9.533))
+MenuHandType_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuHandType.png")), (WIDTH/1.892, HEIGHT/26))
+MenuBack_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBack.png")), (WIDTH/1.81, HEIGHT/16.824))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -346,6 +349,21 @@ NewRunButton_rect.topleft = (WIDTH/1.34 , HEIGHT/1.25)
 
 MainMenuButton_rect = MainMenu_img.get_rect()
 MainMenuButton_rect.topleft = (WIDTH/1.74 , HEIGHT/1.25)
+
+MenuBackButton_rect = MenuBack_img.get_rect()
+MenuBackButton_rect.topleft = (WIDTH/4.53 , HEIGHT/1.15)
+
+MenuBlindsButton_rect = MenuBlinds_img.get_rect()
+MenuBlindsButton_rect.topleft = (WIDTH/1.67 , HEIGHT/8)
+
+MenuPokerHandsButton_rect = MenuPokerHands_img.get_rect()
+MenuPokerHandsButton_rect.topleft = (WIDTH/4.25 , HEIGHT/8)
+
+MenuVouchersButton_rect = MenuVouchers_img.get_rect()
+MenuVouchersButton_rect.topleft = (WIDTH/2.4 , HEIGHT/8)
+
+RunInfo_rect = RunInfo.get_rect()
+RunInfo_rect.topleft = (WIDTH/24, HEIGHT/1.49)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -485,7 +503,6 @@ class GUITOGGLES():
             else:
                 self.sprite = self.original_image                  
        
-question = GUITOGGLES(WIDTH/24, HEIGHT/1.49, Question_mark, scale_factor=1.15, isbutton=False)
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
@@ -494,7 +511,7 @@ githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)
 quitButton  = GUITOGGLES(0,0, quitButtonimg , scale_factor = 1.15, isbutton = True)
 
 def update_gui_buttons():
-    if question.toggle:
+    if settings2.toggle:
         button_spacing = int(HEIGHT / 10)
         start_y = int(HEIGHT / 10)
         
@@ -1383,6 +1400,8 @@ default_deck = []
 Active_Jokers = []
 packHand = []
 scoring_queue = []
+selectedMenu = "Hands"
+menuOpen = False
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
@@ -1423,6 +1442,7 @@ rerolls = 0
 cards_found = 0
 lastFool = None
 locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
+unlocked_hands = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush"]
 locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
 Hand_levels = {
     "High Card": 1,
@@ -2959,7 +2979,7 @@ def reset_game_variables():
     global target_score, contributing, BLIND_X, BLIND_Y
     global total_score, saved_total_score, is_straight, is_flush
     global ShopCount, totalReward, joker_manager
-    global shopJokerSelected, ActiveJokerSelected
+    global shopJokerSelected, ActiveJokerSelected, locked_hands, locked_cards, unlocked_hands
     global handsize, chips, mult, current_score
     global round_score, scored_counter, total_scoring_count
     global DRAG_THRESHOLD, calc_progress
@@ -2979,6 +2999,10 @@ def reset_game_variables():
     hand.clear()
     Active_Jokers.clear()
     Held_Consumables.clear()
+
+    locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
+    unlocked_hands = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush"]
+    locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
 
     max_handsize = 8
     max_hand = 4
@@ -3541,7 +3565,7 @@ while game:
                             seed += num
                         random.seed(seed)
                         running = True
-                    elif settings:  
+                    elif settings2.toggle:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 buttonClick.play(0)
@@ -3549,10 +3573,10 @@ while game:
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
                         buttonClick.play(0)
-                        settings = True
+                        settings2.toggle = True
                     if xbutton_rect.collidepoint(event.pos):
                         buttonClick.play(0)
-                        settings = False
+                        settings2.toggle = False
             
         screen.fill((0, 0, 0))  
         spinningBG.animate()
@@ -3588,7 +3612,7 @@ while game:
             letter.draw()
         screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
         
-        if settings:
+        if settings2.toggle:
             screen.fill((255,255,255))
             draw_settings()
             screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
@@ -3645,7 +3669,6 @@ while game:
                 Active_Jokers.append(new_joker)
                 joker_manager = initialize_joker_effects(Active_Jokers)
         global discard_queue
-        question.should_draw = True
         mouse_pos = pygame.mouse.get_pos()
         cursor_pos = pygame.mouse.get_pos()
         hovering = False
@@ -3714,7 +3737,7 @@ while game:
                         dev_progress = ""
                 
                 if event.key == pygame.K_ESCAPE and not dev_command_bar_active:
-                    question.toggle = not question.toggle
+                    settings = not settings
                     
             if event.type == pygame.MOUSEWHEEL and help_menu:
                 scroll_offset += event.y * scroll_speed
@@ -3735,7 +3758,7 @@ while game:
                         help_menu = False
                         helpButton.toggle = False
 
-                    if settings:  
+                    if settings2.toggle:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 buttonClick.play(0)
@@ -3744,9 +3767,23 @@ while game:
                         
                     if xbutton_rect.collidepoint(event.pos):
                         buttonClick.play(0)
-                        settings = False
                         settings2.toggle = False
                         
+                    if RunInfo_rect.collidepoint(mouse_pos):
+                        menuOpen = True
+
+                    if MenuBackButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        menuOpen = False
+
+                    if MenuPokerHandsButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        selectedMenu = "Hands"
+
+                    if MenuVouchersButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        selectedMenu = "Vouchers"
+
+                    if MenuBlindsButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        selectedMenu = "Blinds"
+
                     if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                         GameState = "Shop"
                         buttonClick.play(0)
@@ -3804,13 +3841,13 @@ while game:
                             ShopPacks.append(pack)
                         break
                        
-                    if settings == False:
+                    if settings:
                         for toggle in guiToggleList:
                             if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
-                                toggle.toggle = not question.toggle
+                                toggle.toggle = not settings2.toggle
                                 buttonClick.play(0)
-                                if toggle == settings2:
-                                    settings = True
+                                if toggle == settings:
+                                    settings2.toggle = True
                                 if toggle == githubButton:
                                     webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
                                     toggle.toggle = False
@@ -3905,6 +3942,7 @@ while game:
                                     saved_level = Hand_levels.get("Straight Flush", 1)
                                 if hand_type in locked_hands:
                                     locked_hands.remove(hand_type)
+                                    unlocked_hands.append(hand_type)
                                     match hand_type:
                                         case "Five of a Kind":
                                             locked_cards.remove("The Reaper")
@@ -4551,6 +4589,7 @@ while game:
                                     c.slot = idx
         screen.blit(GameBackground_img, (0, 0))
         screen.blit(SideBar_img, (0, 0))
+        screen.blit(RunInfo, RunInfo_rect.topleft)
         if scoring_queue and not calculating:
                     for card in scoring_queue:
                         if card.is_contributing:
@@ -4990,15 +5029,13 @@ while game:
             screen.blit(STARTCARD, (card_x, 0))
 
         shopAnimaton()
-        if question.toggle:
+        if settings:
                 screen.blit(overlay, (0, 0))
                 update_gui_buttons()
                 for button in guibutton:
                     button.draw()
-        if settings2.toggle:
-            settings = True
 
-        if settings:
+        if settings2.toggle:
             screen.fill((255,255,255))
             draw_settings()
             screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
@@ -5006,6 +5043,43 @@ while game:
         chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
         for indicator in chip_indicators:
             indicator.draw(screen)
+
+        if menuOpen:
+            dimScreen = pygame.Surface((WIDTH, HEIGHT))
+            dimScreen.fill((0, 0, 0))
+            dimScreen.set_alpha(50)
+            screen.blit(dimScreen, (0, 0))
+            screen.blit(GameMenu_img, (WIDTH/5 , HEIGHT/20))
+            screen.blit(MenuBack_img, (WIDTH/4.53 , HEIGHT/1.15))
+            screen.blit(MenuBlinds_img, (WIDTH/1.67 , HEIGHT/8))
+            screen.blit(MenuVouchers_img, (WIDTH/2.4 , HEIGHT/8))
+            screen.blit(MenuPokerHands_img, (WIDTH/4.25 , HEIGHT/8))
+            if selectedMenu == "Hands":
+                screen.blit(Pointer_img, (WIDTH/3.5 , HEIGHT/16))
+                i = 0
+                for h in reversed(unlocked_hands):
+                    i += 1
+                    screen.blit(MenuHandType_img, (WIDTH/4.25 , HEIGHT/4 + i * 60))
+                    text = PixelFontS.render(f"{h}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/2.25, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"lvl. {Hand_levels[h]}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/3.6, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"{Hand_Chips[h] * Hand_levels[h]}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/1.695, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"{Hand_Mult[h] * Hand_levels[h]}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/1.505, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"{int(hand_plays[h] / 50)}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/1.345, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+            elif selectedMenu == "Blinds":
+                screen.blit(Pointer_img, (WIDTH/1.54 , HEIGHT/16))
+            elif selectedMenu == "Vouchers":
+                screen.blit(Pointer_img, (WIDTH/2.14 , HEIGHT/16))
+
 
         if GameState == "Dead":
             redScreen = pygame.Surface((WIDTH, HEIGHT))
