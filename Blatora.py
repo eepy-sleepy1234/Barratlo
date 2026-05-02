@@ -4749,6 +4749,9 @@ while game:
                 text = PixelFontS.render(small_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
+                text = PixelFontS.render(small_blind.name, True, black)
+                text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
+                screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
