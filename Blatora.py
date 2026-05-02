@@ -19,11 +19,9 @@ from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_e
 pygame.init()
 pygame.font.init()
 
-    
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
-
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
@@ -48,7 +46,6 @@ scroll_speed = 30
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
 has_invincible = False
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
-    """Load image with fallback to placeholder if file not found"""
     try:
         return pygame.image.load(filepath).convert_alpha()
     except (FileNotFoundError, pygame.error):
@@ -111,14 +108,11 @@ line_height = OSDmono.get_height()
 jevilActive = False
 
 for line in help_lines:
-
     clean_line = html.unescape(line.replace('\t', '    ').rstrip())
-
 
     if not clean_line.strip():
         helpMenu_surfaces.append(None)
         continue
-
 
     if '**' in clean_line:
         parts = clean_line.split('**')
@@ -131,7 +125,6 @@ for line in help_lines:
             else:
                 text_surface = OSDmono.render(part, True, (0, 0, 0))
             surfaces.append(text_surface)
-
 
         total_width = sum(s.get_width() for s in surfaces)
         combined_surface = pygame.Surface((total_width, line_height), pygame.SRCALPHA)
@@ -149,9 +142,7 @@ helpMenu  = PixelFont.render(helptext, True, (0, 0, 0))
 clock = pygame.time.Clock()
 pygame.mixer.init()
 
-
 pygame.mouse.set_visible(False)
-
 
 video_cap = None
 video_surface = None
@@ -179,7 +170,6 @@ def get_video_frame():
         return None
     
     ret, frame = video_cap.read()
-    
 
     if not ret:
         video_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -200,11 +190,6 @@ def close_video():
         video_cap.release()
         video_cap = None
 
-
-
-
-
-
 # ==================== SOUNDS ====================
 foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
@@ -224,8 +209,8 @@ cursor_normal = pygame.transform.scale(cursor_normal, (32, 32))
 cursor_hover = pygame.transform.scale(cursor_hover, (32, 32))
 
 # ==================== GUI BUTTONS ====================
-Question_mark = load_image_safe(os.path.join(GUI_DIR, 'QuestionMark.png'))
-Question_mark = pygame.transform.scale(Question_mark, (WIDTH/20, WIDTH/12))
+RunInfo = load_image_safe(os.path.join(GUI_DIR, 'RunInfoButton.png'))
+RunInfo = pygame.transform.scale(RunInfo, (WIDTH/20, WIDTH/12))
 
 Settings_2 = load_image_safe(os.path.join(GUI_DIR, 'Settings2.png'))
 Settings_2 = pygame.transform.scale(Settings_2, (int(HEIGHT/5), int(HEIGHT/10.5)))
@@ -258,12 +243,14 @@ SortbuttonSuit_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 CashOutButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CashOutButton.png")), (HEIGHT/1.5, HEIGHT/8))
 ShopBuy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ShopBuy.png")), (WIDTH/14.5, HEIGHT/14.54))
 UseButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "UseButton.png")), (WIDTH/43.5, HEIGHT/15))
+CantUseButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CantUseButton.png")), (WIDTH/43.5, HEIGHT/15))
 SellButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SellButton.png")), (WIDTH/14.5, HEIGHT/14.54))
 RerollButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Reroll.png")), (WIDTH/9.1, HEIGHT/12.5))
 NextRoundButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NextRound.png")), (WIDTH/9.1, HEIGHT/12.5))
 SelectBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SelectBlind.png")), (WIDTH/6.8, HEIGHT/20))
 SkipBlind_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "SkipBlind.png")), (WIDTH/12, HEIGHT/18))
 PackDesc_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "PackDesc.png")), (WIDTH/5, HEIGHT/6))
+Pointer_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "pointer.png")), (WIDTH/21, HEIGHT/17.875))
 
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
@@ -287,6 +274,12 @@ NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRu
 MainMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MainMenuButton.png")), (WIDTH/6.8, HEIGHT/20))
 Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyButton.png")), (WIDTH/6.8, HEIGHT/20))
 Invincible_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "InvincibleSplash.png")), (WIDTH,HEIGHT))
+GameMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GameMenu.png")), (WIDTH/1.68, HEIGHT/1.1))
+MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBlinds.png")), (WIDTH/6.462, HEIGHT/9.533))
+MenuVouchers_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuVouchers.png")), (WIDTH/6.462, HEIGHT/9.533))
+MenuPokerHands_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuPokerHands.png")), (WIDTH/6.462, HEIGHT/9.533))
+MenuHandType_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuHandType.png")), (WIDTH/1.892, HEIGHT/26))
+MenuBack_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBack.png")), (WIDTH/1.81, HEIGHT/16.824))
 
 # ==================== OVERLAYS ====================
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -357,6 +350,21 @@ NewRunButton_rect.topleft = (WIDTH/1.34 , HEIGHT/1.25)
 MainMenuButton_rect = MainMenu_img.get_rect()
 MainMenuButton_rect.topleft = (WIDTH/1.74 , HEIGHT/1.25)
 
+MenuBackButton_rect = MenuBack_img.get_rect()
+MenuBackButton_rect.topleft = (WIDTH/4.53 , HEIGHT/1.15)
+
+MenuBlindsButton_rect = MenuBlinds_img.get_rect()
+MenuBlindsButton_rect.topleft = (WIDTH/1.67 , HEIGHT/8)
+
+MenuPokerHandsButton_rect = MenuPokerHands_img.get_rect()
+MenuPokerHandsButton_rect.topleft = (WIDTH/4.25 , HEIGHT/8)
+
+MenuVouchersButton_rect = MenuVouchers_img.get_rect()
+MenuVouchersButton_rect.topleft = (WIDTH/2.4 , HEIGHT/8)
+
+RunInfo_rect = RunInfo.get_rect()
+RunInfo_rect.topleft = (WIDTH/24, HEIGHT/1.49)
+
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
@@ -383,13 +391,11 @@ StartingTimg = letter_images['StartTimg']
 StartingRimg = letter_images['StartRimg']
 StartingOimg = letter_images['StartOimg']
 
-
 developer = False
 setting_width = WIDTH/6
 setting_height = HEIGHT/5
 settingsList = []
 devtoggle = ""
-
 
 class User_settings():
     def __init__(self,name, visible = True):
@@ -421,15 +427,12 @@ Music = User_settings('Music')
 Music.toggle = True
 DEV_MODE = User_settings('Developer', False)  #Keep At Bottem#
 
-
-
 def dev_commands():
     global dev_toggle
     global dev_command
     if DEV_MODE.toggle:
         if dev_toggle:
             dev_command = input('Insert Developer Command')
-            
 
 dev_code = "talabro"
 dev_progress = ""
@@ -478,11 +481,9 @@ class GUITOGGLES():
         self.isbutton = isbutton
         if self.isbutton == True:
             guibutton.append(self)
-            
-    
+
     def draw(self):
         if self.should_draw:
- 
             blit_rect = self.sprite.get_rect(center=(self.x, self.y))
             screen.blit(self.sprite, blit_rect)
             self.rect = blit_rect
@@ -501,9 +502,7 @@ class GUITOGGLES():
                 self.sprite = pygame.transform.scale(self.original_image, (new_w, new_h))
             else:
                 self.sprite = self.original_image                  
-                                                    
-                    
-question = GUITOGGLES(WIDTH/24, HEIGHT/1.49, Question_mark, scale_factor=1.15, isbutton=False)
+       
 settings2 = GUITOGGLES(0, 0, Settings_2, scale_factor=1.15, isbutton=True)
 helpButton = GUITOGGLES(0, 0, helpButtonimg, scale_factor=1.15, isbutton=True)    
 githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)    
@@ -512,9 +511,7 @@ githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)
 quitButton  = GUITOGGLES(0,0, quitButtonimg , scale_factor = 1.15, isbutton = True)
 
 def update_gui_buttons():
-
-    if question.toggle:
-
+    if settings2.toggle:
         button_spacing = int(HEIGHT / 10)
         start_y = int(HEIGHT / 10)
         
@@ -523,36 +520,23 @@ def update_gui_buttons():
             button.x = int(WIDTH / 10)
             button.y = start_y + (index * button_spacing)
     else:
-
         for button in guibutton:
             button.should_draw = False        
- 
-        
 
-        
-
-        
 def draw_settings():
     index = 0
     for setting in settingsList:
         if setting.visible:
-           
-        
-
-       
             x_pos = int(WIDTH/20)
             y_pos = int((HEIGHT/10 + 20) * index) + 20
             text_x = x_pos + setting.img.get_width() + 10 
             screen.blit(setting.name, (text_x, y_pos))
-        
             screen.blit(setting.img, (x_pos, y_pos))
             setting.rect.x = x_pos
             setting.rect.y = y_pos
             index += 1
             setting.update_img()
 
-
-       
 dev_selection = True
 blitting = False    
 def blit_img():
@@ -573,7 +557,6 @@ def blit_img():
 
     if DEV_MODE.toggle:
         while dev_toggle:
-            
             if dev_command.lower() == 'addjoker':
                 print(All_Jokers_Name)
                 addedJoker = input("Insert Name Of Joker")
@@ -600,8 +583,6 @@ def blit_img():
                                 joker_manager = initialize_joker_effects(Active_Jokers) 
                 print(f"Added {number} {name}s and reinitialized joker manager!")
                     
-               
-              
             elif dev_command.lower() == 'setblit':
                 asset = input('Input asset name, including .png if a png: ')
                 directory = input('Choose a directory(assets, joker, gui, Suits): ').lower()
@@ -617,8 +598,6 @@ def blit_img():
                 else:
                     print("Invalid Directory")
                     
-                    
-
                 scaling = input('WH, WW, HH, HW, pixel: ').lower()
 
                 blitpositionx = input('Xposition (Width/chosenxpos): ')
@@ -636,7 +615,6 @@ def blit_img():
                 except:
                     print("Invalid position")
                     
-                
                 dimensionsx = input('Choose a width: ')
                 dimensionsy = input('Choose a height: ')
                 try:
@@ -644,14 +622,12 @@ def blit_img():
                     dimensionsy = float(dimensionsy)
                 except:
                     print("Invalid dimensions")
-                   
                 
                 try:
                     blitting_img_original = pygame.image.load(os.path.join(directory, str(asset))).convert_alpha()
                 except:
                     print("Something went wrong loading image")
                     
-                
                 try:
                     if scaling == 'wh':
                         blitting_img = pygame.transform.scale(blitting_img_original, (int(WIDTH/dimensionsx), int(HEIGHT/dimensionsy)))
@@ -665,8 +641,7 @@ def blit_img():
                         blitting_img = pygame.transform.scale(blitting_img_original, (int(dimensionsx), int(dimensionsy)))
                     
                     blitting = True
-                    
-
+            
                 except:
                     print("Something went wrong scaling")
                     dev_toggle = False
@@ -681,15 +656,12 @@ def blit_img():
             elif dev_command.lower() == 'unblit':
                 blitting = False
                 
-            
             elif dev_command.lower() == 'reblit':
                 blitting = True
                 
-            
             elif dev_command.lower() == 'help':
                 print("Commands: \n Help\n reblit\n unblit\n exit\n setblit\n blitW\n blitH\n blitx\n blity\n changescaling\n sethand\n resetdeck\n setresources\n setround\n setboss\naddtarot\n addjoker\n")
-                
-
+            
             elif dev_command.lower() == 'blitx':
                 new_x = input("Insert New X position (Width/x): ")
                 try:
@@ -701,7 +673,6 @@ def blit_img():
                 except:
                     print("Invalid position")
                 
-            
             elif dev_command.lower() == 'blity':
                 new_y = input("Insert New Y position (Height/y): ")
                 try:
@@ -713,13 +684,11 @@ def blit_img():
                 except:
                     print("Invalid position")
                 
-            
             elif dev_command.lower() == 'changescaling':
                 new_scale = input("Insert New Scale Config (wh, ww, hh, hw, pixel): ").lower()
                 scaling = new_scale
                 print(f"Scaling mode changed to: {scaling}")
-                
-
+            
             elif dev_command.lower() == 'blitw':
                 new_W = input("Insert New Width: ")
                 try:
@@ -727,7 +696,6 @@ def blit_img():
                     print(f"Width updated to: {dimensionsx}")
                 except:
                     print("Invalid number")
-                
             
             elif dev_command.lower() == 'blith':
                 new_H = input("Insert New Height: ")
@@ -737,15 +705,12 @@ def blit_img():
                 except:
                     print("Invalid number")
                 
-
             elif dev_command.lower() == 'sethand':
                 print("Available ranks: Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Jack, Queen, King, Ace")
                 print("Available suits: Hearts, Diamonds, Clubs, Spades")
                 print("Enter cards one at a time. Type 'done' when finished.")
                 dev_selection = True
-
                 hand.clear()
-                
                 card_templates = {}
                 temp_deck = []
                 for root, dirs, files in os.walk(SUITS_DIR):
@@ -766,12 +731,9 @@ def blit_img():
                 while card_count < 8:
                     rank_input = input(f"Card {card_count + 1} - Rank (or 'done'): ").strip()
                     rank_input.lower()
-                    
                     if rank_input.lower() == 'done':
                         break
-                        
                     suit_input = input(f"Card {card_count + 1} - Suit: ").strip()
-
                     card_key = f"{rank_input}Of{suit_input}"
                     if card_key in card_templates:
                         rank, suit, image = card_templates[card_key]
@@ -789,17 +751,13 @@ def blit_img():
                 sort_hand()
                 print(f"Hand set with {len(hand)} cards")
                 
-
             elif dev_command.lower() == 'resetdeck':
-            
                 hand.clear()
-                
                 card_count = {}
                 deck.clear()
                 deck = perm_deck.copy()
                 random.shuffle(deck)
-                
-
+            
                 for i in range(handsize):
                     if deck:
                         card = deck.pop()
@@ -811,8 +769,6 @@ def blit_img():
                 sort_hand()
                 print(f"Deck reset! New hand dealt with {len(hand)} cards. {len(deck)} cards remaining in deck.")
                 
-
-
             elif dev_command.lower() == 'setresources':
                 global hands, discards, chips, mult
                 try:
@@ -834,12 +790,10 @@ def blit_img():
                 except:
                     print("Invalid input")
                 
-
             elif dev_command.lower() == 'setboss':
                 if not boss_blinds:
                     print("No boss blinds available")
                     
-                
                 print("Available boss blinds:")
                 for boss in boss_blinds:
                     print(f"  - {boss.name}")
@@ -858,9 +812,6 @@ def blit_img():
                 print("Unknown command. Type 'help' for list of commands.")
 
             dev_command = input("Input Developer Command")    
-
-
-
 
 def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
     x = rect.x + padding
@@ -937,8 +888,6 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
                 draw_x += surf.get_width()
             y += line_height
 
-
-
 def process_dev_command(command):
     global dev_command, ante, joker_manager, round_num, current_blind, target_score
     global hands, discards, chips, mult, hand, deck, perm_deck, handsize
@@ -955,8 +904,7 @@ def process_dev_command(command):
     
     command_lower = command.lower()
     if command_lower == 'help':
-        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n addtarot\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
-
+        return "Commands:\n  help - Show this help\n  addjoker - Add a joker\n addtarot - add a tarot card\n  resetdeck - Reset the deck\n  setresources - Set hands/discards\n  setround - Set round number\n  setboss - Set boss blind\n  money - Set money amount\n  sethand - Build custom hand\n  exit - Close dev mode"
 
     elif command_lower == 'addtarot':
         dev_awaiting_input = True
@@ -1068,7 +1016,6 @@ def handle_multi_step_input(input_text):
         dev_awaiting_input = False
         joker_name = input_text
         
-   
         for joke in All_Jokers:
             if joke.name.lower() == joker_name.lower():
                 new_joka = Joker(joke.image, joke.rarity, joke.name)
@@ -1113,7 +1060,6 @@ def handle_multi_step_input(input_text):
                 dev_awaiting_input = False
                 return "Invalid number"
     
-
     elif dev_current_command == 'setround':
         try:
             round_num = int(input_text)
@@ -1126,7 +1072,6 @@ def handle_multi_step_input(input_text):
             dev_awaiting_input = False
             return "Invalid round number"
     
-   
     elif dev_current_command == 'setboss':
         boss_name = input_text
         if set_boss_blind(boss_name):
@@ -1155,8 +1100,7 @@ def handle_multi_step_input(input_text):
     elif dev_current_command == 'addshadow':
         shadowToAdd = input_text
         for s in ShadowCards:
-            if (s.name).lower() == input_text:
-                
+            if (s.name).lower() == input_text:   
                 new_tarot = Consumable(s.image, s.name)
                 Held_Consumables.append(new_tarot)
                 dev_awaiting_input = False
@@ -1176,7 +1120,6 @@ def handle_multi_step_input(input_text):
         dev_awaiting_input = False
         return f"Spectral Card Not Found"
     
-  
     elif dev_current_command == 'money':
         try:
             money = int(input_text)
@@ -1216,7 +1159,6 @@ def handle_multi_step_input(input_text):
             if suit not in ["Hearts", "Diamonds", "Clubs", "Spades"]:
                 return "Invalid suit. Enter: Hearts, Diamonds, Clubs, or Spades"
             
-          
             rank = data['current_rank']
             filepath = os.path.join(SUITS_DIR, suit, f"{rank}Of{suit}.png")
             try:
@@ -1261,13 +1203,11 @@ def draw_dev_command_bar():
     line_height = PixelFontXXS.get_height() + 5
     max_y = HEIGHT - 50
     
-   
     expanded_lines = []
     for line in dev_command_output_lines:
         color = yellow if line.startswith("> ") else white
         for subline in line.split('\n'):
             expanded_lines.append((subline[:100], color))
-    
 
     max_lines = (bar_height - 60) // line_height
     visible = expanded_lines[-max_lines:]
@@ -1279,7 +1219,6 @@ def draw_dev_command_bar():
             screen.blit(text, (10, y_offset))
             y_offset += line_height
     
-
     input_y = HEIGHT - 35
     if dev_awaiting_input:
         prompt = f"{dev_input_prompt}> "
@@ -1348,7 +1287,6 @@ def letter_classes():
     
     global LetterPosx
     
-    
     LetterPosx = [(CENTERLETTERW - LETTERW*3),
                        (CENTERLETTERW - LETTERW*2),
                        (CENTERLETTERW - LETTERW),
@@ -1358,9 +1296,6 @@ def letter_classes():
                        (CENTERLETTERW + LETTERW*3)]
 
     global Letters
-    
-    
-    
     global StartingB
     global StartingA
     global StartingL
@@ -1377,15 +1312,11 @@ def letter_classes():
     StartingO = starting_letters(StartingOimg,LetterPosx[6], CENTERLETTERH)
     Letters = [StartingB, StartingA, StartingL, StartingA2, StartingT, StartingR, StartingO]
     
-    
     global shuffled_letters
     shuffled_letters = LetterPosx.copy()
     
-
     while True:
         random.shuffle(shuffled_letters)
-        
-        
         StartingB.target_x = shuffled_letters[0]
         StartingA.target_x = shuffled_letters[1]
         StartingL.target_x = shuffled_letters[2]
@@ -1393,17 +1324,11 @@ def letter_classes():
         StartingT.target_x = shuffled_letters[4]
         StartingR.target_x = shuffled_letters[5]
         StartingO.target_x = shuffled_letters[6]
-        
-   
         temp_order = sorted(Letters, key=lambda letter: letter.target_x)
         temp_string = ''.join([letter.letter for letter in temp_order])
-        
-
         if temp_string != "BALATRO":
             break
 
-    
-            
 def animate_letters():
     global letter_animation
     screen.fill((255,255,255))
@@ -1452,8 +1377,6 @@ def pop_and_check_retrigger(card, scoring_queue):
         card.scaling_delay         = 0
         card.rotation_speed        = 0
         card.angle                 = 0
-        card.lucky_triggered       = False
-        card.lucky_mult            = False
         card.state                 = "played"
         card.scoring_animating     = True
         card.scoring_y             = 0 
@@ -1472,16 +1395,17 @@ mainMusic.set_volume(0.1)
 mainMusic.play(-1)
 mainMusicPlaying = True
 
-    
-    
 perm_deck = []
 default_deck = []
 Active_Jokers = []
 packHand = []
 scoring_queue = []
+selectedMenu = "Hands"
+menuOpen = False
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
+base_chance = 1
 max_handsize = 8
 handsize = max_handsize
 chips = 0
@@ -1518,6 +1442,7 @@ rerolls = 0
 cards_found = 0
 lastFool = None
 locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
+unlocked_hands = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush"]
 locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
 Hand_levels = {
     "High Card": 1,
@@ -1664,10 +1589,11 @@ BOSS_DESC = {
     "The Magnet": "All cards with a red suit are frozen at the start of the round",
     "Jade Butterfly": "idk bro figure it out",
     "Korma Burger": "mmmmmmmm burgre",
-    "The ": "",
-    "The ": "",
-    "The ": "",
+    "Sunset Fridge": "im a fridge",
+    "Wedgewood Log": "you can get my log",
+    "Wisteria Harmony": "[insert angel chorus here]",
     }
+
 invincibleActive = False
 class Card:
     card_id_counter = 0
@@ -1692,8 +1618,6 @@ class Card:
         self.suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
-        self.lucky_triggered = False
-        self.lucky_mult = False
         self.retriggers = 0 
         self.remaining = 0
         
@@ -1749,7 +1673,8 @@ class Card:
             filepath = os.path.join(SUITS_DIR, self.suit, filename)
 
         raw_image = pygame.image.load(filepath).convert_alpha()
-
+        if current_blind.name in ("The Bridge", "The Chair", "The Splinter", "The Bird", "The Bow", "The Arrow", "The Cone"):
+            boss_debuff()
         self.image = pygame.transform.smoothscale(
             raw_image,
             (HEIGHT/8, HEIGHT/5.82)
@@ -1825,8 +1750,6 @@ class Card:
                     chip_indicators.append(indicator)
             self.angle += self.rotation_speed
 
-
-
 chip_indicators = []
 class ChipIndicator:
     def __init__(self, x, y, value, color):
@@ -1892,25 +1815,25 @@ def boss_debuff():
     if round_num % 3 == 0:
         if current_blind.name == "The Bird":
             for card in deck:
-                if card.suit == "Hearts":
+                if card.suit == "Hearts" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The Arrow":
             for card in deck:
-                if card.suit == "Spades":
+                if card.suit == "Spades" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The Cone":
             for card in deck:
-                if card.suit == "Clubs":
+                if card.suit == "Clubs" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The Bow":
             for card in deck:
-                if card.suit == "Diamonds":
+                if card.suit == "Diamonds" or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
@@ -1943,8 +1866,8 @@ def boss_debuff():
                     card.is_debuffed = False
         if current_blind.name == "The Luck":
             for card in deck:
-                rand = random.randint(1, 5)
-                if rand == 1 and not card.debuff_assigned:
+                rand = random.randint(min(base_chance, 5), 5)
+                if rand == 5 and not card.debuff_assigned:
                     card.is_debuffed = True
         if current_blind.name == "The Fork":
             if hands >= max_hand:
@@ -1974,18 +1897,19 @@ def boss_debuff():
                     card.is_debuffed = True
         if current_blind.name == "The Magnet":
             for card in deck:
-                if card.suit in ("Hearts", "Diamonds"):
+                if card.suit in ("Hearts", "Diamonds") or card.enhancement == "Wild":
+                    card.is_frozen = True
                     card.freeze_timer = 4
         if current_blind.name == "The Splinter":
             for card in deck:
-                if card.suit in ("Spades", "Clubs"):
+                if card.suit in ("Spades", "Clubs") or card.enhancement == "Wild":
                     card.is_debuffed = True
                 else:
                     card.is_debuffed = False
         if current_blind.name == "The South":
             for card in deck:
-                rand = random.randint(1, 5)
-                if rand == 1 and not card.debuff_assigned:
+                rand = random.randint(min(base_chance, 5), 5)
+                if rand == 5 and not card.debuff_assigned:
                     card.is_frozen = True
                     card.freeze_timer = random.randint(1, 3)
         if current_blind.name == "The Band":
@@ -2131,7 +2055,6 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             surface.blit(rotated_glitch, glitch_rect.topleft)
         card.rect = rect
 
-
 class Animation():
     def __init__(self, sprite_name, frame_width, frame_height, fps, frames, xpos, ypos, setWidth, setHeight):
         self.sprite_sheet = sprite_name
@@ -2165,9 +2088,7 @@ class Animation():
                 self.reset_animation()
                 return
         if currentFrame % self.frame_interval == 0:
-            self.current_frame = (self.current_frame + 1) % self.frames
-            
-                
+            self.current_frame = (self.current_frame + 1) % self.frames      
         
         screen.blit(self.cached_frames[self.current_frame], (self.xpos, self.ypos))
       
@@ -2232,7 +2153,6 @@ def animateGlitch():
         glitch_index = 0 
     glitchimage = glitchframes[int(glitch_index)]
     
-
 dev_command_bar_active = False
 dev_command_input = ""
 dev_command_history = []
@@ -2244,12 +2164,9 @@ dev_multi_step_data = {}
 shop_down = False
 card_play_counts = {} 
 def shopAnimaton():
-    
     global shop_down
-
     if GameState not in ("Shop", "TarotPack", "SpectralPack", "ShadowPack", "StandardPack") and not shop_down:
         shopAnimation.current_frame = 0
-        
     if GameState in ("Shop", "TarotPack", "SpectralPack", "ShadowPack", "StandardPack"):
         if shop_down == False:
             if shopAnimation.current_frame >= 66:
@@ -2484,7 +2401,6 @@ class Joker:
                 else:
                     self.sound.play(0)
 
-    
         if self.name in jokerDescription:
             self.description = jokerDescription[self.name]
            
@@ -2496,6 +2412,8 @@ class Joker:
             desc = desc.replace("{value}", str(JokerEffects.wetFloorValue))
         elif self.name == "Ptsd Joker":
             desc = desc.replace("{value}", str(1 + (round(JokerEffects.last_hand_counter, 1))))
+        elif self.name == "Dead Frog":
+            desc = desc.replace("{value}", str(round(20 * JokerEffects.FrogCounter)))
         elif self.name == "Pool Table":
             desc = desc.replace("{value}", str(round(JokerEffects.poolMoney,1)))
         elif self.name == "Skip Joker":
@@ -2933,11 +2851,11 @@ def detect_hand(cards):
         return "", []
     s = len([c for c in cards if c.enhancement == "Glitched"])
     values = sorted([c.value for c in cards if c.enhancement != "Glitched"])
-    suits = [c.suit for c in cards if c.enhancement != "Glitched"]
+    suits = [c.suit for c in cards if c.enhancement not in ("Glitched", "Wild")]
     value_counts = Counter(values)
     suits_counts = Counter(suits)
     if s == 0:
-        is_flush = n == 5 and max(suits_counts.values()) == 5
+        is_flush = n == 5 and 1 == len(suits_counts)
         is_straight = n == 5 and all(values[i] - values[i-1] == 1 for i in range(1,5))
     else:
         is_flush, is_straight = False, False
@@ -3016,9 +2934,7 @@ letter_animation = True
 running = True
 letter_classes()
 animate_letters()
-
 sorted_letters = sorted(Letters, key=lambda letter: letter.xpos)
-    
 startAnimation = True
 
 for i, letter in enumerate(sorted_letters):
@@ -3063,7 +2979,7 @@ def reset_game_variables():
     global target_score, contributing, BLIND_X, BLIND_Y
     global total_score, saved_total_score, is_straight, is_flush
     global ShopCount, totalReward, joker_manager
-    global shopJokerSelected, ActiveJokerSelected
+    global shopJokerSelected, ActiveJokerSelected, locked_hands, locked_cards, unlocked_hands
     global handsize, chips, mult, current_score
     global round_score, scored_counter, total_scoring_count
     global DRAG_THRESHOLD, calc_progress
@@ -3083,6 +2999,10 @@ def reset_game_variables():
     hand.clear()
     Active_Jokers.clear()
     Held_Consumables.clear()
+
+    locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
+    unlocked_hands = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush"]
+    locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
 
     max_handsize = 8
     max_hand = 4
@@ -3148,37 +3068,41 @@ def reset_game_variables():
     cards_found = 0
     lastFool = None
 
+    JokerEffects.reset_joker_variables()
+
     boss_blind = random.choice(boss_blinds)
     current_blind = None
 
     hand_plays = {
-    "High Card": 0,
-    "Pair": 0,
-    "Two Pair": 0,
-    "Three of a Kind": 0,
-    "Straight": 0,
-    "Flush": 0,
-    "Full House": 0,
-    "Four of a Kind": 0,
-    "Straight Flush": 0,
-    "Five of a Kind": 0,
-    "Flush House": 0,
-    "Flush Five": 0
-    }
+        "High Card": 0,
+        "Pair": 0,
+        "Two Pair": 0,
+        "Three of a Kind": 0,
+        "Straight": 0,
+        "Flush": 0,
+        "Full House": 0,
+        "Four of a Kind": 0,
+        "Straight Flush": 0,
+        "Five of a Kind": 0,
+        "Flush House": 0,
+        "Flush Five": 0,
+        "Huh of a What": 0,
+        }
     Hand_levels = {
-    "High Card": 1,
-    "Pair": 1,
-    "Two Pair": 1,
-    "Three of a Kind": 1,
-    "Straight": 1,
-    "Flush": 1,
-    "Full House": 1,
-    "Four of a Kind": 1,
-    "Straight Flush": 1,
-    "Five of a Kind": 1,
-    "Flush House": 1,
-    "Flush Five": 1,
-    }
+        "High Card": 1,
+        "Pair": 1,
+        "Two Pair": 1,
+        "Three of a Kind": 1,
+        "Straight": 1,
+        "Flush": 1,
+        "Full House": 1,
+        "Four of a Kind": 1,
+        "Straight Flush": 1,
+        "Five of a Kind": 1,
+        "Flush House": 1,
+        "Flush Five": 1,
+        "Huh of a What": 1,
+        }
     Hand_Mult = {
         "High Card": 1,
         "Pair": 2,
@@ -3192,6 +3116,7 @@ def reset_game_variables():
         "Five of a Kind": 12,
         "Flush House": 14,
         "Flush Five": 16,
+        "Huh of a What": 10,
         }
 
     Hand_Chips = {
@@ -3207,8 +3132,46 @@ def reset_game_variables():
         "Five of a Kind": 120,
         "Flush House": 140,
         "Flush Five": 160,
+        "Huh of a What": 100,
         }
 
+def get_card_limit(name):
+    match name:
+        case "Chariot":
+            return 2
+        case "Death":
+            return 2
+        case "Devil":
+            return 2
+        case "Empress":
+            return 2
+        case "Hanged Man":
+            return 2
+        case "Hierophant":
+            return 2
+        case "Justice":
+            return 1
+        case "Lovers":
+            return 1
+        case "Magician":
+            return 2
+        case "World":
+            return 3
+        case "Star":
+            return 3
+        case "Sun":
+            return 3
+        case "Moon":
+            return 3
+        case "Strength":
+            return 2
+        case "Tower":
+            return 1
+        case _:
+            return 6
+
+def get_spectral_effect(name):
+    pass
 
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
@@ -3288,6 +3251,10 @@ def get_tarot_effect(name):
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement = "Steel"
                         break
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Steel"
+                        break
         lastFool = "Chariot"
     if name == "Death":
         if len(selected_cards) == 2:
@@ -3300,6 +3267,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Gold"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Gold"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3310,6 +3281,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Mult"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Mult"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3329,6 +3304,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Bonus"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Bonus"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3339,6 +3318,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Glass"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Glass"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3349,6 +3332,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 2:
             for card in selected_cards:
                 card.enhancement = "Wild"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Wild"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3359,6 +3346,10 @@ def get_tarot_effect(name):
         if len(selected_cards) < 3:
             for card in selected_cards:
                 card.enhancement = "Lucky"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement = "Lucky"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3369,6 +3360,10 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Clubs"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Clubs"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3379,6 +3374,10 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Diamonds"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3393,6 +3392,11 @@ def get_tarot_effect(name):
                     idx = keys.index(card.rank)
                     card.rank = keys[idx + 1 if idx < len(RANK_VALUES) else 0]
                 card.value = RANK_VALUES[card.rank]
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.rank = card.rank
+                        perm_card.value = card.value
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3405,12 +3409,16 @@ def get_tarot_effect(name):
             for card in selected_cards:
                 card.suit = "Hearts"
                 card.name = f"{card.rank} of {card.suit}"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Hearts"
+                        perm_card.name = card.name
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
                         perm_card.name = card.name
-                        perm_card.refresh_image()
                         break
             lastFool = "Sun"
     if name == "Tower":
@@ -3421,14 +3429,18 @@ def get_tarot_effect(name):
                 card.value = 0
                 card.chip_value = 50
                 card.suit = "Glitched"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Glitched", 0, 0, "Glitched"
+                        break
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.enhancement, perm_card.rank, perm_card.value, perm_card.suit = "Glitched", 0, 0, "Glitched"
                         break
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
-        wheelnum = random.randint(1, 4)
-        if wheelnum == 1:
+        wheelnum = random.randint(min(base_chance, 4), 4)
+        if wheelnum == 4:
             jonker = random.choice(Active_Jokers)
             wheelnum2 = random.randint(1, 3)
             if wheelnum2 == 1:
@@ -3441,6 +3453,10 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Spades"
+                for perm_card in deck:
+                    if perm_card.card_id == card.card_id:
+                        perm_card.suit = "Spades"
+                        break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
@@ -3459,7 +3475,7 @@ def get_shadow_effect(name):
         Hand_levels["Four of a Kind"] += 1
         lastFool = "Fists"
     elif name == "Glitch":
-        Hand_levels["Flush House"] += 1
+        Hand_levels["Huh of a What"] += 1
         lastFool = "Glitch"
     elif name == "Ice":
         Hand_levels["Two Pair"] += 1
@@ -3486,7 +3502,6 @@ def get_shadow_effect(name):
         Hand_levels["Three of a Kind"] += 1
         lastFool = "Trick"
 
-    
 init_video()
 game = True
 
@@ -3519,9 +3534,7 @@ while game:
                 sys.exit()
 
             keys = pygame.key.get_pressed()
-
             if event.type == pygame.KEYDOWN:
-    
                 if event.unicode:
                         dev_progress += event.unicode.lower()
  
@@ -3534,7 +3547,6 @@ while game:
                             dev_toggle = True
                                     
             if event.type == pygame.MOUSEBUTTONDOWN:
-                
                 if event.button == 1:
                     if start_button_rect.collidepoint(event.pos):
                         buttonClick.play(0)
@@ -3553,19 +3565,18 @@ while game:
                             seed += num
                         random.seed(seed)
                         running = True
-                    elif settings:  
+                    elif settings2.toggle:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 buttonClick.play(0)
-                                setting.toggle = not setting.toggle
-                           
+                                setting.toggle = not setting.toggle 
                                 setting.update_img()
                     elif setting_rect.collidepoint(event.pos): 
                         buttonClick.play(0)
-                        settings = True
+                        settings2.toggle = True
                     if xbutton_rect.collidepoint(event.pos):
                         buttonClick.play(0)
-                        settings = False
+                        settings2.toggle = False
             
         screen.fill((0, 0, 0))  
         spinningBG.animate()
@@ -3601,7 +3612,7 @@ while game:
             letter.draw()
         screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
         
-        if settings:
+        if settings2.toggle:
             screen.fill((255,255,255))
             draw_settings()
             screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
@@ -3622,7 +3633,7 @@ while game:
             screen.blit(cursor_normal, cursor_pos)   
 
         if Focy.toggle: 
-            if random.randint(1, 20000)  == 1:
+            if random.randint(min(base_chance, 20000), 20000)  == 20000:
                 
                 subprocess.run(['powershell', '-Command', 
                 '$obj = New-Object -ComObject WScript.Shell;'
@@ -3642,7 +3653,6 @@ while game:
     overlay.set_alpha(128)
     
     while running:
-
         if Music.toggle:
             if not mainMusicPlaying:
                 mainMusic.play(-1)
@@ -3659,17 +3669,13 @@ while game:
                 Active_Jokers.append(new_joker)
                 joker_manager = initialize_joker_effects(Active_Jokers)
         global discard_queue
-        question.should_draw = True
         mouse_pos = pygame.mouse.get_pos()
-        
         cursor_pos = pygame.mouse.get_pos()
-        
         hovering = False
         for toggle in guiToggleList:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
                 hovering = True
                 break
-
         hovered_joker = None
         for joker in Active_Jokers:
             if joker.x > 0 and joker.rect.collidepoint(cursor_pos):
@@ -3685,7 +3691,6 @@ while game:
                 break
             
         update_gui_buttons()
-
         if Atttention_helper.toggle and not prev_attention_state:
             init_video()
         elif not Atttention_helper.toggle and prev_attention_state:
@@ -3711,21 +3716,18 @@ while game:
                         dev_command_output_lines.append(result)
                         dev_command_history.append(dev_command_input)
                         dev_command_input = ""
-                        
                     elif event.key == pygame.K_ESCAPE:
                         dev_command_bar_active = False
                         dev_command_input = ""
                         dev_awaiting_input = False
                         dev_current_command = None
                         pygame.mouse.set_visible(False)
-                        
                     elif event.key == pygame.K_BACKSPACE:
                         dev_command_input = dev_command_input[:-1]
                         
                     elif event.unicode and len(dev_command_input) < 100:
                         dev_command_input += event.unicode
                 
-               
                 elif event.unicode and not dev_command_bar_active:
                     dev_progress += event.unicode.lower()
                     dev_progress = dev_progress[-len(dev_code):]
@@ -3735,7 +3737,7 @@ while game:
                         dev_progress = ""
                 
                 if event.key == pygame.K_ESCAPE and not dev_command_bar_active:
-                    question.toggle = not question.toggle
+                    settings = not settings
                     
             if event.type == pygame.MOUSEWHEEL and help_menu:
                 scroll_offset += event.y * scroll_speed
@@ -3756,7 +3758,7 @@ while game:
                         help_menu = False
                         helpButton.toggle = False
 
-                    if settings:  
+                    if settings2.toggle:
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
                                 buttonClick.play(0)
@@ -3765,9 +3767,23 @@ while game:
                         
                     if xbutton_rect.collidepoint(event.pos):
                         buttonClick.play(0)
-                        settings = False
                         settings2.toggle = False
                         
+                    if RunInfo_rect.collidepoint(mouse_pos):
+                        menuOpen = True
+
+                    if MenuBackButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        menuOpen = False
+
+                    if MenuPokerHandsButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        selectedMenu = "Hands"
+
+                    if MenuVouchersButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        selectedMenu = "Vouchers"
+
+                    if MenuBlindsButton_rect.collidepoint(mouse_pos) and menuOpen:
+                        selectedMenu = "Blinds"
+
                     if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                         GameState = "Shop"
                         buttonClick.play(0)
@@ -3782,7 +3798,6 @@ while game:
                                     if card not in Shop_Cards and card not in Active_Jokers:
                                         rare_joker = False
                                         break
-
                                 elif rarity_choice <= 28:
                                     card = random.choice(TarotCards)
                                     if card not in Shop_Cards and card not in Held_Consumables:
@@ -3826,13 +3841,13 @@ while game:
                             ShopPacks.append(pack)
                         break
                        
-                    if settings == False:
+                    if settings:
                         for toggle in guiToggleList:
                             if toggle.should_draw and toggle.rect.collidepoint(mouse_pos):
-                                toggle.toggle = not question.toggle
+                                toggle.toggle = not settings2.toggle
                                 buttonClick.play(0)
-                                if toggle == settings2:
-                                    settings = True
+                                if toggle == settings:
+                                    settings2.toggle = True
                                 if toggle == githubButton:
                                     webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
                                     toggle.toggle = False
@@ -3918,7 +3933,7 @@ while game:
                             if len(selected_cards) > 0:
                                 hand_type, contributing = detect_hand(selected_cards)
                                 saved_base_chips = (Hand_Chips.get(hand_type, 0) * Hand_levels.get(hand_type, 1))
-                                saved_base_mult = Hand_Mult.get(hand_type, 1)
+                                saved_base_mult = Hand_Mult.get(hand_type, 1) * Hand_levels.get(hand_type, 1)
                                 saved_level = Hand_levels.get(hand_type, 1)
                                 saved_hand = hand_type
                                 if hand_type == "Royal Flush":
@@ -3927,6 +3942,7 @@ while game:
                                     saved_level = Hand_levels.get("Straight Flush", 1)
                                 if hand_type in locked_hands:
                                     locked_hands.remove(hand_type)
+                                    unlocked_hands.append(hand_type)
                                     match hand_type:
                                         case "Five of a Kind":
                                             locked_cards.remove("The Reaper")
@@ -4009,8 +4025,7 @@ while game:
                                             joker_manager = initialize_joker_effects(Active_Jokers)
                                             Shop_Cards.remove(card) 
                                             money -= card.price
-                                            purchases += 1
-                                            
+                                            purchases += 1    
                                     if isinstance(card, Consumable):
                                         if len(Held_Consumables) < maxConsCount:
                                             shopJokerSelected = False
@@ -4023,46 +4038,47 @@ while game:
                                 if pack.state == "selected" and money >= pack.price:
                                     money -= pack.price
                                     shopJokerSelected = False
+                                    pack.state = "hand"
                                     selection = pack.selection
                                     if "Standard" in pack.name:
                                         GameState = "StandardPack"
                                         for i in range(pack.cardNum):
                                             randrank = random.choice(RANKS_WRITTEN)
                                             randsuit = random.choice(SUITS)
-                                            num = random.randint(1, 100)
-                                            if num < 3:
+                                            num = random.randint(min(base_chance, 100), 100)
+                                            if num > 97:
                                                 enhancement = "Bonus"
-                                            elif num < 6:
+                                            elif num > 94:
                                                 enhancement = "Glass"
-                                            elif num < 9:
+                                            elif num > 91:
                                                 enhancement = "Gold"
-                                            elif num < 12:
+                                            elif num > 88:
                                                 enhancement = "Lucky"
-                                            elif num < 15:
+                                            elif num > 85:
                                                 enhancement = "Mult"
-                                            elif num < 18:
+                                            elif num > 82:
                                                 enhancement = "Steel"
-                                            elif num < 21:
+                                            elif num > 79:
                                                 enhancement = "Glitched"
                                             else:
                                                 enhancement = "Default"
-                                            num = random.randint(1, 100)
-                                            if num < 3:
+                                            num = random.randint(min(base_chance, 100), 100)
+                                            if num > 97:
                                                 edition = "Polychrome"
-                                            elif num < 6:
+                                            elif num > 94:
                                                 edition = "Foil"
-                                            elif num < 9:
+                                            elif num > 91:
                                                 edition = "Holographic"
                                             else:
                                                 edition = None
-                                            num = random.randint(1, 100)
-                                            if num < 3:
+                                            num = random.randint(min(base_chance, 100), 100)
+                                            if num > 97:
                                                 seal = "Red"
-                                            elif num < 6:
+                                            elif num > 94:
                                                 seal = "Gold"
-                                            elif num < 9:
+                                            elif num > 91:
                                                 seal = "Blue"
-                                            elif num < 9:
+                                            elif num > 88:
                                                 seal = "Purple"
                                             else:
                                                 seal = None
@@ -4077,7 +4093,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(ShadowCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
                                                     break
                                     if "Spectral" in pack.name:
@@ -4085,7 +4101,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(SpectralCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
                                                     break
                                         reset_deck_for_new_round()
@@ -4101,7 +4117,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(TarotCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
                                                     break
                                         reset_deck_for_new_round()
@@ -4122,7 +4138,6 @@ while game:
                                 Active_Jokers.remove(card)
                                 joker_manager = initialize_joker_effects(Active_Jokers)
                                 money += int(card.price / 2)
-                               
                                 if card.name == "Jevil":
                                     jevilActive = False
                                 if card.name == "Pool Table":
@@ -4131,7 +4146,6 @@ while game:
                                     RulesHand = None
                                 if card.name == "Getting An Upgrade":
                                     rare_joker = True
-
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -4183,9 +4197,7 @@ while game:
                             rerollCost += 1
                             for i in range(ShopCount):
                                 rarity_choice = random.randint(1, 100)
-                            
                                 while True:
-                                    
                                     if rare_joker:
                                         card = random.choice(Rare_Jokers)
                                         if card not in Shop_Cards and card not in Active_Jokers:
@@ -4237,9 +4249,7 @@ while game:
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
                             jonkler_sphere_clicked = False
-                        
                         reset_deck_for_new_round()
-                        
                         if jevilActive:
                             newSuit = random.choice(['Spades', 'Hearts', 'Clubs', 'Diamonds'])
                             for card in perm_deck:
@@ -4579,7 +4589,7 @@ while game:
                                     c.slot = idx
         screen.blit(GameBackground_img, (0, 0))
         screen.blit(SideBar_img, (0, 0))
-        
+        screen.blit(RunInfo, RunInfo_rect.topleft)
         if scoring_queue and not calculating:
                     for card in scoring_queue:
                         if card.is_contributing:
@@ -4605,15 +4615,21 @@ while game:
                                             case "Bonus":
                                                 saved_base_chips += 30
                                             case "Lucky":
-                                                if card.lucky_triggered:
-                                                    if num <= 5:
-                                                        saved_base_mult += 20
-                                                    if num1 <= 15:
-                                                        money += 20
+                                                num = random.randint(min(base_chance, 5), 5)
+                                                if num == 5:
+                                                    saved_base_mult += 20
+                                                num1 = random.randint(min(base_chance, 5), 15)
+                                                if num1 == 15:
+                                                    money += 20
+                                                if num1 != 15 and num != 5:
+                                                    card.scoring_complete = True
+                                                    scoring_queue.remove(card)
+                                                    if len(scoring_queue) > 0:
+                                                        scoring_queue[0].scaling = True
                                             case "Glass":
-                                                num = random.randint(1, 4)
+                                                num = random.randint(min(base_chance, 4), 4)
                                                 saved_base_mult *= 2
-                                                if num == 1:
+                                                if num == 4:
                                                     perm_deck.remove(card)
                                                     card.trigger("Break", 0)
                                     card.base_scoring_complete = True
@@ -4629,31 +4645,30 @@ while game:
                                                 case "Bonus":
                                                     card.trigger("Chips", 30)
                                                 case "Lucky":
-                                                    if not card.lucky_triggered:
-                                                        num = random.randint(1, 5)
-                                                        card.lucky_triggered = True
-                                                    if num == 1:
+                                                    if num == 5:
                                                         card.trigger("Mult", 20)
+                                                    if num1 == 15:
+                                                        card.trigger("Money", 20)     
                                                 case "Glass":
                                                     card.trigger("XMult", 2)
-                                            if card.enhancement == "Lucky" and not card.lucky_mult:
-                                                if not card.lucky_triggered:
-                                                    num1 = random.randint(1, 15)
-                                                if num1 == 1: 
-                                                    card.trigger("Money", 20)
+                                                case _:
+                                                    pass       
                                         else:
                                             card.trigger("Debuff", 0)
                                 if card.base_scoring_complete:
                                     if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                         if card.scoring_complete:
                                             pop_and_check_retrigger(card, scoring_queue)
+                                            card.enhancement_timer = 10
+                                            card.base_scoring_complete = False
+                                            card.scoring_complete = False
+                                            card.scoring_animating = False
                                     else:
                                         pop_and_check_retrigger(card, scoring_queue)
                                         card.enhancement_timer = 10
                                         card.base_scoring_complete = False
                                         card.scoring_complete = False
                                         card.scoring_animating = False
-
 
                                 context = {
                                     'card': card,
@@ -4672,8 +4687,7 @@ while game:
                                     for joker_name in context['triggered_jokers']:
                                         if joker_name == "Jevil":
                                             jevilActive = True
-                                    
-                        
+                                        
         if not calculating:
             selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring", "scored")]
             if len(selected_cards) > 0:
@@ -4900,17 +4914,33 @@ while game:
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
-            useX, useY = get_selected_Shop_Cards(joker)
+            limit = get_card_limit(joker.name)
+            if limit >= len(selected_cards):
+                useX, useY = get_selected_Shop_Cards(joker)
+                CuseX, CuseY = -100, -100
+            else:
+                useX, useY = -100, -100
+                CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
-                UseButton_rect = UseButton_img.get_rect()
-                UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+            elif CuseX > 0:
+                screen.blit(CantUseButton_img, (CuseX + WIDTH/30, CuseY - HEIGHT/30))
+            UseButton_rect = UseButton_img.get_rect()
+            UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in PackCards:
-            useX, useY = get_selected_Shop_Cards(joker)
+            limit = get_card_limit(joker.name)
+            if limit >= len(selected_cards):
+                useX, useY = get_selected_Shop_Cards(joker)
+                CuseX, CuseY = -100, -100
+            else:
+                useX, useY = -100, -100
+                CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
-                UseButton_rect = UseButton_img.get_rect()
-                UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+            elif CuseX > 0:
+                screen.blit(CantUseButton_img, (CuseX + WIDTH/30, CuseY - HEIGHT/30))
+            UseButton_rect = UseButton_img.get_rect()
+            UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in ShopPacks:
             buyX, buyY = get_selected_Shop_Cards(joker)
             if buyX > 0:
@@ -4947,7 +4977,6 @@ while game:
             consSpacing = 600 / (len(ShopPacks) + 1) * WIDTH/2500
             draw_consumables(screen, ShopPacks, WIDTH/1.4, HEIGHT/1.14, spread=consSpacing)
 
-
         if hovered_joker and hovered_joker.description:
             if hovered_joker not in Shop_Cards or GameState == "Shop":
                 tip_w = int(WIDTH / 8)
@@ -4973,21 +5002,17 @@ while game:
                     tip_y = int(hovered_joker.rect.bottom + 10)
                 tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
                 draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30))
-        
         update_card_animation()
-
         if SO_SERIOUS.toggle or jonkler_sphere_active:
             soserious.animate()
             if not soseriousmusic.get_num_channels() and SO_SERIOUS.toggle: 
                 soseriousmusic.play(-1)
-            
             if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
                 text = PixelFontXS.render("Click Jonkler to discard first hand!", True, white)
                 text_rect = text.get_rect(center=(soserious.xpos + soserious.setWidth//2, soserious.ypos + soserious.setHeight + 20))
                 screen.blit(text, text_rect)
         else:
             soseriousmusic.stop()
-
         if current_blind:
             current_blind.update()
             current_blind.draw(screen)
@@ -5004,15 +5029,13 @@ while game:
             screen.blit(STARTCARD, (card_x, 0))
 
         shopAnimaton()
-        if question.toggle:
+        if settings:
                 screen.blit(overlay, (0, 0))
                 update_gui_buttons()
                 for button in guibutton:
                     button.draw()
-        if settings2.toggle:
-            settings = True
 
-        if settings:
+        if settings2.toggle:
             screen.fill((255,255,255))
             draw_settings()
             screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
@@ -5020,6 +5043,43 @@ while game:
         chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
         for indicator in chip_indicators:
             indicator.draw(screen)
+
+        if menuOpen:
+            dimScreen = pygame.Surface((WIDTH, HEIGHT))
+            dimScreen.fill((0, 0, 0))
+            dimScreen.set_alpha(50)
+            screen.blit(dimScreen, (0, 0))
+            screen.blit(GameMenu_img, (WIDTH/5 , HEIGHT/20))
+            screen.blit(MenuBack_img, (WIDTH/4.53 , HEIGHT/1.15))
+            screen.blit(MenuBlinds_img, (WIDTH/1.67 , HEIGHT/8))
+            screen.blit(MenuVouchers_img, (WIDTH/2.4 , HEIGHT/8))
+            screen.blit(MenuPokerHands_img, (WIDTH/4.25 , HEIGHT/8))
+            if selectedMenu == "Hands":
+                screen.blit(Pointer_img, (WIDTH/3.5 , HEIGHT/16))
+                i = 0
+                for h in reversed(unlocked_hands):
+                    i += 1
+                    screen.blit(MenuHandType_img, (WIDTH/4.25 , HEIGHT/4 + i * 60))
+                    text = PixelFontS.render(f"{h}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/2.25, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"lvl. {Hand_levels[h]}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/3.6, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"{Hand_Chips[h] * Hand_levels[h]}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/1.695, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"{Hand_Mult[h] * Hand_levels[h]}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/1.505, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+                    text = PixelFontS.render(f"{int(hand_plays[h] / 50)}", True, white)
+                    text_rect = text.get_rect(center=(WIDTH/1.345, HEIGHT/3.69 + i * 60))
+                    screen.blit(text, text_rect)
+            elif selectedMenu == "Blinds":
+                screen.blit(Pointer_img, (WIDTH/1.54 , HEIGHT/16))
+            elif selectedMenu == "Vouchers":
+                screen.blit(Pointer_img, (WIDTH/2.14 , HEIGHT/16))
+
 
         if GameState == "Dead":
             redScreen = pygame.Surface((WIDTH, HEIGHT))
@@ -5094,7 +5154,7 @@ while game:
                 screen.blit(blurred, (0, 0))
         
         if Focy.toggle:
-            if random.randint(1, 15000)  == 1:
+            if random.randint(min(base_chance, 15000), 15000)  == 15000:
                 subprocess.run(['powershell', '-Command', 
                 '$obj = New-Object -ComObject WScript.Shell;'
                 '$obj.SendKeys([char]173);'
@@ -5143,7 +5203,6 @@ while game:
                 if RulesHand is None:
                     RulesHand = random.choice(["Two Pair","High Card","Three of a Kind","Four of a Kind","Five of a Kind","Flush House","Flush Five","Straight","Straight Flush","Full House","Flush House","Pair","Flush","Royal Flush"])
             
-
         for card in hand:
             card.update()
             if card.state == "discarded":
@@ -5191,7 +5250,6 @@ while game:
                         c.vy = 0
                 scoring_in_progress = False
                 scored = True
-
         if scored:
             for joker in Active_Jokers:
                 if joker.name == "Pool Table":
@@ -5204,7 +5262,6 @@ while game:
             else:
                 hand_type_temp = saved_hand
                 contributing_temp = []
-            
             context = {
                 'chips': saved_base_chips,
                 'mult': saved_base_mult,
@@ -5217,9 +5274,7 @@ while game:
                 'rulesHand': RulesHand,
                 'blind': current_blind,
                 'bosses': boss_blinds,
-                
-
-
+                "most_played" : max(hand_plays.items(), key=lambda item: item[1])
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
@@ -5235,14 +5290,14 @@ while game:
                     if JokerEffects.last_hand_counter == 0:
                         ptsdExplosion.play(0)
               
-
-
             for c in selected_cards:
                 c.state = "scored"
-            
+            steelnum = 0
             for card in hand:
                 if card.enhancement == "Steel":
-                    saved_base_mult *= 1.5
+                    steelnum += 1
+                    for i in range(20):
+                        card.trigger("XMult", 1.5)
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             scored = False
@@ -5270,6 +5325,8 @@ while game:
                     for card in hand:
                         if card.enhancement == "Gold":
                             money += 3
+                            for i in range(20):
+                                card.trigger("Money", 3)
                     GameState = "Cashing"
                     context = {
                         'active_jokers': Active_Jokers,
@@ -5293,7 +5350,7 @@ while game:
                     else:
                         current_score = round(final_score * ease_progress)
                     saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
-                    saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress))
+                    saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress) * (1.5 ** steelnum))
                     if saved_hand != 'Royal Flush':
                         hand_plays[saved_hand] += 1
                     else:
@@ -5331,6 +5388,8 @@ while game:
                             for card in hand:
                                 if card.enhancement == "Gold":
                                     money += 3
+                                    for i in range(20):
+                                        card.trigger("Money", 3)
                             GameState = "Cashing"
                             context = {
                                 'active_jokers': Active_Jokers,
@@ -5345,7 +5404,6 @@ while game:
                             for card in hand:
                                 discard_queue.append(card)
                             discarding = True
-
         if discarding:
             if discard_queue:
                 if discard_timer >= 2:
