@@ -21,7 +21,7 @@ pygame.font.init()
 
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
@@ -143,6 +143,7 @@ clock = pygame.time.Clock()
 pygame.mixer.init()
 
 pygame.mouse.set_visible(False)
+pygame.event.set_grab(True)
 
 video_cap = None
 video_surface = None
@@ -268,6 +269,7 @@ GameBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR
 JokerBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "JokerBG.png")), (HEIGHT/1.5, HEIGHT/4.5))
 ConsBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ConsBG.png")), (HEIGHT/2.5, HEIGHT/4.5))
 BlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindBG.png")), (WIDTH/6, HEIGHT*2))
+BossBlindBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BossBlindBG.png")), (WIDTH/6, HEIGHT*2))
 BlindName_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "BlindName.png")), (WIDTH/6.8, HEIGHT/20))
 DeadBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DeadBG.png")), (WIDTH/2.1, HEIGHT/1.1))
 NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRunButton.png")), (WIDTH/6.8, HEIGHT/20))
@@ -363,7 +365,7 @@ MenuVouchersButton_rect = MenuVouchers_img.get_rect()
 MenuVouchersButton_rect.topleft = (WIDTH/2.4 , HEIGHT/8)
 
 RunInfo_rect = RunInfo.get_rect()
-RunInfo_rect.topleft = (WIDTH/24, HEIGHT/1.49)
+RunInfo_rect.topleft = (WIDTH/80, HEIGHT/1.67)
 
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
@@ -511,7 +513,7 @@ githubButton = GUITOGGLES(0, 0, github_link, scale_factor=1.15, isbutton=True)
 quitButton  = GUITOGGLES(0,0, quitButtonimg , scale_factor = 1.15, isbutton = True)
 
 def update_gui_buttons():
-    if settings2.toggle:
+    if settings:
         button_spacing = int(HEIGHT / 10)
         start_y = int(HEIGHT / 10)
         
@@ -1512,6 +1514,7 @@ scoring_in_progress = False
 calculating = False
 discarding = False
 round_num = 1
+visible_round_num = round_num
 ante = 1
 money = 4
 blind_defeated = False
@@ -2185,6 +2188,7 @@ class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
         self.image = image
+        self.imageS = pygame.transform.scale(self.image, (HEIGHT/10, HEIGHT/10))
         self.x = x
         self.y = y
         self.target_x = x
@@ -2321,6 +2325,7 @@ def advance_to_next_blind():
         showdown_blind = random.choice(showdown_blinds)
         current_blind = None
     round_num += 1
+    visible_round_num += 1
     current_score = 0
     totalReward += hands + blind_reward
     hands = max_hand
@@ -3014,6 +3019,7 @@ def reset_game_variables():
     calculating = False
     discarding = False
     round_num = 1
+    visible_round_num = 1
     ante = 1
     money = 4
     blind_defeated = False
@@ -3518,7 +3524,6 @@ while game:
             mainMusic.stop()
             mainMusicPlaying = False
         cursor_pos = pygame.mouse.get_pos()
-        pygame.mouse.set_visible(False)
         hovering = False
         for toggle in guiToggleList:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
@@ -3721,7 +3726,6 @@ while game:
                         dev_command_input = ""
                         dev_awaiting_input = False
                         dev_current_command = None
-                        pygame.mouse.set_visible(False)
                     elif event.key == pygame.K_BACKSPACE:
                         dev_command_input = dev_command_input[:-1]
                         
@@ -3738,6 +3742,12 @@ while game:
                 
                 if event.key == pygame.K_ESCAPE and not dev_command_bar_active:
                     settings = not settings
+                    if settings:
+                        pygame.mouse.set_visible(True)
+                        pygame.event.set_grab(False)
+                    else:
+                        pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
                     
             if event.type == pygame.MOUSEWHEEL and help_menu:
                 scroll_offset += event.y * scroll_speed
@@ -4739,7 +4749,7 @@ while game:
                 text = PixelFontS.render(small_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
-                screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.65))
+                screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
@@ -4748,7 +4758,7 @@ while game:
                 text = PixelFontS.render(small_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
-                screen.blit(small_blind.image,(WIDTH/3, HEIGHT/1.53))
+                screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.48))
             if round_num % 3 == 2:
                 screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
@@ -4759,7 +4769,7 @@ while game:
                 text = PixelFontS.render(big_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
-                screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.65))
+                screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
@@ -4768,24 +4778,24 @@ while game:
                 text = PixelFontS.render(big_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
-                screen.blit(big_blind.image,(WIDTH/1.82, HEIGHT/1.53))
+                screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.48))
             if round_num % 3 == 0:
-                screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/2))
+                screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
                 SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
                 text = PixelFontS.render(boss_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
                 screen.blit(text, text_rect)
-                screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.65))
+                screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.59))
             else:
-                screen.blit(BlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
+                screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
                 text = PixelFontS.render(boss_blind.name, True, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
-                screen.blit(boss_blind.image,(WIDTH/1.31, HEIGHT/1.53))
+                screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.48))
         
         if not calculating:
             if scoring_in_progress:
@@ -4831,7 +4841,7 @@ while game:
             text = PixelFontS.render(f"{target_score_text}", True, red)
             text_rect = text.get_rect(center=(WIDTH/7.4, HEIGHT / 5))
             screen.blit(text, text_rect)
-        text = PixelFontS.render(f"{round_num}", True, orange)
+        text = PixelFontS.render(f"{visible_round_num}", True, orange)
         text_rect = text.get_rect(center=(WIDTH/6.3, HEIGHT / 1.415))
         screen.blit(text, text_rect)
         text = PixelFontS.render(f"{ante}", True, orange)
@@ -5117,7 +5127,7 @@ while game:
             text = PixelFontS.render(f"{ante}", True, white)
             text_rect = text.get_rect(center=(WIDTH/1.115, HEIGHT/2.83))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{round_num}", True, white)
+            text = PixelFontS.render(f"{visible_round_num}", True, white)
             text_rect = text.get_rect(center=(WIDTH/1.115, HEIGHT/2.35))
             screen.blit(text, text_rect)
             screen.blit(current_blind.image,(WIDTH/1.23, HEIGHT/1.77))
@@ -5144,10 +5154,11 @@ while game:
                     bar_y = int((-scroll_offset / total_height) * view_height + 100)
                     pygame.draw.rect(screen, (100, 100, 100), (WIDTH - 40, bar_y, 20, bar_height))
                 screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
-        if hovering:
-            screen.blit(cursor_hover, cursor_pos)
-        else:
-            screen.blit(cursor_normal, cursor_pos)
+        if not settings:
+            if hovering:
+                screen.blit(cursor_hover, cursor_pos)
+            else:
+                screen.blit(cursor_normal, cursor_pos)
         if GameState == "Playing":
             if current_blind.name == "The Eye":
                 blurred = boss_debuff()
