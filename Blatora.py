@@ -65,16 +65,42 @@ Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Load
 screen.blit(Loading_img,(0,0))
 pygame.display.flip()
 
-OSDmono =  pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))
-OSDmono.antialiased = False
-PixelFont = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/20))
-PixelFont.antialiased = False
-PixelFontS = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))
-PixelFontS.antialiased = False
-PixelFontXS = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/50))
-PixelFontXS.antialiased = False
-PixelFontXXS = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/100))
-PixelFontXXS.antialiased = False
+# --- Pixel font: always render at native 10px grid, then scale up ---
+FONT_NATIVE = pygame.freetype.Font(os.path.join(FONTS_DIR, 'Protein Pixels.ttf'), 10)
+FONT_NATIVE.antialiased = False
+
+def render_pixel(text, color, scale=1):
+    if text is None:
+        text = ""
+    surf, rect = FONT_NATIVE.render(str(text), color)
+    if scale > 1:
+        w, h = surf.get_size()
+        surf = pygame.transform.scale(surf, (w * scale, h * scale))
+        rect = surf.get_rect()
+    return surf, rect
+
+def pixel_text_width(text, scale=1):
+    return FONT_NATIVE.get_rect(str(text)).width * scale
+
+def pixel_line_height(scale=1):
+    return FONT_NATIVE.get_sized_height() * scale
+
+class _ScaledFont:
+    def __init__(self, scale):
+        self.scale = scale
+    def render(self, text, color):
+        return render_pixel(text, color, self.scale)
+    def get_sized_height(self):
+        return pixel_line_height(self.scale)
+    def get_rect(self, text):
+        surf, rect = render_pixel(text, (0,0,0), self.scale)
+        return rect
+
+OSDmono   = _ScaledFont(3)
+PixelFont  = _ScaledFont(4)
+PixelFontS = _ScaledFont(3)
+PixelFontXS = _ScaledFont(2)
+PixelFontXXS = _ScaledFont(1)
 toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
@@ -125,10 +151,7 @@ for line in help_lines:
         surfaces = []
         for i, part in enumerate(parts):
             if i % 2 == 1: 
-                bold_font = pygame.freetype.Font(os.path.join(FONTS_DIR, 'OSD mono.ttf'), int(HEIGHT / 30))
-                bold_font.antialiased = False
-                bold_font.strong = True
-                text_surface, _ = bold_font.render(part, (0, 0, 0))
+                text_surface, _ = OSDmono.render(part, (0, 0, 0))
             else:
                 text_surface, _ = OSDmono.render(part, (0, 0, 0))
             surfaces.append(text_surface)
@@ -2325,7 +2348,7 @@ def set_boss_blind(boss_name):
             return True
     return False
 def advance_to_next_blind():
-    global totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, GameState, boss_blind, current_blind, jonkler_sphere_active, jonkler_sphere_clicked
+    global visible_round_num, totalReward, round_num, ante, hands, discards, current_score, money, blind_reward, GameState, boss_blind, current_blind, jonkler_sphere_active, jonkler_sphere_clicked
     if round_num % 3 == 0:
         ante += 1
         boss_blind = random.choice(boss_blinds)
