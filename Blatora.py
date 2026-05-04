@@ -9,6 +9,7 @@ import webbrowser
 import re
 import time
 import pygame
+import pygame.freetype
 import numpy
 import cv2
 import pyperclip
@@ -17,7 +18,7 @@ import JokerEffects
 import copy
 from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_effects
 pygame.init()
-pygame.font.init()
+pygame.freetype.init()
 
 screen_info = pygame.display.Info()
 WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
@@ -64,11 +65,16 @@ Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Load
 screen.blit(Loading_img,(0,0))
 pygame.display.flip()
 
-OSDmono =  pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))        
-PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/10))
-PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/20))
-PixelFontXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))
-PixelFontXXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/50))
+OSDmono =  pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))
+OSDmono.antialiased = False
+PixelFont = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/20))
+PixelFont.antialiased = False
+PixelFontS = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))
+PixelFontS.antialiased = False
+PixelFontXS = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/50))
+PixelFontXS.antialiased = False
+PixelFontXXS = pygame.freetype.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/100))
+PixelFontXXS.antialiased = False
 toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
@@ -104,7 +110,7 @@ help_lines = helptext.split('\n')
 helpMenu_surfaces = []
 scroll_offset = 0
 scroll_speed = 30
-line_height = OSDmono.get_height()
+line_height = OSDmono.get_sized_height()
 jevilActive = False
 
 for line in help_lines:
@@ -119,11 +125,12 @@ for line in help_lines:
         surfaces = []
         for i, part in enumerate(parts):
             if i % 2 == 1: 
-                bold_font = pygame.font.Font(os.path.join(FONTS_DIR, 'OSD mono.ttf'), int(HEIGHT / 30))
-                bold_font.set_bold(True)
-                text_surface = bold_font.render(part, True, (0, 0, 0))
+                bold_font = pygame.freetype.Font(os.path.join(FONTS_DIR, 'OSD mono.ttf'), int(HEIGHT / 30))
+                bold_font.antialiased = False
+                bold_font.strong = True
+                text_surface, _ = bold_font.render(part, (0, 0, 0))
             else:
-                text_surface = OSDmono.render(part, True, (0, 0, 0))
+                text_surface, _ = OSDmono.render(part, (0, 0, 0))
             surfaces.append(text_surface)
 
         total_width = sum(s.get_width() for s in surfaces)
@@ -135,10 +142,10 @@ for line in help_lines:
 
         helpMenu_surfaces.append(combined_surface)
     else:
-        surface = OSDmono.render(clean_line, True, (0, 0, 0))
+        surface, _ = OSDmono.render(clean_line, (0, 0, 0))
         helpMenu_surfaces.append(surface)
 
-helpMenu  = PixelFont.render(helptext, True, (0, 0, 0))
+helpMenu, _  = PixelFont.render(helptext, (0, 0, 0))
 clock = pygame.time.Clock()
 pygame.mixer.init()
 
@@ -404,7 +411,7 @@ class User_settings():
         
         self.toggle = False
         font_size = int(HEIGHT / 40)
-        self.name = PixelFont.render(name, True, (0, 0, 0))
+        self.name, _ = PixelFont.render(name, (0, 0, 0))
         self.visible = visible
         self.img = SETTINGOFFIMG
         settingsList.append(self)
@@ -819,7 +826,7 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
     x = rect.x + padding
     y = rect.y + padding
     max_width = rect.width - padding * 2
-    line_height = font.get_linesize()
+    line_height = font.get_sized_height()
 
     if bg_color:
         pygame.draw.rect(surface, bg_color, rect)
@@ -856,7 +863,7 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
 
         stripped = paragraph.lstrip(' ')
         indent_chars = len(paragraph) - len(stripped)
-        indent_px = font.size(' ')[0] * indent_chars
+        indent_px = font.get_rect(' ').width * indent_chars
 
         segments = parse_segments(stripped)
 
@@ -869,11 +876,11 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
         line_words = []
         line_width = 0
         for word, col in words:
-            w = font.size(word + ' ')[0]
+            w = font.get_rect(word + ' ').width
             if line_width + w > max_width - indent_px and line_words:
                 draw_x = x + indent_px
                 for lw, lc in line_words:
-                    surf = font.render(lw + ' ', True, lc)
+                    surf, _ = font.render(lw + ' ', lc)
                     surface.blit(surf, (draw_x, y))
                     draw_x += surf.get_width()
                 y += line_height
@@ -885,7 +892,7 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
         if line_words:
             draw_x = x + indent_px
             for lw, lc in line_words:
-                surf = font.render(lw + ' ', True, lc)
+                surf, _ = font.render(lw + ' ', lc)
                 surface.blit(surf, (draw_x, y))
                 draw_x += surf.get_width()
             y += line_height
@@ -1202,7 +1209,7 @@ def draw_dev_command_bar():
     screen.blit(bar_surface, (0, bar_y))
     pygame.draw.rect(screen, yellow, (0, bar_y, WIDTH, bar_height), 2)
     
-    line_height = PixelFontXXS.get_height() + 5
+    line_height = PixelFontXXS.get_sized_height() + 5
     max_y = HEIGHT - 50
     
     expanded_lines = []
@@ -1217,7 +1224,7 @@ def draw_dev_command_bar():
     y_offset = bar_y + 10
     for subline, color in visible:
         if y_offset + line_height < max_y:
-            text = PixelFontXXS.render(subline, True, color)
+            text, _ = PixelFontXXS.render(subline, color)
             screen.blit(text, (10, y_offset))
             y_offset += line_height
     
@@ -1226,9 +1233,9 @@ def draw_dev_command_bar():
         prompt = f"{dev_input_prompt}> "
     else:
         prompt = "> "
-    prompt_text = PixelFontXS.render(prompt, True, yellow)
+    prompt_text, _ = PixelFontXS.render(prompt, yellow)
     screen.blit(prompt_text, (10, input_y))
-    input_text = PixelFontXS.render(dev_command_input + "_", True, white)
+    input_text, _ = PixelFontXS.render(dev_command_input + "_", white)
     screen.blit(input_text, (10 + prompt_text.get_width(), input_y))
             
 class starting_letters():
@@ -1792,7 +1799,7 @@ class ChipIndicator:
         pygame.draw.polygon(diamond_surface, (r, g, b, self.alpha), adjusted_points)
         diamond_surface.set_alpha(self.alpha)
         surface.blit(diamond_surface, (self.x - diamond_size, self.y - diamond_size))
-        text = PixelFont.render(f"+{self.value}", True, (255, 255, 255))
+        text, _ = PixelFont.render(f"+{self.value}", (255, 255, 255))
         text.set_alpha(self.alpha)
         text_rect = text.get_rect(center=(self.x, self.y))
         surface.blit(text, text_rect)
@@ -2837,7 +2844,7 @@ def wrap_text(text, font, max_width):
     current_line = []
     for word in words:
         test_line = ' '.join(current_line + [word])
-        if font.size(test_line)[0] <= max_width:
+        if font.get_rect(test_line).width <= max_width:
             current_line.append(word)
         else:
             if current_line:
@@ -4734,8 +4741,8 @@ while game:
         if GameState == "Shop":
             screen.blit(ShopBackground_img, (WIDTH/3, HEIGHT/2))
             screen.blit(RerollButton_img, (WIDTH/2.95, HEIGHT/1.53))
-            text = PixelFontS.render(f"${rerollCost}", True, white)
-            text_rect = text.get_rect(center=(WIDTH/2.55, HEIGHT / 1.4))
+            text, text_rect = PixelFontS.render(f"${rerollCost}", white)
+            text_rect.center = (int(WIDTH/2.55), int(HEIGHT / 1.4))
             screen.blit(text, text_rect)
             screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
         if GameState == "Blinds":
@@ -4746,11 +4753,8 @@ while game:
                 screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.18))
                 SelectBlind_rect.topleft = (WIDTH/3.4, HEIGHT/1.93)
                 SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
-                text = PixelFontS.render(small_blind.name, True, black)
-                text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
-                screen.blit(text, text_rect)
-                text = PixelFontS.render(small_blind.name, True, black)
-                text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.65))
+                text, text_rect = PixelFontS.render(small_blind.name, black)
+                text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.59))
             else:
@@ -4758,7 +4762,7 @@ while game:
                 screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
                 screen.blit(SelectBlind_img, (WIDTH/3.4, HEIGHT/1.8))
                 screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.12))
-                text = PixelFontS.render(small_blind.name, True, black)
+                text, _ = PixelFontS.render(small_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.48))
@@ -4769,7 +4773,7 @@ while game:
                 screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.18))
                 SelectBlind_rect.topleft = (WIDTH/1.97, HEIGHT/1.93)
                 SkipBlind_rect.topleft = (WIDTH/1.75, HEIGHT/1.18)
-                text = PixelFontS.render(big_blind.name, True, black)
+                text, _ = PixelFontS.render(big_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.59))
@@ -4778,7 +4782,7 @@ while game:
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
                 screen.blit(SelectBlind_img, (WIDTH/1.97, HEIGHT/1.8))
                 screen.blit(SkipBlind_img, (WIDTH/1.75, HEIGHT/1.12))
-                text = PixelFontS.render(big_blind.name, True, black)
+                text, _ = PixelFontS.render(big_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.48))
@@ -4787,7 +4791,7 @@ while game:
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
                 SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
-                text = PixelFontS.render(boss_blind.name, True, black)
+                text, _ = PixelFontS.render(boss_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.59))
@@ -4795,79 +4799,79 @@ while game:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
-                text = PixelFontS.render(boss_blind.name, True, black)
+                text, _ = PixelFontS.render(boss_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.48))
         
         if not calculating:
             if scoring_in_progress:
-                text = PixelFontS.render(saved_hand, True, white)
+                text, _ = PixelFontS.render(saved_hand, white)
             else:
-                text = PixelFontS.render(hand_type, True, white)
+                text, _ = PixelFontS.render(hand_type, white)
         else:
             current_score_text = change_notation(current_score)
-            text = PixelFontS.render(f"{current_score_text}", True, white)
+            text, _ = PixelFontS.render(f"{current_score_text}", white)
         text_rect = text.get_rect(center=(WIDTH/9.4, HEIGHT / 2.5))
         screen.blit(text, text_rect)
-        text = PixelFontS.render(f"{hands}", True, white)
+        text, _ = PixelFontS.render(f"{hands}", white)
         text_rect = text.get_rect(center=(WIDTH/20, HEIGHT / 1.79))
         screen.blit(text, text_rect)
-        text = PixelFontS.render(f"{discards}", True, white)
+        text, _ = PixelFontS.render(f"{discards}", white)
         text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT / 1.79))
         screen.blit(text, text_rect)
         if scoring_in_progress or calculating:
             saved_base_chips_text = change_notation(saved_base_chips)
-            text = PixelFontS.render(f"{saved_base_chips_text}", True, white)
+            text, _ = PixelFontS.render(f"{saved_base_chips_text}", white)
         else:
             chips_text = change_notation(chips)
-            text = PixelFontS.render(f"{chips_text}", True, white)
+            text, _ = PixelFontS.render(f"{chips_text}", white)
         text_rect = text.get_rect(center=(WIDTH/15, HEIGHT / 2.2))
         screen.blit(text, text_rect)
         if scoring_in_progress or calculating:
             saved_base_mult_text = change_notation(saved_base_mult)
-            text = PixelFontS.render(f"{saved_base_mult_text}", True, white)
+            text, _ = PixelFontS.render(f"{saved_base_mult_text}", white)
         else:
             mult_text = change_notation(mult)
-            text = PixelFontS.render(f"{mult_text}", True, white)
+            text, _ = PixelFontS.render(f"{mult_text}", white)
         text_rect = text.get_rect(center=(WIDTH/7, HEIGHT / 2.2))
         screen.blit(text, text_rect)
         if GameState == "Playing":
-            text = PixelFontS.render(f"{len(hand)} / {handsize}", True, white)
+            text, _ = PixelFontS.render(f"{len(hand)} / {handsize}", white)
             text_rect = text.get_rect(center=(WIDTH/2, HEIGHT / 1.05))
             screen.blit(text, text_rect)
             total_score_text = change_notation(total_score)
-            text = PixelFontS.render(f"{total_score_text}", True, white)
+            text, _ = PixelFontS.render(f"{total_score_text}", white)
             text_rect = text.get_rect(center=(WIDTH/7.5, HEIGHT / 3.17))
             screen.blit(text, text_rect)
             target_score_text = change_notation(target_score)
-            text = PixelFontS.render(f"{target_score_text}", True, red)
+            text, _ = PixelFontS.render(f"{target_score_text}", red)
             text_rect = text.get_rect(center=(WIDTH/7.4, HEIGHT / 5))
             screen.blit(text, text_rect)
-        text = PixelFontS.render(f"{visible_round_num}", True, orange)
+        text, _ = PixelFontS.render(f"{visible_round_num}", orange)
         text_rect = text.get_rect(center=(WIDTH/6.3, HEIGHT / 1.415))
         screen.blit(text, text_rect)
-        text = PixelFontS.render(f"{ante}", True, orange)
+        text, _ = PixelFontS.render(f"{ante}", orange)
         text_rect = text.get_rect(center=(WIDTH/11, HEIGHT / 1.419))
         screen.blit(text, text_rect)
-        text = PixelFontS.render(f"${money}", True, yellow)
+        text, _ = PixelFontS.render(f"${money}", yellow)
         text_rect = text.get_rect(center=(WIDTH/7.7, HEIGHT / 1.595))
         screen.blit(text, text_rect)
         if GameState == "Playing":
-            text = PixelFontXS.render(f"{'$' * blind_reward}", True, yellow)
+            text, _ = PixelFontXS.render(f"{'$' * blind_reward}", yellow)
             text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{current_blind.name}", True, white)
+            text, _ = PixelFontS.render(f"{current_blind.name}", white)
             text_rect = text.get_rect(center=(WIDTH/8, HEIGHT / 30))
             screen.blit(text, text_rect)
             if current_blind.name not in ("Small Blind", "Big Blind"):
                 max_width = WIDTH/8
                 lines = wrap_text(BOSS_DESC[current_blind.name], PixelFontXXS, max_width)
-                line_height = PixelFontXXS.get_height() + 0.1
+                line_height = PixelFontXXS.get_sized_height() + 0.1
                 total_height = len(lines) * line_height
                 start_y = (HEIGHT / 10) - (total_height / 2)
                 for i, line in enumerate(lines):
-                    text = PixelFontXXS.render(line, True, white)
+                    text, _ = PixelFontXXS.render(line, white)
                     text_rect = text.get_rect(center=(WIDTH/7.4, start_y + i * line_height))
                     screen.blit(text, text_rect)
             screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
@@ -4876,11 +4880,11 @@ while game:
             screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
 
         screen.blit(JokerBG_img,(WIDTH/2.7, HEIGHT/30))
-        text = PixelFontXS.render(f"{len(Active_Jokers)} / {maxJokerCount}", True, white)
+        text, _ = PixelFontXS.render(f"{len(Active_Jokers)} / {maxJokerCount}", white)
         text_rect = text.get_rect(center=(WIDTH/2.545, HEIGHT/3.7))
         screen.blit(text, text_rect)
         screen.blit(ConsBG_img,(WIDTH/1.3, HEIGHT/30))
-        text = PixelFontXS.render(f"{len(Held_Consumables)} / {maxConsCount}", True, white)
+        text, _ = PixelFontXS.render(f"{len(Held_Consumables)} / {maxConsCount}", white)
         text_rect = text.get_rect(center=(WIDTH/1.27, HEIGHT/3.7))
         screen.blit(text, text_rect)
 
@@ -4905,7 +4909,7 @@ while game:
                 screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 ShopBuy_rect = ShopBuy_img.get_rect()
                 ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-                text = PixelFontS.render(f"{joker.price}", True, white)
+                text, _ = PixelFontS.render(f"{joker.price}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         for joker in Active_Jokers:
@@ -4914,7 +4918,7 @@ while game:
                 screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 SellButton_rect = SellButton_img.get_rect()
                 SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-                text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
+                text, _ = PixelFontS.render(f"{int(joker.price / 2)}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
@@ -4923,7 +4927,7 @@ while game:
                 screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 SellButton_rect = SellButton_img.get_rect()
                 SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-                text = PixelFontS.render(f"{int(joker.price / 2)}", True, white)
+                text, _ = PixelFontS.render(f"{int(joker.price / 2)}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
@@ -4960,7 +4964,7 @@ while game:
                 screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 ShopBuy_rect = ShopBuy_img.get_rect()
                 ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
-                text = PixelFontS.render(f"{joker.price}", True, white)
+                text, _ = PixelFontS.render(f"{joker.price}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
         
@@ -5001,14 +5005,14 @@ while game:
                 lines, line = [], ''
                 for word in words:
                     test = line + word + ' '
-                    if PixelFontXXS.size(test)[0] <= tip_w - 20:
+                    if PixelFontXXS.get_rect(test).width <= tip_w - 20:
                         line = test
                     else:
                         lines.append(line)
                         line = word + ' '
                 if line:
                     lines.append(line)
-                tip_h = len(lines) * PixelFontXXS.get_linesize() + 20
+                tip_h = len(lines) * PixelFontXXS.get_sized_height() + 20
                 if hovered_joker.rect.bottom + tip_h > HEIGHT:
                     tip_y = int(hovered_joker.rect.top - tip_h - 10)
                 else:
@@ -5021,7 +5025,7 @@ while game:
             if not soseriousmusic.get_num_channels() and SO_SERIOUS.toggle: 
                 soseriousmusic.play(-1)
             if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
-                text = PixelFontXS.render("Click Jonkler to discard first hand!", True, white)
+                text, _ = PixelFontXS.render("Click Jonkler to discard first hand!", white)
                 text_rect = text.get_rect(center=(soserious.xpos + soserious.setWidth//2, soserious.ypos + soserious.setHeight + 20))
                 screen.blit(text, text_rect)
         else:
@@ -5073,19 +5077,19 @@ while game:
                 for h in reversed(unlocked_hands):
                     i += 1
                     screen.blit(MenuHandType_img, (WIDTH/4.25 , HEIGHT/4 + i * 60))
-                    text = PixelFontS.render(f"{h}", True, white)
+                    text, _ = PixelFontS.render(f"{h}", white)
                     text_rect = text.get_rect(center=(WIDTH/2.25, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
-                    text = PixelFontS.render(f"lvl. {Hand_levels[h]}", True, white)
+                    text, _ = PixelFontS.render(f"lvl. {Hand_levels[h]}", white)
                     text_rect = text.get_rect(center=(WIDTH/3.6, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
-                    text = PixelFontS.render(f"{Hand_Chips[h] * Hand_levels[h]}", True, white)
+                    text, _ = PixelFontS.render(f"{Hand_Chips[h] * Hand_levels[h]}", white)
                     text_rect = text.get_rect(center=(WIDTH/1.695, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
-                    text = PixelFontS.render(f"{Hand_Mult[h] * Hand_levels[h]}", True, white)
+                    text, _ = PixelFontS.render(f"{Hand_Mult[h] * Hand_levels[h]}", white)
                     text_rect = text.get_rect(center=(WIDTH/1.505, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
-                    text = PixelFontS.render(f"{int(hand_plays[h] / 50)}", True, white)
+                    text, _ = PixelFontS.render(f"{int(hand_plays[h] / 50)}", white)
                     text_rect = text.get_rect(center=(WIDTH/1.345, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
             elif selectedMenu == "Blinds":
@@ -5103,38 +5107,38 @@ while game:
             screen.blit(NewRun_img, (WIDTH/1.34 , HEIGHT/1.25))
             screen.blit(MainMenu_img, (WIDTH/1.74 , HEIGHT/1.25))
             screen.blit(Copy_img, (WIDTH/1.7 , HEIGHT/1.365))
-            text = PixelFontS.render(f"{seed}", True, white)
+            text, _ = PixelFontS.render(f"{seed}", white)
             text_rect = text.get_rect(center=(WIDTH/1.46, HEIGHT/1.42))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{highest_hand}", True, white)
+            text, _ = PixelFontS.render(f"{highest_hand}", white)
             text_rect = text.get_rect(center=(WIDTH/1.185, HEIGHT/5))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{most_played}", True, white)
+            text, _ = PixelFontS.render(f"{most_played}", white)
             text_rect = text.get_rect(center=(WIDTH/1.185, HEIGHT/3.67))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{cards_played}", True, blue)
+            text, _ = PixelFontS.render(f"{cards_played}", blue)
             text_rect = text.get_rect(center=(WIDTH/1.42, HEIGHT/2.83))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{cards_discarded}", True, red)
+            text, _ = PixelFontS.render(f"{cards_discarded}", red)
             text_rect = text.get_rect(center=(WIDTH/1.385, HEIGHT/2.35))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{purchases}", True, orange)
+            text, _ = PixelFontS.render(f"{purchases}", orange)
             text_rect = text.get_rect(center=(WIDTH/1.375, HEIGHT/2.02))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{rerolls}", True, green)
+            text, _ = PixelFontS.render(f"{rerolls}", green)
             text_rect = text.get_rect(center=(WIDTH/1.4, HEIGHT/1.77))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{cards_found}", True, white)
+            text, _ = PixelFontS.render(f"{cards_found}", white)
             text_rect = text.get_rect(center=(WIDTH/1.435, HEIGHT/1.575))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{ante}", True, white)
+            text, _ = PixelFontS.render(f"{ante}", white)
             text_rect = text.get_rect(center=(WIDTH/1.115, HEIGHT/2.83))
             screen.blit(text, text_rect)
-            text = PixelFontS.render(f"{visible_round_num}", True, white)
+            text, _ = PixelFontS.render(f"{visible_round_num}", white)
             text_rect = text.get_rect(center=(WIDTH/1.115, HEIGHT/2.35))
             screen.blit(text, text_rect)
             screen.blit(current_blind.image,(WIDTH/1.23, HEIGHT/1.77))
-            text = PixelFontS.render(f"{current_blind.name}", True, white)
+            text, _ = PixelFontS.render(f"{current_blind.name}", white)
             text_rect = text.get_rect(center=(WIDTH/1.18, HEIGHT/1.85))
             screen.blit(text, text_rect)
         
