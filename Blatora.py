@@ -457,6 +457,39 @@ Atttention_helper = User_settings('Attention Span Helper')
 Focy = User_settings('Focy')
 Music = User_settings('Music')
 Music.toggle = True
+Kawaii_Mode = User_settings('UWU?')
+
+# ==================== KAWAII MODE ====================
+_KAWAII_SUFFIXES = [" uwu", " owo", " :3", " >w<", " ^-^", " ~nyaa~", "~"]
+_KAWAII_REPLACEMENTS = [
+    ("r", "w"), ("l", "w"), ("R", "W"), ("L", "W"),
+    ("na", "nya"), ("Na", "Nya"), ("no", "nyo"), ("nu", "nyu"),
+    ("th", "d"), ("Th", "D"),
+]
+
+def _kawaii(text):
+    if not Kawaii_Mode.toggle or text is None:
+        return str(text) if text is not None else ""
+    t = str(text)
+    for old, new in _KAWAII_REPLACEMENTS:
+        t = t.replace(old, new)
+    return t + _KAWAII_SUFFIXES[hash(t) % len(_KAWAII_SUFFIXES)]
+
+class _KawaiiFont:
+    def __init__(self, inner):
+        self._inner = inner
+    def render(self, text, color):
+        return self._inner.render(_kawaii(text), color)
+    def get_sized_height(self):
+        return self._inner.get_sized_height()
+    def get_rect(self, text):
+        return self._inner.get_rect(_kawaii(text))
+
+OSDmono    = _KawaiiFont(OSDmono)
+PixelFont  = _KawaiiFont(PixelFont)
+PixelFontS = _KawaiiFont(PixelFontS)
+PixelFontXS = _KawaiiFont(PixelFontXS)
+PixelFontXXS = _KawaiiFont(PixelFontXXS)
 DEV_MODE = User_settings('Developer', False)  #Keep At Bottem#
 
 def dev_commands():
