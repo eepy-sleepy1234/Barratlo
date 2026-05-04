@@ -64,11 +64,11 @@ Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Load
 screen.blit(Loading_img,(0,0))
 pygame.display.flip()
 
-OSDmono =  pygame.font.Font((os.path.join(FONTS_DIR, 'OSD mono.ttf')), int(HEIGHT/30))        
-PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/10))
-PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/20))
-PixelFontXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/30))
-PixelFontXXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Pixel Game.otf')), int(HEIGHT/50))
+OSDmono =  pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))        
+PixelFont = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/10))
+PixelFontS = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/20))
+PixelFontXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/30))
+PixelFontXXS = pygame.font.Font((os.path.join(FONTS_DIR, 'Protein Pixels.ttf')), int(HEIGHT/50))
 toggleable = True 
 LETTERW = WIDTH/12
 LETTERH = WIDTH/12
