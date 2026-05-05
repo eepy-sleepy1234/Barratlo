@@ -88,21 +88,43 @@ _flip()
 FONT_NATIVE = pygame.freetype.Font(os.path.join(FONTS_DIR, 'Protein Pixels.ttf'), 8)
 FONT_NATIVE.antialiased = False
 
+_render_cache   = {}
+_width_cache    = {}
+_textbox_cache  = {}
+
+_NATIVE_LINE_HEIGHT = None
+
+def _get_native_line_height():
+    global _NATIVE_LINE_HEIGHT
+    if _NATIVE_LINE_HEIGHT is None:
+        _NATIVE_LINE_HEIGHT = FONT_NATIVE.get_sized_height()
+    return _NATIVE_LINE_HEIGHT
+
 def render_pixel(text, color, scale=1):
-    if text is None:
-        text = ""
-    surf, rect = FONT_NATIVE.render(str(text), color)
-    if scale > 1:
-        w, h = surf.get_size()
-        surf = pygame.transform.scale(surf, (w * scale, h * scale))
-        rect = surf.get_rect()
-    return surf, rect
+    text = "" if text is None else str(text)
+    key = (text, color, scale)
+    surf = _render_cache.get(key)
+    if surf is None:
+        surf, _ = FONT_NATIVE.render(text, color)
+        if scale > 1:
+            w, h = surf.get_size()
+            surf = pygame.transform.scale(surf, (w * scale, h * scale))
+        _render_cache[key] = surf
+    return surf, surf.get_rect()
+
+def _measure_width(text, scale):
+    key = (text, scale)
+    w = _width_cache.get(key)
+    if w is None:
+        w = FONT_NATIVE.get_rect(str(text)).width * scale
+        _width_cache[key] = w
+    return w
 
 def pixel_text_width(text, scale=1):
-    return FONT_NATIVE.get_rect(str(text)).width * scale
+    return _measure_width(text, scale)
 
 def pixel_line_height(scale=1):
-    return FONT_NATIVE.get_sized_height() * scale
+    return _get_native_line_height() * scale
 
 class _ScaledFont:
     def __init__(self, scale):
@@ -112,8 +134,10 @@ class _ScaledFont:
     def get_sized_height(self):
         return pixel_line_height(self.scale)
     def get_rect(self, text):
-        surf, rect = render_pixel(text, (0,0,0), self.scale)
-        return rect
+        text = str(text) if text is not None else ""
+        w = _measure_width(text, self.scale)
+        h = pixel_line_height(self.scale)
+        return pygame.Rect(0, 0, w, h)
 
 OSDmono   = _ScaledFont(3)
 PixelFont  = _ScaledFont(4)
@@ -500,6 +524,9 @@ def _kawaii(text):
 class _KawaiiFont:
     def __init__(self, inner):
         self._inner = inner
+    @property
+    def scale(self):
+        return self._inner.scale
     def render(self, text, color):
         return self._inner.render(_kawaii(text), color)
     def get_sized_height(self):
@@ -900,50 +927,46 @@ def blit_img():
 
             dev_command = input("Input Developer Command")    
 
-def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
-    x = rect.x + padding
-    y = rect.y + padding
-    max_width = rect.width - padding * 2
-    line_height = font.get_sized_height()
+_COLOR_TAGS = {
+    'red':    (230, 50,  50),
+    'blue':   (50,  150, 255),
+    'yellow': (250, 220, 80),
+    'orange': (240, 150, 40),
+    'green':  (0,   200, 0),
+    'white':  (255, 255, 255),
+    'grey':   (128, 128, 128),
+}
+_TAG_PATTERN = re.compile(r'\[(\w+)\](.*?)\[/\1\]', re.DOTALL)
 
-    if bg_color:
-        pygame.draw.rect(surface, bg_color, rect)
-        pygame.draw.rect(surface, color, rect, 2)
+def _parse_segments(line, default_color):
+    segments = []
+    last = 0
+    for m in _TAG_PATTERN.finditer(line):
+        if m.start() > last:
+            segments.append((line[last:m.start()], default_color))
+        segments.append((m.group(2), _COLOR_TAGS.get(m.group(1), default_color)))
+        last = m.end()
+    if last < len(line):
+        segments.append((line[last:], default_color))
+    return segments
 
-    COLOR_TAGS = {
-        'red': (230, 50, 50),
-        'blue': (50, 150, 255),
-        'yellow': (250, 220, 80),
-        'orange': (240, 150, 40),
-        'green': (0, 200, 0),
-        'white': (255, 255, 255),
-        'grey':(128,128,128),
-    }
+def _compose_text_box(text, font, color, box_w, bg_color, padding):
+    scale     = font.scale
+    lh        = pixel_line_height(scale)
+    max_width = box_w - padding * 2
+    space_w   = _measure_width(' ', scale)
 
-    def parse_segments(line):
-        segments = []
-        pattern = re.compile(r'\[(\w+)\](.*?)\[/\1\]', re.DOTALL)
-        last = 0
-        for m in pattern.finditer(line):
-            if m.start() > last:
-                segments.append((line[last:m.start()], color))
-            seg_color = COLOR_TAGS.get(m.group(1), color)
-            segments.append((m.group(2), seg_color))
-            last = m.end()
-        if last < len(line):
-            segments.append((line[last:], color))
-        return segments
+    rendered_lines = []
 
     for paragraph in text.split('\n'):
         if paragraph.strip() == '':
-            y += line_height
+            rendered_lines.append([])
             continue
 
-        stripped = paragraph.lstrip(' ')
-        indent_chars = len(paragraph) - len(stripped)
-        indent_px = font.get_rect(' ').width * indent_chars
-
-        segments = parse_segments(stripped)
+        stripped      = paragraph.lstrip(' ')
+        indent_chars  = len(paragraph) - len(stripped)
+        indent_px     = space_w * indent_chars
+        segments      = _parse_segments(stripped, color)
 
         words = []
         for seg_text, seg_color in segments:
@@ -951,29 +974,46 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
                 if word:
                     words.append((word, seg_color))
 
-        line_words = []
-        line_width = 0
+        line_words, line_width = [], 0
         for word, col in words:
-            w = font.get_rect(word + ' ').width
+            w = _measure_width(word + ' ', scale)
             if line_width + w > max_width - indent_px and line_words:
-                draw_x = x + indent_px
-                for lw, lc in line_words:
-                    surf, _ = font.render(lw + ' ', lc)
-                    surface.blit(surf, (draw_x, y))
-                    draw_x += surf.get_width()
-                y += line_height
-                line_words = []
-                line_width = 0
+                rendered_lines.append((line_words, indent_px))
+                line_words, line_width = [], 0
             line_words.append((word, col))
             line_width += w
-
         if line_words:
-            draw_x = x + indent_px
-            for lw, lc in line_words:
-                surf, _ = font.render(lw + ' ', lc)
-                surface.blit(surf, (draw_x, y))
-                draw_x += surf.get_width()
-            y += line_height
+            rendered_lines.append((line_words, indent_px))
+
+    total_h = len(rendered_lines) * lh + padding * 2
+    box_surf = pygame.Surface((box_w, total_h), pygame.SRCALPHA)
+
+    if bg_color:
+        box_surf.fill(bg_color)
+        pygame.draw.rect(box_surf, color, box_surf.get_rect(), 2)
+
+    y = padding
+    for entry in rendered_lines:
+        if not entry:
+            y += lh
+            continue
+        line_words, indent_px = entry
+        draw_x = padding + indent_px
+        for word, col in line_words:
+            surf, _ = render_pixel(word + ' ', col, scale)
+            box_surf.blit(surf, (draw_x, y))
+            draw_x += surf.get_width()
+        y += lh
+
+    return box_surf
+
+def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
+    cache_key = (text, font.scale, rect.width, bg_color, color, padding)
+    box_surf = _textbox_cache.get(cache_key)
+    if box_surf is None:
+        box_surf = _compose_text_box(text, font, color, rect.width, bg_color, padding)
+        _textbox_cache[cache_key] = box_surf
+    surface.blit(box_surf, (rect.x, rect.y))
 
 def process_dev_command(command):
     global dev_command, ante, joker_manager, round_num, current_blind, target_score
@@ -1705,6 +1745,8 @@ class Card:
         self.scoring_complete = False
         self.rank = rank
         self.suit = suit
+        self.saved_rank = rank
+        self.saved_suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
         self.retriggers = 0 
@@ -1758,6 +1800,10 @@ class Card:
             filename = f"GlitchBaseSpriteSheet.png"
             filepath = os.path.join(SPRITESHEETS_DIR, filename)
         else:
+            if self.rank == 0:
+                self.rank = self.saved_rank
+            if self.suit == "Glitched":
+                self.suit = self.saved_suit
             filename = f"{self.rank}Of{self.suit}.png"
             filepath = os.path.join(SUITS_DIR, self.suit, filename)
 
@@ -2637,7 +2683,7 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
                 scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
-            match joker.edition:
+            match card.edition:
                 case "Foil":
                     scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
                     scaled_img = scaled_img.copy()
@@ -2944,17 +2990,18 @@ def change_notation(number):
     return number
 
 def wrap_text(text, font, max_width):
+    scale = font.scale
     words = text.split(' ')
-    lines = []
-    current_line = []
+    lines, current_line, current_w = [], [], 0
     for word in words:
-        test_line = ' '.join(current_line + [word])
-        if font.get_rect(test_line).width <= max_width:
+        w = _measure_width(word + ' ', scale)
+        if current_w + w <= max_width:
             current_line.append(word)
+            current_w += w
         else:
             if current_line:
                 lines.append(' '.join(current_line))
-                current_line = [word]
+                current_line, current_w = [word], w
             else:
                 lines.append(word)
     if current_line:
@@ -3378,7 +3425,7 @@ def get_tarot_effect(name):
         if len(selected_cards) == 2:
             card1 = selected_cards[0]
             card2 = selected_cards[1]
-            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal, card1.value, card1.chip_value = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal, card2.value, card2.chip_value
+            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal, card1.value, card1.chip_value, card1.saved_suit, card1.saved_rank = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal, card2.value, card2.chip_value, card2.saved_suit, card2.saved_rank
             card1.refresh_image()
         lastFool = "Death"
     if name == "Devil":
@@ -3478,6 +3525,7 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Clubs"
+                card.saved_suit = card.suit
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Clubs"
@@ -3492,6 +3540,7 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
+                card.saved_suit = card.suit
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Diamonds"
@@ -3500,6 +3549,7 @@ def get_tarot_effect(name):
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Diamonds"
+                        perm_card.saved_suit = card.saved_suit
                         break
             lastFool = "Star"
     if name == "Strength":
@@ -3509,10 +3559,12 @@ def get_tarot_effect(name):
                     keys = list(RANK_VALUES.keys())
                     idx = keys.index(card.rank)
                     card.rank = keys[idx + 1 if idx < len(RANK_VALUES) else 0]
+                    card.saved_rank = card.rank
                 card.value = RANK_VALUES[card.rank]
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.rank = card.rank
+                        perm_card.saved_rank = card.saved_rank
                         perm_card.value = card.value
                         break
                 card.refresh_image()
@@ -3526,17 +3578,20 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Hearts"
+                card.saved_suit = card.suit
                 card.name = f"{card.rank} of {card.suit}"
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
                         perm_card.name = card.name
+                        perm_card.saved_suit = card.saved_suit
                         break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
                         perm_card.name = card.name
+                        perm_card.saved_suit = card.saved_suit
                         break
             lastFool = "Sun"
     if name == "Tower":
@@ -3571,6 +3626,7 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Spades"
+                card.saved_suit = card.suit
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Spades"
@@ -4756,6 +4812,13 @@ while game:
                                                 if num == 4:
                                                     perm_deck.remove(card)
                                                     card.trigger("Break", 0)
+                                        match card.edition:
+                                            case "Foil":
+                                                saved_base_chips += 50
+                                            case "Holographic":
+                                                saved_base_mult += 10
+                                            case "Polychrome":
+                                                saved_base_mult *= 1.5
                                     card.base_scoring_complete = True
                                     card.scoring_complete = False
                                 elif card.base_scoring_complete:
@@ -4772,11 +4835,20 @@ while game:
                                                     if num == 5:
                                                         card.trigger("Mult", 20)
                                                     if num1 == 15:
-                                                        card.trigger("Money", 20)     
+                                                        card.trigger("Money", 20)
                                                 case "Glass":
                                                     card.trigger("XMult", 2)
                                                 case _:
-                                                    pass       
+                                                    pass
+                                            match card.edition:
+                                                case "Foil":
+                                                    card.trigger("Chips", 50)
+                                                case "Holographic":
+                                                    card.trigger("Mult", 10)
+                                                case "Polychrome":
+                                                    card.trigger("XMult", 1.5)
+                                                case _:
+                                                    pass
                                         else:
                                             card.trigger("Debuff", 0)
                                 if card.base_scoring_complete:
@@ -5108,18 +5180,13 @@ while game:
                 tip_x = max(0, min(tip_x, WIDTH - tip_w))
 
                 desc = hovered_joker.get_description()
-                words = desc.split()
-                lines, line = [], ''
-                for word in words:
-                    test = line + word + ' '
-                    if PixelFontXXS.get_rect(test).width <= tip_w - 20:
-                        line = test
-                    else:
-                        lines.append(line)
-                        line = word + ' '
-                if line:
-                    lines.append(line)
-                tip_h = len(lines) * PixelFontXXS.get_sized_height() + 20
+                cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10)
+                box_surf = _textbox_cache.get(cache_key)
+                if box_surf is None:
+                    box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10)
+                    _textbox_cache[cache_key] = box_surf
+                tip_h = box_surf.get_height()
+
                 if hovered_joker.rect.bottom + tip_h > HEIGHT:
                     tip_y = int(hovered_joker.rect.top - tip_h - 10)
                 else:
@@ -5411,8 +5478,10 @@ while game:
                 final_score = int(round(saved_base_chips * saved_base_mult))
             for joke in Active_Jokers:
                 if joke.name == "Ptsd Joker":
+
                     if JokerEffects.last_hand_counter == 0:
                         ptsdExplosion.play(0)
+              
             for c in selected_cards:
                 c.state = "scored"
             steelnum = 0
