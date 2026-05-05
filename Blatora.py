@@ -536,7 +536,7 @@ _PIRATE_REPLACEMENTS = [
 ]
 
 _HOOD_SUFFIXES = [
-    ["a"]
+    "a"
 ]
 
 _HOOD_REPLACEMENTS = [
