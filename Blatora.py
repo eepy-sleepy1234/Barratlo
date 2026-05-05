@@ -458,23 +458,84 @@ Focy = User_settings('Focy')
 Music = User_settings('Music')
 Music.toggle = True
 Kawaii_Mode = User_settings('UWU?')
-
+Pirate_Mode = User_settings('ARR')
+Hood_Mode = User_settings('Gangsta')
+SUFFIXES = [""]
+REPLACEMENTS = [""]
 # ==================== KAWAII MODE ====================
 _KAWAII_SUFFIXES = [" uwu", " owo", " :3", " >w<", " ^-^", " ~nyaa~", "~"]
+
 _KAWAII_REPLACEMENTS = [
     ("r", "w"), ("l", "w"), ("R", "W"), ("L", "W"),
     ("na", "nya"), ("Na", "Nya"), ("no", "nyo"), ("nu", "nyu"),
     ("th", "d"), ("Th", "D"),
 ]
 
-def _kawaii(text):
-    if not Kawaii_Mode.toggle or text is None:
-        return str(text) if text is not None else ""
-    t = str(text)
-    for old, new in _KAWAII_REPLACEMENTS:
-        t = t.replace(old, new)
-    return t + _KAWAII_SUFFIXES[hash(t) % len(_KAWAII_SUFFIXES)]
+_PIRATE_SUFFIXES = ["ie", "y"]
+_PIRATE_REPLACEMENTS = [
+    ("er", "ar"), ("Er", "Ar"),
+    ("you", "ye"), ("You", "Ye"),
+    ("your", "yer"), ("Your", "Yer"),
+    ("my", "me"), ("My", "Me"),
+    ("is", "be"), ("Is", "Be"),
+    ("are", "be"), ("Are", "Be"),
+    ("the", "th'"), ("The", "Th'"),
+    ("to", "t'"), ("To", "T'"),
+    ("ing", "in'"), ("ING", "IN'"),
+    ("friend", "matey"), ("Friend", "Matey"),
+    ("sir", "cap'n"), ("Sir", "Cap'n"),
+    ("yes", "aye"), ("Yes", "Aye"),
+    ("no ", "nay "), ("No ", "Nay "),
+    ("hello", "ahoy"), ("Hello", "Ahoy"),
+]
 
+_HOOD_SUFFIXES = [
+    ["a"]
+]
+
+_HOOD_REPLACEMENTS = [
+    
+    ("th", "d"),  ("Th", "D"),       
+    ("ing", "in'"), ("ING", "IN'"),  
+    ("with", "wit"), ("With", "Wit"),
+    ("the ", "da "), ("The ", "Da "),
+    ("of", "of'"), 
+    
+    ("going to", "finna"), ("Going to", "Finna"),
+    ("about to", "finna"), ("About to", "Finna"),
+    ("got to", "gotta"), ("Got to", "Gotta"),
+    ("want to", "wanna"), ("Want to", "Wanna"),
+    ("what", "wat"), ("What", "Wat"),
+    ("your", "yo"), ("Your", "Yo"),
+    ("my", "ma"), ("My", "Ma"),
+    
+    ("friend", "homie"), ("Friend", "Homie"),
+    ("okay", "aight"), ("Okay", "Aight"),
+    ("yes", "fasho"), ("Yes", "Fasho"),
+    ("cool", "lowkey fire"), ("Cool", "Lowkey fire"),
+    ("hello", "yo"), ("Hello", "Yo"),
+    ("man", "bruh"), ("Man", "Bruh"),
+]
+
+
+def _kawaii(text):
+    if text is not None:
+        if Kawaii_Mode.toggle:
+            t = str(text)
+            for old, new in _KAWAII_REPLACEMENTS:
+                t = t.replace(old, new)
+            return t + _KAWAII_SUFFIXES[hash(t) % len(_KAWAII_SUFFIXES)]
+        elif Pirate_Mode.toggle:
+            t = str(text)
+            for old, new in _PIRATE_REPLACEMENTS:
+                t = t.replace(old, new)
+            return t + _PIRATE_SUFFIXES[hash(t) % len(_PIRATE_SUFFIXES)]
+        elif Hood_Mode.toggle:
+            t = str(text)
+            for old, new in _HOOD_REPLACEMENTS:
+                t = t.replace(old, new)
+            return t + _HOOD_SUFFIXES[hash(t) % len(_HOOD_SUFFIXES)]
+        return str(text)
 class _KawaiiFont:
     def __init__(self, inner):
         self._inner = inner
