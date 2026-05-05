@@ -48,7 +48,7 @@ class JokerEffectsManager:
             return context
         
         context['current_event'] = event_type
-        
+
         for effect in self.effects[event_type]:
             old_chips = context.get('chips', 0)
             old_mult = context.get('mult', 0)

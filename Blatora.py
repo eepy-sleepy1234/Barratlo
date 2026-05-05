@@ -20,9 +20,29 @@ from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_e
 pygame.init()
 pygame.freetype.init()
 
-screen_info = pygame.display.Info()
-WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
+VW, VH = 1920, 1080
+WIDTH, HEIGHT = VW, VH
+
+_screen_info = pygame.display.Info()
+REAL_W, REAL_H = _screen_info.current_w, _screen_info.current_h
+_real_screen = pygame.display.set_mode((REAL_W, REAL_H), pygame.NOFRAME)
+
+screen = pygame.Surface((VW, VH))
+
+def _flip():
+    pygame.transform.scale(screen, (REAL_W, REAL_H), _real_screen)
+    pygame.display.flip()
+
+def _virtual_mouse_pos():
+    rx, ry = pygame.mouse.get_pos()
+    return (int(rx * VW / REAL_W), int(ry * VH / REAL_H))
+
+def _translate_event(event):
+    if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
+        vx = int(event.pos[0] * VW / REAL_W)
+        vy = int(event.pos[1] * VH / REAL_H)
+        return pygame.event.Event(event.type, {**event.__dict__, 'pos': (vx, vy)})
+    return event
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
@@ -61,12 +81,11 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
             surf.fill((200, 200, 200))  
             return surf
 
-Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Loading.png")), (WIDTH, HEIGHT))
-screen.blit(Loading_img,(0,0))
-pygame.display.flip()
+Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Loading.png")), (VW, VH))
+screen.blit(Loading_img, (0, 0))
+_flip()
 
-# --- Pixel font: always render at native 10px grid, then scale up ---
-FONT_NATIVE = pygame.freetype.Font(os.path.join(FONTS_DIR, 'Protein Pixels.ttf'), 10)
+FONT_NATIVE = pygame.freetype.Font(os.path.join(FONTS_DIR, 'Protein Pixels.ttf'), 8)
 FONT_NATIVE.antialiased = False
 
 def render_pixel(text, color, scale=1):
@@ -314,6 +333,9 @@ MenuHandType_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, 
 MenuBack_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBack.png")), (WIDTH/1.81, HEIGHT/16.824))
 
 # ==================== OVERLAYS ====================
+Foil_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Foil.png")), (WIDTH/12.5, HEIGHT/7.27))
+Holo_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Holographic.png")), (WIDTH/12.5, HEIGHT/7.27))
+Poly_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Polychrome.png")), (WIDTH/12.5, HEIGHT/7.27))
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -1399,12 +1421,13 @@ def animate_letters():
     screen.fill((255,255,255))
     for i in Letters:
         i.draw()
-    pygame.display.flip()
+    _flip()
     pygame.time.wait(200)
         
     global letter_animation
     while letter_animation:
         for event in pygame.event.get():
+            event = _translate_event(event)
             if event.type  == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -1414,7 +1437,7 @@ def animate_letters():
             i.updatex()
             
             i.draw()
-        pygame.display.flip()
+        _flip()
         clock.tick(60)
         if abs(StartingB.xpos - StartingB.target_x) < 1:
             letter_animation = False
@@ -2095,6 +2118,19 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
             scaled_img = scaled_img.copy()
             scaled_img.blit(scaled_overlay, (0, 0))
+        match card.edition:
+            case "Foil":
+                scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+            case "Holographic":
+                scaled_overlay = pygame.transform.smoothscale(Holo_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+            case "Polychrome":
+                scaled_overlay = pygame.transform.smoothscale(Poly_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
         if card.is_frozen:
             if card.freeze_timer == 3:
                 scaled_overlay = pygame.transform.smoothscale(Frozen_img, (scaled_w, scaled_h))
@@ -2601,6 +2637,19 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
                 scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
+            match joker.edition:
+                case "Foil":
+                    scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
+                    scaled_img = scaled_img.copy()
+                    scaled_img.blit(scaled_overlay, (0, 0))
+                case "Holographic":
+                    scaled_overlay = pygame.transform.smoothscale(Holo_img, (scaled_w, scaled_h))
+                    scaled_img = scaled_img.copy()
+                    scaled_img.blit(scaled_overlay, (0, 0))
+                case "Polychrome":
+                    scaled_overlay = pygame.transform.smoothscale(Poly_img, (scaled_w, scaled_h))
+                    scaled_img = scaled_img.copy()
+                    scaled_img.blit(scaled_overlay, (0, 0))
         except AttributeError:
             a = 2
         finally:
@@ -3586,7 +3635,7 @@ while game:
         else:
             mainMusic.stop()
             mainMusicPlaying = False
-        cursor_pos = pygame.mouse.get_pos()
+        cursor_pos = _virtual_mouse_pos()
         hovering = False
         for toggle in guiToggleList:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
@@ -3597,6 +3646,7 @@ while game:
         if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
             hovering = True
         for event in pygame.event.get():
+            event = _translate_event(event)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -3712,7 +3762,7 @@ while game:
                 draw_fox = True
         if draw_fox:
             focy_scare.animate()
-        pygame.display.flip()
+        _flip()
         clock.tick(60)
         currentFrame += 1
 
@@ -3737,8 +3787,8 @@ while game:
                 Active_Jokers.append(new_joker)
                 joker_manager = initialize_joker_effects(Active_Jokers)
         global discard_queue
-        mouse_pos = pygame.mouse.get_pos()
-        cursor_pos = pygame.mouse.get_pos()
+        mouse_pos = _virtual_mouse_pos()
+        cursor_pos = _virtual_mouse_pos()
         hovering = False
         for toggle in guiToggleList:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
@@ -3765,6 +3815,7 @@ while game:
             close_video()
         prev_attention_state = Atttention_helper.toggle
         for event in pygame.event.get():
+            event = _translate_event(event)
             if event.type == pygame.QUIT:
                 running = False
             keys = pygame.key.get_pressed() 
@@ -5268,7 +5319,7 @@ while game:
 
         animateGlitch()
 
-        pygame.display.flip()  
+        _flip()  
         clock.tick(60)
         currentFrame += 1
 
@@ -5360,10 +5411,8 @@ while game:
                 final_score = int(round(saved_base_chips * saved_base_mult))
             for joke in Active_Jokers:
                 if joke.name == "Ptsd Joker":
-
                     if JokerEffects.last_hand_counter == 0:
                         ptsdExplosion.play(0)
-              
             for c in selected_cards:
                 c.state = "scored"
             steelnum = 0
