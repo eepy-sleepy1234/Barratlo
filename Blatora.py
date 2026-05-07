@@ -600,7 +600,7 @@ PixelFont  = _KawaiiFont(PixelFont)
 PixelFontS = _KawaiiFont(PixelFontS)
 PixelFontXS = _KawaiiFont(PixelFontXS)
 PixelFontXXS = _KawaiiFont(PixelFontXXS)
-DEV_MODE = User_settings('Developer', False)  #Keep At Bottem#
+DEV_MODE = User_settings('Developer', False)  #Keep At Bottom#
 
 def dev_commands():
     global dev_toggle
@@ -2785,6 +2785,8 @@ class Consumable:
         self.slot = slot
         self.vx = 0
         self.vy = 0
+        self.soulx = 0
+        self.souly = 0
         self.x = WIDTH/1.6
         self.target_x = WIDTH/1.6
         self.scoring_x = 0
@@ -2863,7 +2865,12 @@ for root, dirs, files in os.walk(CONS_DIR):
             image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
             consumable = Consumable(image, Cons_name)
             if "TarotCards" in filepath:
-                TarotCards.append(consumable)
+                if "SoulOverlay" in filepath:
+                    SoulOverlay = image
+                elif "SoulShadow" in filepath:
+                    SoulShadow = image
+                else:
+                    TarotCards.append(consumable)
             elif "ShadowCards" in filepath:
                 ShadowCards.append(consumable)
             elif "SpectralCards" in filepath:
@@ -2892,6 +2899,15 @@ def draw_consumables(surface, cards, center_x, center_y, spread=20):
         rect = rotated.get_rect(center=(cons.x, cons.y))
         surface.blit(rotated, rect.topleft)
         cons.rect = rect
+        cons.soulx, cons.souly = rect.topleft
+        if abs(cons.vx) < 50:
+            cons.soulx -= cons.vx * 2
+        if abs(cons.vy) < 50:
+            cons.souly -= cons.vy * 2
+        if cons.name == "The Soul":
+            drift = math.sin(pygame.time.get_ticks() / 500) * 5
+            screen.blit(SoulShadow, (cons.soulx, cons.souly + drift))
+            screen.blit(SoulOverlay, (cons.soulx, cons.souly + drift))
 
 class Cardpack:
     card_id_counter = 0
@@ -3393,6 +3409,15 @@ def get_card_limit(name):
             return 2
         case "Tower":
             return 1
+        case "Aura":
+            return 1
+        case "Deja Vu":
+            return 1
+        case "Talisman":
+            return 1
+        case "Trance":
+            return 1
+        
         case _:
             return 6
 
@@ -3419,13 +3444,13 @@ def get_tarot_effect(name):
         if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(TarotCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "The Soul":
                     break
             Held_Consumables.append(card)
         if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(TarotCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "The Soul":
                     break
             Held_Consumables.append(card)
         lastFool = "Emperor"
@@ -3441,13 +3466,13 @@ def get_tarot_effect(name):
         if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(ShadowCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "True Shadow":
                     break
             Held_Consumables.append(card)
-        if len(Held_Consumables) < maxConsCount and card not in Shop_Cards:
+        if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(ShadowCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "True Shadow":
                     break
             Held_Consumables.append(card)
         lastFool = "High Priest"
@@ -4041,11 +4066,11 @@ while game:
                                         break
                                 elif rarity_choice <= 28:
                                     card = random.choice(TarotCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables:
+                                    if card not in Shop_Cards and card not in Held_Consumables and card.name != "The Soul":
                                         break
                                 elif rarity_choice <= 50:
                                     card = random.choice(ShadowCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
+                                    if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards and card.name != "True Shadow":
                                         break
                                 elif rarity_choice <= 75:
                                     card = random.choice(Common_Jokers)
@@ -4336,7 +4361,12 @@ while game:
                                                 newcard = random.choice(ShadowCards)
                                                 if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
-                                                    break
+                                                    if newcard.name == "True Shadow":
+                                                        num = random.randint(base_chance, 10)
+                                                        if num == 10:
+                                                            break
+                                                    else:
+                                                        break
                                     if "Spectral" in pack.name:
                                         GameState = "SpectralPack"
                                         for i in range(pack.cardNum):
@@ -4360,7 +4390,12 @@ while game:
                                                 newcard = random.choice(TarotCards)
                                                 if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
-                                                    break
+                                                    if newcard.name == "The Soul":
+                                                        num = random.randint(base_chance, 10)
+                                                        if num == 10:
+                                                            break
+                                                    else:
+                                                        break
                                         reset_deck_for_new_round()
                                         for i in range(max_handsize):
                                             if deck:
@@ -4446,11 +4481,11 @@ while game:
                                             break
                                     if rarity_choice <= 28:
                                         card = random.choice(TarotCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                        if card not in Shop_Cards and card not in Held_Consumables and card.name != "The Soul":
                                             break
                                     elif rarity_choice <= 50:
                                         card = random.choice(ShadowCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
+                                        if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards and card.name != "True Shadow":
                                             break
                                     elif rarity_choice <= 75:
                                         card = random.choice(Common_Jokers)
@@ -5172,7 +5207,7 @@ while game:
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards):
+            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
                 useX, useY = get_selected_Shop_Cards(joker)
                 CuseX, CuseY = -100, -100
             else:
@@ -5186,7 +5221,7 @@ while game:
             UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in PackCards:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards):
+            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
                 useX, useY = get_selected_Shop_Cards(joker)
                 CuseX, CuseY = -100, -100
             else:
