@@ -3417,12 +3417,69 @@ def get_card_limit(name):
             return 1
         case "Trance":
             return 1
-        
+        case "Medium":
+            return 1
+        case "Cryptid":
+            return 1
         case _:
             return 6
 
 def get_spectral_effect(name):
-    pass
+    global money, lastFool, selected_cards, perm_deck, hand, deck, Active_Jokers, GameState, PackCards
+    if name == "Ankh":
+        if len(Active_Jokers) > 0:
+            copied = random.choice(Active_Jokers)
+            Active_Jokers.clear()
+            Active_Jokers.append(copied)
+            copied = Joker(copied.image, copied.rarity, copied.name, edition=copied.edition)
+            Active_Jokers.append(copied)
+    if name == "Aura":
+        for card in selected_cards:
+            edit = random.randint(base_chance, 100)
+            if edit < 40:
+                edit = "Foil"
+            elif edit < 80:
+                edit = "Holographic"
+            else:
+                edit = "Polychrome"
+            card.edition = edit
+    if name == "Cryptid":
+        for card in selected_cards:
+            newcard = Card(card.rank, card.suit, card.image, enhancement=card.enhancement, edition=card.edition, seal=card.seal)
+            if GameState == "Playing":
+                pass
+            else:
+                pass
+    if name == "Deja Vu":
+        pass
+    if name == "Ectoplasm":
+        pass
+    if name == "Familiar":
+        pass
+    if name == "Grim":
+        pass
+    if name == "Hex":
+        pass
+    if name == "Immolate":
+        pass
+    if name == "Incantation":
+        pass
+    if name == "Medium":
+        pass
+    if name == "Ouija":
+        pass
+    if name == "Sigil":
+        pass
+    if name == "Talisman":
+        pass
+    if name == "The Soul":
+        pass
+    if name == "Trance":
+        pass
+    if name == "True Shadow":
+        pass
+    if name == "Wraith":
+        pass
 
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
@@ -4441,6 +4498,9 @@ while game:
                                 for shadow in ShadowCards:
                                     if shadow.name == card.name:
                                         get_shadow_effect(card.name)
+                                for spectral in SpectralCards:
+                                    if spectral.name == card.name:
+                                        get_spectral_effect(card.name)
                         for card in PackCards:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
