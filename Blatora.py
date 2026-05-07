@@ -535,34 +535,18 @@ _PIRATE_REPLACEMENTS = [
     ("hello", "ahoy"), ("Hello", "Ahoy"),
 ]
 
-_HOOD_SUFFIXES = [
-    "a"
-]
+_HOOD_SUFFIXES = [" yo", " dawg", " bro", " fam", " cuz", " homie"]
 
 _HOOD_REPLACEMENTS = [
-    
-    ("th", "d"),  ("Th", "D"),       
-    ("ing", "in'"), ("ING", "IN'"),  
-    ("with", "wit"), ("With", "Wit"),
-    ("the ", "da "), ("The ", "Da "),
-    ("of", "of'"), 
-    
-    ("going to", "finna"), ("Going to", "Finna"),
-    ("about to", "finna"), ("About to", "Finna"),
-    ("got to", "gotta"), ("Got to", "Gotta"),
-    ("want to", "wanna"), ("Want to", "Wanna"),
-    ("what", "wat"), ("What", "Wat"),
-    ("your", "yo"), ("Your", "Yo"),
-    ("my", "ma"), ("My", "Ma"),
-    
-    ("friend", "homie"), ("Friend", "Homie"),
-    ("okay", "aight"), ("Okay", "Aight"),
-    ("yes", "fasho"), ("Yes", "Fasho"),
-    ("cool", "lowkey fire"), ("Cool", "Lowkey fire"),
     ("hello", "yo"), ("Hello", "Yo"),
-    ("man", "bruh"), ("Man", "Bruh"),
+    ("friend", "bro"), ("Friend", "Bro"),
+    ("my ", "ma' "), ("My ", "Ma' "),
+    ("is ", "be "), ("Is ", "Be "),
+    ("are ", "be "), ("Are ", "Be "),
+    ("the ", "da "), ("The ", "Da "),
+    ("you ", "u "), ("You ", "U "),
+    ("ing", "in'"), ("ING", "IN'"),
 ]
-
 
 def _kawaii(text):
     if text is not None:
@@ -4171,15 +4155,16 @@ while game:
                                 buttonClick.play(0)
                                 if toggle == settings:
                                     settings2.toggle = True
-                                if toggle == githubButton:
-                                    webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
-                                    toggle.toggle = False
-                                if toggle == helpButton:
-                                    help_menu = True
+                                elif not settings2.toggle:    
+                                    if toggle == githubButton:
+                                        webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
+                                        toggle.toggle = False
+                                    if toggle == helpButton:
+                                        help_menu = True
 
-                                if toggle == quitButton:
-                                    game = False
-                                    running = False
+                                    if toggle == quitButton:
+                                        game = False
+                                        running = False
                         
                     if (SO_SERIOUS.toggle or jonkler_sphere_active) and soserious.rect.collidepoint(mouse_pos):
                         if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
@@ -5541,7 +5526,10 @@ while game:
             invincibleSplash()
 
         animateGlitch()
-
+        if Kawaii_Mode.toggle:
+            transparent_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            transparent_surface.fill((255, 36, 222, 50))
+            screen.blit(transparent_surface, (0, 0))
         _flip()  
         clock.tick(60)
         currentFrame += 1
