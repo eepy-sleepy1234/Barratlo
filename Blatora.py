@@ -4098,15 +4098,16 @@ while game:
                                 buttonClick.play(0)
                                 if toggle == settings:
                                     settings2.toggle = True
-                                if toggle == githubButton:
-                                    webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
-                                    toggle.toggle = False
-                                if toggle == helpButton:
-                                    help_menu = True
+                                elif not settings2.toggle:    
+                                    if toggle == githubButton:
+                                        webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
+                                        toggle.toggle = False
+                                    if toggle == helpButton:
+                                        help_menu = True
 
-                                if toggle == quitButton:
-                                    game = False
-                                    running = False
+                                    if toggle == quitButton:
+                                        game = False
+                                        running = False
                         
                     if (SO_SERIOUS.toggle or jonkler_sphere_active) and soserious.rect.collidepoint(mouse_pos):
                         if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
