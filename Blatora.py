@@ -20,9 +20,29 @@ from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_e
 pygame.init()
 pygame.freetype.init()
 
-screen_info = pygame.display.Info()
-WIDTH, HEIGHT = screen_info.current_w, screen_info.current_h
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
+VW, VH = 1920, 1080
+WIDTH, HEIGHT = VW, VH
+
+_screen_info = pygame.display.Info()
+REAL_W, REAL_H = _screen_info.current_w, _screen_info.current_h
+_real_screen = pygame.display.set_mode((REAL_W, REAL_H), pygame.NOFRAME)
+
+screen = pygame.Surface((VW, VH))
+
+def _flip():
+    pygame.transform.scale(screen, (REAL_W, REAL_H), _real_screen)
+    pygame.display.flip()
+
+def _virtual_mouse_pos():
+    rx, ry = pygame.mouse.get_pos()
+    return (int(rx * VW / REAL_W), int(ry * VH / REAL_H))
+
+def _translate_event(event):
+    if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
+        vx = int(event.pos[0] * VW / REAL_W)
+        vy = int(event.pos[1] * VH / REAL_H)
+        return pygame.event.Event(event.type, {**event.__dict__, 'pos': (vx, vy)})
+    return event
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "Assets")
@@ -61,29 +81,50 @@ def load_image_safe(filepath, fallback_path=PLACEHOLDER):
             surf.fill((200, 200, 200))  
             return surf
 
-Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Loading.png")), (WIDTH, HEIGHT))
-screen.blit(Loading_img,(0,0))
-pygame.display.flip()
+Loading_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Loading.png")), (VW, VH))
+screen.blit(Loading_img, (0, 0))
+_flip()
 
-# --- Pixel font: always render at native 10px grid, then scale up ---
-FONT_NATIVE = pygame.freetype.Font(os.path.join(FONTS_DIR, 'Protein Pixels.ttf'), 10)
+FONT_NATIVE = pygame.freetype.Font(os.path.join(FONTS_DIR, 'Protein Pixels.ttf'), 8)
 FONT_NATIVE.antialiased = False
 
+_render_cache   = {}
+_width_cache    = {}
+_textbox_cache  = {}
+
+_NATIVE_LINE_HEIGHT = None
+
+def _get_native_line_height():
+    global _NATIVE_LINE_HEIGHT
+    if _NATIVE_LINE_HEIGHT is None:
+        _NATIVE_LINE_HEIGHT = FONT_NATIVE.get_sized_height()
+    return _NATIVE_LINE_HEIGHT
+
 def render_pixel(text, color, scale=1):
-    if text is None:
-        text = ""
-    surf, rect = FONT_NATIVE.render(str(text), color)
-    if scale > 1:
-        w, h = surf.get_size()
-        surf = pygame.transform.scale(surf, (w * scale, h * scale))
-        rect = surf.get_rect()
-    return surf, rect
+    text = "" if text is None else str(text)
+    key = (text, color, scale)
+    surf = _render_cache.get(key)
+    if surf is None:
+        surf, _ = FONT_NATIVE.render(text, color)
+        if scale > 1:
+            w, h = surf.get_size()
+            surf = pygame.transform.scale(surf, (w * scale, h * scale))
+        _render_cache[key] = surf
+    return surf, surf.get_rect()
+
+def _measure_width(text, scale):
+    key = (text, scale)
+    w = _width_cache.get(key)
+    if w is None:
+        w = FONT_NATIVE.get_rect(str(text)).width * scale
+        _width_cache[key] = w
+    return w
 
 def pixel_text_width(text, scale=1):
-    return FONT_NATIVE.get_rect(str(text)).width * scale
+    return _measure_width(text, scale)
 
 def pixel_line_height(scale=1):
-    return FONT_NATIVE.get_sized_height() * scale
+    return _get_native_line_height() * scale
 
 class _ScaledFont:
     def __init__(self, scale):
@@ -93,8 +134,10 @@ class _ScaledFont:
     def get_sized_height(self):
         return pixel_line_height(self.scale)
     def get_rect(self, text):
-        surf, rect = render_pixel(text, (0,0,0), self.scale)
-        return rect
+        text = str(text) if text is not None else ""
+        w = _measure_width(text, self.scale)
+        h = pixel_line_height(self.scale)
+        return pygame.Rect(0, 0, w, h)
 
 OSDmono   = _ScaledFont(3)
 PixelFont  = _ScaledFont(4)
@@ -314,6 +357,9 @@ MenuHandType_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, 
 MenuBack_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBack.png")), (WIDTH/1.81, HEIGHT/16.824))
 
 # ==================== OVERLAYS ====================
+Foil_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Foil.png")), (WIDTH/12.5, HEIGHT/7.27))
+Holo_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Holographic.png")), (WIDTH/12.5, HEIGHT/7.27))
+Poly_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Polychrome.png")), (WIDTH/12.5, HEIGHT/7.27))
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -458,26 +504,74 @@ Focy = User_settings('Focy')
 Music = User_settings('Music')
 Music.toggle = True
 Kawaii_Mode = User_settings('UWU?')
-
+Pirate_Mode = User_settings('ARR')
+Hood_Mode = User_settings('Gangsta')
+SUFFIXES = [""]
+REPLACEMENTS = [""]
 # ==================== KAWAII MODE ====================
 _KAWAII_SUFFIXES = [" uwu", " owo", " :3", " >w<", " ^-^", " ~nyaa~", "~"]
+
 _KAWAII_REPLACEMENTS = [
     ("r", "w"), ("l", "w"), ("R", "W"), ("L", "W"),
     ("na", "nya"), ("Na", "Nya"), ("no", "nyo"), ("nu", "nyu"),
     ("th", "d"), ("Th", "D"),
 ]
 
-def _kawaii(text):
-    if not Kawaii_Mode.toggle or text is None:
-        return str(text) if text is not None else ""
-    t = str(text)
-    for old, new in _KAWAII_REPLACEMENTS:
-        t = t.replace(old, new)
-    return t + _KAWAII_SUFFIXES[hash(t) % len(_KAWAII_SUFFIXES)]
+_PIRATE_SUFFIXES = ["ie", "y"]
+_PIRATE_REPLACEMENTS = [
+    ("er", "ar"), ("Er", "Ar"),
+    ("you", "ye"), ("You", "Ye"),
+    ("your", "yer"), ("Your", "Yer"),
+    ("my", "me"), ("My", "Me"),
+    ("is", "be"), ("Is", "Be"),
+    ("are", "be"), ("Are", "Be"),
+    ("the", "th'"), ("The", "Th'"),
+    ("to", "t'"), ("To", "T'"),
+    ("ing", "in'"), ("ING", "IN'"),
+    ("friend", "matey"), ("Friend", "Matey"),
+    ("sir", "cap'n"), ("Sir", "Cap'n"),
+    ("yes", "aye"), ("Yes", "Aye"),
+    ("no ", "nay "), ("No ", "Nay "),
+    ("hello", "ahoy"), ("Hello", "Ahoy"),
+]
 
+_HOOD_SUFFIXES = [" yo", " dawg", " bro", " fam", " cuz", " homie"]
+
+_HOOD_REPLACEMENTS = [
+    ("hello", "yo"), ("Hello", "Yo"),
+    ("friend", "bro"), ("Friend", "Bro"),
+    ("my ", "ma' "), ("My ", "Ma' "),
+    ("is ", "be "), ("Is ", "Be "),
+    ("are ", "be "), ("Are ", "Be "),
+    ("the ", "da "), ("The ", "Da "),
+    ("you ", "u "), ("You ", "U "),
+    ("ing", "in'"), ("ING", "IN'"),
+]
+
+def _kawaii(text):
+    if text is not None:
+        if Kawaii_Mode.toggle:
+            t = str(text)
+            for old, new in _KAWAII_REPLACEMENTS:
+                t = t.replace(old, new)
+            return t + _KAWAII_SUFFIXES[hash(t) % len(_KAWAII_SUFFIXES)]
+        elif Pirate_Mode.toggle:
+            t = str(text)
+            for old, new in _PIRATE_REPLACEMENTS:
+                t = t.replace(old, new)
+            return t + _PIRATE_SUFFIXES[hash(t) % len(_PIRATE_SUFFIXES)]
+        elif Hood_Mode.toggle:
+            t = str(text)
+            for old, new in _HOOD_REPLACEMENTS:
+                t = t.replace(old, new)
+            return t + _HOOD_SUFFIXES[hash(t) % len(_HOOD_SUFFIXES)]
+        return str(text)
 class _KawaiiFont:
     def __init__(self, inner):
         self._inner = inner
+    @property
+    def scale(self):
+        return self._inner.scale
     def render(self, text, color):
         return self._inner.render(_kawaii(text), color)
     def get_sized_height(self):
@@ -490,7 +584,7 @@ PixelFont  = _KawaiiFont(PixelFont)
 PixelFontS = _KawaiiFont(PixelFontS)
 PixelFontXS = _KawaiiFont(PixelFontXS)
 PixelFontXXS = _KawaiiFont(PixelFontXXS)
-DEV_MODE = User_settings('Developer', False)  #Keep At Bottem#
+DEV_MODE = User_settings('Developer', False)  #Keep At Bottom#
 
 def dev_commands():
     global dev_toggle
@@ -878,50 +972,46 @@ def blit_img():
 
             dev_command = input("Input Developer Command")    
 
-def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
-    x = rect.x + padding
-    y = rect.y + padding
-    max_width = rect.width - padding * 2
-    line_height = font.get_sized_height()
+_COLOR_TAGS = {
+    'red':    (230, 50,  50),
+    'blue':   (50,  150, 255),
+    'yellow': (250, 220, 80),
+    'orange': (240, 150, 40),
+    'green':  (0,   200, 0),
+    'white':  (255, 255, 255),
+    'grey':   (128, 128, 128),
+}
+_TAG_PATTERN = re.compile(r'\[(\w+)\](.*?)\[/\1\]', re.DOTALL)
 
-    if bg_color:
-        pygame.draw.rect(surface, bg_color, rect)
-        pygame.draw.rect(surface, color, rect, 2)
+def _parse_segments(line, default_color):
+    segments = []
+    last = 0
+    for m in _TAG_PATTERN.finditer(line):
+        if m.start() > last:
+            segments.append((line[last:m.start()], default_color))
+        segments.append((m.group(2), _COLOR_TAGS.get(m.group(1), default_color)))
+        last = m.end()
+    if last < len(line):
+        segments.append((line[last:], default_color))
+    return segments
 
-    COLOR_TAGS = {
-        'red': (230, 50, 50),
-        'blue': (50, 150, 255),
-        'yellow': (250, 220, 80),
-        'orange': (240, 150, 40),
-        'green': (0, 200, 0),
-        'white': (255, 255, 255),
-        'grey':(128,128,128),
-    }
+def _compose_text_box(text, font, color, box_w, bg_color, padding):
+    scale     = font.scale
+    lh        = pixel_line_height(scale)
+    max_width = box_w - padding * 2
+    space_w   = _measure_width(' ', scale)
 
-    def parse_segments(line):
-        segments = []
-        pattern = re.compile(r'\[(\w+)\](.*?)\[/\1\]', re.DOTALL)
-        last = 0
-        for m in pattern.finditer(line):
-            if m.start() > last:
-                segments.append((line[last:m.start()], color))
-            seg_color = COLOR_TAGS.get(m.group(1), color)
-            segments.append((m.group(2), seg_color))
-            last = m.end()
-        if last < len(line):
-            segments.append((line[last:], color))
-        return segments
+    rendered_lines = []
 
     for paragraph in text.split('\n'):
         if paragraph.strip() == '':
-            y += line_height
+            rendered_lines.append([])
             continue
 
-        stripped = paragraph.lstrip(' ')
-        indent_chars = len(paragraph) - len(stripped)
-        indent_px = font.get_rect(' ').width * indent_chars
-
-        segments = parse_segments(stripped)
+        stripped      = paragraph.lstrip(' ')
+        indent_chars  = len(paragraph) - len(stripped)
+        indent_px     = space_w * indent_chars
+        segments      = _parse_segments(stripped, color)
 
         words = []
         for seg_text, seg_color in segments:
@@ -929,29 +1019,46 @@ def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
                 if word:
                     words.append((word, seg_color))
 
-        line_words = []
-        line_width = 0
+        line_words, line_width = [], 0
         for word, col in words:
-            w = font.get_rect(word + ' ').width
+            w = _measure_width(word + ' ', scale)
             if line_width + w > max_width - indent_px and line_words:
-                draw_x = x + indent_px
-                for lw, lc in line_words:
-                    surf, _ = font.render(lw + ' ', lc)
-                    surface.blit(surf, (draw_x, y))
-                    draw_x += surf.get_width()
-                y += line_height
-                line_words = []
-                line_width = 0
+                rendered_lines.append((line_words, indent_px))
+                line_words, line_width = [], 0
             line_words.append((word, col))
             line_width += w
-
         if line_words:
-            draw_x = x + indent_px
-            for lw, lc in line_words:
-                surf, _ = font.render(lw + ' ', lc)
-                surface.blit(surf, (draw_x, y))
-                draw_x += surf.get_width()
-            y += line_height
+            rendered_lines.append((line_words, indent_px))
+
+    total_h = len(rendered_lines) * lh + padding * 2
+    box_surf = pygame.Surface((box_w, total_h), pygame.SRCALPHA)
+
+    if bg_color:
+        box_surf.fill(bg_color)
+        pygame.draw.rect(box_surf, color, box_surf.get_rect(), 2)
+
+    y = padding
+    for entry in rendered_lines:
+        if not entry:
+            y += lh
+            continue
+        line_words, indent_px = entry
+        draw_x = padding + indent_px
+        for word, col in line_words:
+            surf, _ = render_pixel(word + ' ', col, scale)
+            box_surf.blit(surf, (draw_x, y))
+            draw_x += surf.get_width()
+        y += lh
+
+    return box_surf
+
+def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
+    cache_key = (text, font.scale, rect.width, bg_color, color, padding)
+    box_surf = _textbox_cache.get(cache_key)
+    if box_surf is None:
+        box_surf = _compose_text_box(text, font, color, rect.width, bg_color, padding)
+        _textbox_cache[cache_key] = box_surf
+    surface.blit(box_surf, (rect.x, rect.y))
 
 def process_dev_command(command):
     global dev_command, ante, joker_manager, round_num, current_blind, target_score
@@ -1399,12 +1506,13 @@ def animate_letters():
     screen.fill((255,255,255))
     for i in Letters:
         i.draw()
-    pygame.display.flip()
+    _flip()
     pygame.time.wait(200)
         
     global letter_animation
     while letter_animation:
         for event in pygame.event.get():
+            event = _translate_event(event)
             if event.type  == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -1414,7 +1522,7 @@ def animate_letters():
             i.updatex()
             
             i.draw()
-        pygame.display.flip()
+        _flip()
         clock.tick(60)
         if abs(StartingB.xpos - StartingB.target_x) < 1:
             letter_animation = False
@@ -1682,6 +1790,8 @@ class Card:
         self.scoring_complete = False
         self.rank = rank
         self.suit = suit
+        self.saved_rank = rank
+        self.saved_suit = suit
         self.value = RANK_VALUES[rank]
         self.card_id = Card.card_id_counter
         self.retriggers = 0 
@@ -1735,6 +1845,10 @@ class Card:
             filename = f"GlitchBaseSpriteSheet.png"
             filepath = os.path.join(SPRITESHEETS_DIR, filename)
         else:
+            if self.rank == 0:
+                self.rank = self.saved_rank
+            if self.suit == "Glitched":
+                self.suit = self.saved_suit
             filename = f"{self.rank}Of{self.suit}.png"
             filepath = os.path.join(SUITS_DIR, self.suit, filename)
 
@@ -2095,6 +2209,19 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
             scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
             scaled_img = scaled_img.copy()
             scaled_img.blit(scaled_overlay, (0, 0))
+        match card.edition:
+            case "Foil":
+                scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+            case "Holographic":
+                scaled_overlay = pygame.transform.smoothscale(Holo_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
+            case "Polychrome":
+                scaled_overlay = pygame.transform.smoothscale(Poly_img, (scaled_w, scaled_h))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (0, 0))
         if card.is_frozen:
             if card.freeze_timer == 3:
                 scaled_overlay = pygame.transform.smoothscale(Frozen_img, (scaled_w, scaled_h))
@@ -2601,6 +2728,19 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
                 scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
+            match card.edition:
+                case "Foil":
+                    scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
+                    scaled_img = scaled_img.copy()
+                    scaled_img.blit(scaled_overlay, (0, 0))
+                case "Holographic":
+                    scaled_overlay = pygame.transform.smoothscale(Holo_img, (scaled_w, scaled_h))
+                    scaled_img = scaled_img.copy()
+                    scaled_img.blit(scaled_overlay, (0, 0))
+                case "Polychrome":
+                    scaled_overlay = pygame.transform.smoothscale(Poly_img, (scaled_w, scaled_h))
+                    scaled_img = scaled_img.copy()
+                    scaled_img.blit(scaled_overlay, (0, 0))
         except AttributeError:
             a = 2
         finally:
@@ -2629,6 +2769,8 @@ class Consumable:
         self.slot = slot
         self.vx = 0
         self.vy = 0
+        self.soulx = 0
+        self.souly = 0
         self.x = WIDTH/1.6
         self.target_x = WIDTH/1.6
         self.scoring_x = 0
@@ -2707,7 +2849,12 @@ for root, dirs, files in os.walk(CONS_DIR):
             image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
             consumable = Consumable(image, Cons_name)
             if "TarotCards" in filepath:
-                TarotCards.append(consumable)
+                if "SoulOverlay" in filepath:
+                    SoulOverlay = image
+                elif "SoulShadow" in filepath:
+                    SoulShadow = image
+                else:
+                    TarotCards.append(consumable)
             elif "ShadowCards" in filepath:
                 ShadowCards.append(consumable)
             elif "SpectralCards" in filepath:
@@ -2736,6 +2883,15 @@ def draw_consumables(surface, cards, center_x, center_y, spread=20):
         rect = rotated.get_rect(center=(cons.x, cons.y))
         surface.blit(rotated, rect.topleft)
         cons.rect = rect
+        cons.soulx, cons.souly = rect.topleft
+        if abs(cons.vx) < 50:
+            cons.soulx -= cons.vx * 2
+        if abs(cons.vy) < 50:
+            cons.souly -= cons.vy * 2
+        if cons.name == "The Soul":
+            drift = math.sin(pygame.time.get_ticks() / 500) * 5
+            screen.blit(SoulShadow, (cons.soulx, cons.souly + drift))
+            screen.blit(SoulOverlay, (cons.soulx, cons.souly + drift))
 
 class Cardpack:
     card_id_counter = 0
@@ -2895,17 +3051,18 @@ def change_notation(number):
     return number
 
 def wrap_text(text, font, max_width):
+    scale = font.scale
     words = text.split(' ')
-    lines = []
-    current_line = []
+    lines, current_line, current_w = [], [], 0
     for word in words:
-        test_line = ' '.join(current_line + [word])
-        if font.get_rect(test_line).width <= max_width:
+        w = _measure_width(word + ' ', scale)
+        if current_w + w <= max_width:
             current_line.append(word)
+            current_w += w
         else:
             if current_line:
                 lines.append(' '.join(current_line))
-                current_line = [word]
+                current_line, current_w = [word], w
             else:
                 lines.append(word)
     if current_line:
@@ -3236,11 +3393,77 @@ def get_card_limit(name):
             return 2
         case "Tower":
             return 1
+        case "Aura":
+            return 1
+        case "Deja Vu":
+            return 1
+        case "Talisman":
+            return 1
+        case "Trance":
+            return 1
+        case "Medium":
+            return 1
+        case "Cryptid":
+            return 1
         case _:
             return 6
 
 def get_spectral_effect(name):
-    pass
+    global money, lastFool, selected_cards, perm_deck, hand, deck, Active_Jokers, GameState, PackCards
+    if name == "Ankh":
+        if len(Active_Jokers) > 0:
+            copied = random.choice(Active_Jokers)
+            Active_Jokers.clear()
+            Active_Jokers.append(copied)
+            copied = Joker(copied.image, copied.rarity, copied.name, edition=copied.edition)
+            Active_Jokers.append(copied)
+    if name == "Aura":
+        for card in selected_cards:
+            edit = random.randint(base_chance, 100)
+            if edit < 40:
+                edit = "Foil"
+            elif edit < 80:
+                edit = "Holographic"
+            else:
+                edit = "Polychrome"
+            card.edition = edit
+    if name == "Cryptid":
+        for card in selected_cards:
+            newcard = Card(card.rank, card.suit, card.image, enhancement=card.enhancement, edition=card.edition, seal=card.seal)
+            if GameState == "Playing":
+                pass
+            else:
+                pass
+    if name == "Deja Vu":
+        pass
+    if name == "Ectoplasm":
+        pass
+    if name == "Familiar":
+        pass
+    if name == "Grim":
+        pass
+    if name == "Hex":
+        pass
+    if name == "Immolate":
+        pass
+    if name == "Incantation":
+        pass
+    if name == "Medium":
+        pass
+    if name == "Ouija":
+        pass
+    if name == "Sigil":
+        pass
+    if name == "Talisman":
+        pass
+    if name == "The Soul":
+        pass
+    if name == "Trance":
+        pass
+    if name == "True Shadow":
+        pass
+    if name == "Wraith":
+        pass
 
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
@@ -3262,13 +3485,13 @@ def get_tarot_effect(name):
         if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(TarotCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "The Soul":
                     break
             Held_Consumables.append(card)
         if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(TarotCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "The Soul":
                     break
             Held_Consumables.append(card)
         lastFool = "Emperor"
@@ -3284,13 +3507,13 @@ def get_tarot_effect(name):
         if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(ShadowCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "True Shadow":
                     break
             Held_Consumables.append(card)
-        if len(Held_Consumables) < maxConsCount and card not in Shop_Cards:
+        if len(Held_Consumables) < maxConsCount:
             while True:
                 card = random.choice(ShadowCards)
-                if card not in Held_Consumables and card not in Shop_Cards:
+                if card not in Held_Consumables and card not in Shop_Cards and card.name != "True Shadow":
                     break
             Held_Consumables.append(card)
         lastFool = "High Priest"
@@ -3329,7 +3552,7 @@ def get_tarot_effect(name):
         if len(selected_cards) == 2:
             card1 = selected_cards[0]
             card2 = selected_cards[1]
-            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal, card1.value, card1.chip_value = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal, card2.value, card2.chip_value
+            card1.rank, card1.suit, card1.enhancement, card1.edition, card1.seal, card1.value, card1.chip_value, card1.saved_suit, card1.saved_rank = card2.rank, card2.suit, card2.enhancement, card2.edition, card2.seal, card2.value, card2.chip_value, card2.saved_suit, card2.saved_rank
             card1.refresh_image()
         lastFool = "Death"
     if name == "Devil":
@@ -3429,6 +3652,7 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Clubs"
+                card.saved_suit = card.suit
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Clubs"
@@ -3443,6 +3667,7 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Diamonds"
+                card.saved_suit = card.suit
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Diamonds"
@@ -3451,6 +3676,7 @@ def get_tarot_effect(name):
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Diamonds"
+                        perm_card.saved_suit = card.saved_suit
                         break
             lastFool = "Star"
     if name == "Strength":
@@ -3460,10 +3686,12 @@ def get_tarot_effect(name):
                     keys = list(RANK_VALUES.keys())
                     idx = keys.index(card.rank)
                     card.rank = keys[idx + 1 if idx < len(RANK_VALUES) else 0]
+                    card.saved_rank = card.rank
                 card.value = RANK_VALUES[card.rank]
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.rank = card.rank
+                        perm_card.saved_rank = card.saved_rank
                         perm_card.value = card.value
                         break
                 card.refresh_image()
@@ -3477,17 +3705,20 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Hearts"
+                card.saved_suit = card.suit
                 card.name = f"{card.rank} of {card.suit}"
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
                         perm_card.name = card.name
+                        perm_card.saved_suit = card.saved_suit
                         break
                 card.refresh_image()
                 for perm_card in perm_deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Hearts"
                         perm_card.name = card.name
+                        perm_card.saved_suit = card.saved_suit
                         break
             lastFool = "Sun"
     if name == "Tower":
@@ -3522,6 +3753,7 @@ def get_tarot_effect(name):
         if len(selected_cards) <= 3:
             for card in selected_cards:
                 card.suit = "Spades"
+                card.saved_suit = card.suit
                 for perm_card in deck:
                     if perm_card.card_id == card.card_id:
                         perm_card.suit = "Spades"
@@ -3586,7 +3818,7 @@ while game:
         else:
             mainMusic.stop()
             mainMusicPlaying = False
-        cursor_pos = pygame.mouse.get_pos()
+        cursor_pos = _virtual_mouse_pos()
         hovering = False
         for toggle in guiToggleList:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
@@ -3597,6 +3829,7 @@ while game:
         if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
             hovering = True
         for event in pygame.event.get():
+            event = _translate_event(event)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -3712,7 +3945,7 @@ while game:
                 draw_fox = True
         if draw_fox:
             focy_scare.animate()
-        pygame.display.flip()
+        _flip()
         clock.tick(60)
         currentFrame += 1
 
@@ -3737,8 +3970,8 @@ while game:
                 Active_Jokers.append(new_joker)
                 joker_manager = initialize_joker_effects(Active_Jokers)
         global discard_queue
-        mouse_pos = pygame.mouse.get_pos()
-        cursor_pos = pygame.mouse.get_pos()
+        mouse_pos = _virtual_mouse_pos()
+        cursor_pos = _virtual_mouse_pos()
         hovering = False
         for toggle in guiToggleList:
             if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
@@ -3765,6 +3998,7 @@ while game:
             close_video()
         prev_attention_state = Atttention_helper.toggle
         for event in pygame.event.get():
+            event = _translate_event(event)
             if event.type == pygame.QUIT:
                 running = False
             keys = pygame.key.get_pressed() 
@@ -3873,11 +4107,11 @@ while game:
                                         break
                                 elif rarity_choice <= 28:
                                     card = random.choice(TarotCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables:
+                                    if card not in Shop_Cards and card not in Held_Consumables and card.name != "The Soul":
                                         break
                                 elif rarity_choice <= 50:
                                     card = random.choice(ShadowCards)
-                                    if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
+                                    if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards and card.name != "True Shadow":
                                         break
                                 elif rarity_choice <= 75:
                                     card = random.choice(Common_Jokers)
@@ -3921,15 +4155,16 @@ while game:
                                 buttonClick.play(0)
                                 if toggle == settings:
                                     settings2.toggle = True
-                                if toggle == githubButton:
-                                    webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
-                                    toggle.toggle = False
-                                if toggle == helpButton:
-                                    help_menu = True
+                                elif not settings2.toggle:    
+                                    if toggle == githubButton:
+                                        webbrowser.open("https://github.com/eepy-sleepy1234/Barratlo/tree/main")
+                                        toggle.toggle = False
+                                    if toggle == helpButton:
+                                        help_menu = True
 
-                                if toggle == quitButton:
-                                    game = False
-                                    running = False
+                                    if toggle == quitButton:
+                                        game = False
+                                        running = False
                         
                     if (SO_SERIOUS.toggle or jonkler_sphere_active) and soserious.rect.collidepoint(mouse_pos):
                         if jonkler_sphere_active and not jonkler_sphere_clicked and GameState == "Playing":
@@ -4168,7 +4403,12 @@ while game:
                                                 newcard = random.choice(ShadowCards)
                                                 if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
-                                                    break
+                                                    if newcard.name == "True Shadow":
+                                                        num = random.randint(base_chance, 10)
+                                                        if num == 10:
+                                                            break
+                                                    else:
+                                                        break
                                     if "Spectral" in pack.name:
                                         GameState = "SpectralPack"
                                         for i in range(pack.cardNum):
@@ -4192,7 +4432,12 @@ while game:
                                                 newcard = random.choice(TarotCards)
                                                 if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
                                                     PackCards.append(newcard)
-                                                    break
+                                                    if newcard.name == "The Soul":
+                                                        num = random.randint(base_chance, 10)
+                                                        if num == 10:
+                                                            break
+                                                    else:
+                                                        break
                                         reset_deck_for_new_round()
                                         for i in range(max_handsize):
                                             if deck:
@@ -4238,6 +4483,9 @@ while game:
                                 for shadow in ShadowCards:
                                     if shadow.name == card.name:
                                         get_shadow_effect(card.name)
+                                for spectral in SpectralCards:
+                                    if spectral.name == card.name:
+                                        get_spectral_effect(card.name)
                         for card in PackCards:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -4278,11 +4526,11 @@ while game:
                                             break
                                     if rarity_choice <= 28:
                                         card = random.choice(TarotCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables:
+                                        if card not in Shop_Cards and card not in Held_Consumables and card.name != "The Soul":
                                             break
                                     elif rarity_choice <= 50:
                                         card = random.choice(ShadowCards)
-                                        if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards:
+                                        if card not in Shop_Cards and card not in Held_Consumables and card.name not in locked_cards and card.name != "True Shadow":
                                             break
                                     elif rarity_choice <= 75:
                                         card = random.choice(Common_Jokers)
@@ -4705,6 +4953,13 @@ while game:
                                                 if num == 4:
                                                     perm_deck.remove(card)
                                                     card.trigger("Break", 0)
+                                        match card.edition:
+                                            case "Foil":
+                                                saved_base_chips += 50
+                                            case "Holographic":
+                                                saved_base_mult += 10
+                                            case "Polychrome":
+                                                saved_base_mult *= 1.5
                                     card.base_scoring_complete = True
                                     card.scoring_complete = False
                                 elif card.base_scoring_complete:
@@ -4721,11 +4976,20 @@ while game:
                                                     if num == 5:
                                                         card.trigger("Mult", 20)
                                                     if num1 == 15:
-                                                        card.trigger("Money", 20)     
+                                                        card.trigger("Money", 20)
                                                 case "Glass":
                                                     card.trigger("XMult", 2)
                                                 case _:
-                                                    pass       
+                                                    pass
+                                            match card.edition:
+                                                case "Foil":
+                                                    card.trigger("Chips", 50)
+                                                case "Holographic":
+                                                    card.trigger("Mult", 10)
+                                                case "Polychrome":
+                                                    card.trigger("XMult", 1.5)
+                                                case _:
+                                                    pass
                                         else:
                                             card.trigger("Debuff", 0)
                                 if card.base_scoring_complete:
@@ -4988,7 +5252,7 @@ while game:
                 screen.blit(text, text_rect)
         for joker in Held_Consumables:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards):
+            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
                 useX, useY = get_selected_Shop_Cards(joker)
                 CuseX, CuseY = -100, -100
             else:
@@ -5002,7 +5266,7 @@ while game:
             UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
         for joker in PackCards:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards):
+            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
                 useX, useY = get_selected_Shop_Cards(joker)
                 CuseX, CuseY = -100, -100
             else:
@@ -5057,18 +5321,13 @@ while game:
                 tip_x = max(0, min(tip_x, WIDTH - tip_w))
 
                 desc = hovered_joker.get_description()
-                words = desc.split()
-                lines, line = [], ''
-                for word in words:
-                    test = line + word + ' '
-                    if PixelFontXXS.get_rect(test).width <= tip_w - 20:
-                        line = test
-                    else:
-                        lines.append(line)
-                        line = word + ' '
-                if line:
-                    lines.append(line)
-                tip_h = len(lines) * PixelFontXXS.get_sized_height() + 20
+                cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10)
+                box_surf = _textbox_cache.get(cache_key)
+                if box_surf is None:
+                    box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10)
+                    _textbox_cache[cache_key] = box_surf
+                tip_h = box_surf.get_height()
+
                 if hovered_joker.rect.bottom + tip_h > HEIGHT:
                     tip_y = int(hovered_joker.rect.top - tip_h - 10)
                 else:
@@ -5267,8 +5526,11 @@ while game:
             invincibleSplash()
 
         animateGlitch()
-
-        pygame.display.flip()  
+        if Kawaii_Mode.toggle:
+            transparent_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            transparent_surface.fill((255, 36, 222, 50))
+            screen.blit(transparent_surface, (0, 0))
+        _flip()  
         clock.tick(60)
         currentFrame += 1
 
