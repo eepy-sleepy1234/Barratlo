@@ -3430,10 +3430,19 @@ def get_spectral_effect(name):
     if name == "Cryptid":
         for card in selected_cards:
             newcard = Card(card.rank, card.suit, card.image, enhancement=card.enhancement, edition=card.edition, seal=card.seal)
+            newcard2 = Card(card.rank, card.suit, card.image, enhancement=card.enhancement, edition=card.edition, seal=card.seal)
             if GameState == "Playing":
-                pass
+                newcard.slot = len(hand) + 1
+                newcard2.slot = len(hand) + 2
+                hand.append(newcard)
+                hand.append(newcard2)
             else:
-                pass
+                newcard.slot = len(PackCards) + 1
+                newcard2.slot = len(PackCards) + 2
+                PackCards.append(newcard)
+                PackCards.append(newcard2)
+            perm_deck.append(newcard)
+            perm_deck.append(newcard2)
     if name == "Deja Vu":
         pass
     if name == "Ectoplasm":
