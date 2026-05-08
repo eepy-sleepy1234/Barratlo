@@ -3686,7 +3686,9 @@ def get_spectral_effect(name):
             card.seal = "Gold"
     if name == "The Soul":
         if len(Active_Jokers) < maxJokerCount:
-            Active_Jokers.append(random.choice(Legendary_Jokers))
+            newjoke = random.choice(Legendary_Jokers)
+            newjoke = Joker(newjoke.image, newjoke.rarity, newjoke.name)
+            Active_Jokers.append(newjoke)
     if name == "Trance":
         for card in selected_cards:
             card.seal = "Blue"
@@ -4646,7 +4648,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(ShadowCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards and newcard.name not in locked_cards:
                                                     PackCards.append(newcard)
                                                     if newcard.name == "True Shadow":
                                                         num = random.randint(base_chance, 10)
@@ -4659,7 +4661,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(SpectralCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards and newcard.name not in locked_cards:
                                                     PackCards.append(newcard)
                                                     break
                                         reset_deck_for_new_round()
@@ -4675,7 +4677,7 @@ while game:
                                         for i in range(pack.cardNum):
                                             while True:
                                                 newcard = random.choice(TarotCards)
-                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards:
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards and newcard.name not in locked_cards:
                                                     PackCards.append(newcard)
                                                     if newcard.name == "The Soul":
                                                         num = random.randint(base_chance, 10)
