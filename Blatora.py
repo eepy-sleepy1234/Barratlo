@@ -4743,6 +4743,9 @@ while game:
                                 for shadow in ShadowCards:
                                     if shadow.name == card.name:
                                         get_shadow_effect(card.name)
+                                for spectral in SpectralCards:
+                                    if spectral.name == card.name:
+                                        get_spectral_effect(card.name)
                                 if "of" in card.name:
                                     perm_deck.append(card)
                                 if selection < 1:
