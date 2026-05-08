@@ -399,6 +399,21 @@ def DeadFrog_effect(context):
     print(FrogCounter)
     return context
 
+def Worm_effect(context):
+    return
+
+def Virus_effect(context):
+    return
+
+def Spyware_effect(context):
+    return
+
+def Ransomware_effect(context):
+    return
+
+def LostKing_effect(context):
+    return
+
 def OopyGoopy_effect(context):
     jokers = context.get('active_jokers')
     if not jokers:
@@ -591,17 +606,42 @@ JOKER_REGISTRY = {
     'Exponent Joker': {
         'events': [('on_hand_played', Exponent_effect)],
         'description': 'Gains ^0.1 each time a Full House is played that contains a four and a two',
-        'Oopy Goopy': True 
+        'Oopy Goopy': True
     },
     'Useful Joker': {
         'events': [('on_hand_played', Useful_effect)],
         'description': '+1 Mult when hand contains a card',
-        'Oopy Goopy': True 
+        'Oopy Goopy': True
     },
     'Dead Frog': {
         'events': [('on_hand_played', DeadFrog_effect)],
         'description': 'This joker gains +20 chips when played hand is not most played hand',
-        'Oopy Goopy': True 
+        'Oopy Goopy': True
+    },
+    'Worm': {
+        'events': [('on_hand_played', Worm_effect)],
+        'description': 'If first played hand of the round contains a glitched card, add another glitched card to your hand',
+        'Oopy Goopy': True
+    },
+    'Virus': {
+        'events': [('on_hand_played', Virus_effect)],
+        'description': 'inserts its own code',
+        'Oopy Goopy': True
+    },
+    'Spyware': {
+        'events': [('on_hand_played', Spyware_effect)],
+        'description': 'something with seeing stuff',
+        'Oopy Goopy': True
+    },
+    'Ransomware': {
+        'events': [('on_hand_played', Ransomware_effect)],
+        'description': 'something with money',
+        'Oopy Goopy': True
+    },
+    'Lost King': {
+        'events': [('on_hand_played', LostKing_effect)],
+        'description': 'Steals the scaling from all scaling jokers',
+        'Oopy Goopy': True
     },
 }
 
