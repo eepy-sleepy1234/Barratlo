@@ -63,9 +63,10 @@ BASES_DIR = os.path.join(ASSETS_DIR, "CardBases")
 PACKS_DIR = os.path.join(ASSETS_DIR, "CardPacks")
 scroll_offset = 0
 scroll_speed = 30
-
+hover_list = []
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
 has_invincible = False
+screen_rect = screen.get_rect()
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     try:
         return pygame.image.load(filepath).convert_alpha()
@@ -370,79 +371,55 @@ STARTBUTTON_X = int((WIDTH/2) - ((WIDTH/4.4)/2))
 STARTBUTTON_Y = (HEIGHT/2) + CENTERLETTERH/2
 start_button_rect = STARTBUTTON.get_rect()
 start_button_rect.topleft = (STARTBUTTON_X, STARTBUTTON_Y)
-
 SETTINGSRECT = SETTINGONIMG.get_rect()
-
 xbutton_rect = xbutton.get_rect()
 xbutton_rect.topleft = ((WIDTH - xbutton_rect.width), 0)
-
 playhandw = Playhand_img.get_width()
 playhandh = Playhand_img.get_height()
 sortrankw = SortbuttonSuit_img.get_width()
 sortrankh = SortbuttonSuit_img.get_height()
 CashOutw = CashOutButton_img.get_width()
 CashOuth = CashOutButton_img.get_height()
-
 SortbuttonSuit_rect = SortbuttonSuit_img.get_rect()
 SortbuttonSuit_rect.topleft = (int(WIDTH/2 - (sortrankw + sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
-
 SortbuttonRank_rect = SortbuttonRank_img.get_rect()
 SortbuttonRank_rect.topleft = (int(WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10)))
-
 Playhand_rect = Playhand_img.get_rect()
 Playhand_rect.topleft = (int(0 + playhandw/4), HEIGHT - int(playhandh * 2))
-
 Discardhand_rect = Playhand_img.get_rect()
 Discardhand_rect.topleft = (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh * 2))
-
 CashOut_rect = CashOutButton_img.get_rect()
 CashOut_rect.topleft = (WIDTH/3.2, HEIGHT / 1.9)
-
 Reroll_rect = RerollButton_img.get_rect()
 Reroll_rect.topleft = (WIDTH/2.95, HEIGHT/1.53)
-
 NextRound_rect = NextRoundButton_img.get_rect()
 NextRound_rect.topleft = (WIDTH/2.95, HEIGHT/1.83)
-
 ShopBuy_rect = ShopBuy_img.get_rect()
 ShopBuy_rect.topleft =(-100, -100)
-
 SellButton_rect = SellButton_img.get_rect()
 SellButton_rect.topleft =(-100, -100)
-
 UseButton_rect = UseButton_img.get_rect()
 UseButton_rect.topleft =(-100, -100)
-
 SkipBlind_rect = SkipBlind_img.get_rect()
 SkipBlind_rect.topleft =(-100, -100)
-
 SelectBlind_rect = SelectBlind_img.get_rect()
 SelectBlind_rect.topleft =(-100, -100)
-
 CopyButton_rect = Copy_img.get_rect()
 CopyButton_rect.topleft = (WIDTH/1.7 , HEIGHT/1.365)
-
 NewRunButton_rect = NewRun_img.get_rect()
 NewRunButton_rect.topleft = (WIDTH/1.34 , HEIGHT/1.25)
-
 MainMenuButton_rect = MainMenu_img.get_rect()
 MainMenuButton_rect.topleft = (WIDTH/1.74 , HEIGHT/1.25)
-
 MenuBackButton_rect = MenuBack_img.get_rect()
 MenuBackButton_rect.topleft = (WIDTH/4.53 , HEIGHT/1.15)
-
 MenuBlindsButton_rect = MenuBlinds_img.get_rect()
 MenuBlindsButton_rect.topleft = (WIDTH/1.67 , HEIGHT/8)
-
 MenuPokerHandsButton_rect = MenuPokerHands_img.get_rect()
 MenuPokerHandsButton_rect.topleft = (WIDTH/4.25 , HEIGHT/8)
-
 MenuVouchersButton_rect = MenuVouchers_img.get_rect()
 MenuVouchersButton_rect.topleft = (WIDTH/2.4 , HEIGHT/8)
-
 RunInfo_rect = RunInfo.get_rect()
 RunInfo_rect.topleft = (WIDTH/80, HEIGHT/1.67)
-
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
@@ -2704,7 +2681,9 @@ for root, dirs, files in os.walk(JOKERS_DIR):
             
 for jokername in All_Jokers:
     All_Jokers_Name.append(jokername.name)
+
 def draw_jokers(surface, cards, center_x, center_y, spread=20):
+    
     n = len(cards)
     if n == 0:
         return
@@ -2748,6 +2727,7 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
             rect = rotated.get_rect(center=(joker.x, joker.y))
             surface.blit(rotated, rect.topleft)
             joker.rect = rect
+            active_hover_rects.append(joker.rect)
 
 class Consumable:
     card_id_counter = 0
@@ -2884,6 +2864,7 @@ def draw_consumables(surface, cards, center_x, center_y, spread=20):
         surface.blit(rotated, rect.topleft)
         cons.rect = rect
         cons.soulx, cons.souly = rect.topleft
+        active_hover_rects.append(cons.rect)
         if abs(cons.vx) < 50:
             cons.soulx -= cons.vx * 2
         if abs(cons.vy) < 50:
@@ -3814,10 +3795,15 @@ def get_shadow_effect(name):
 
 init_video()
 game = True
-
+mouse_display = cursor_normal
 def mouse_hover(rect):
+    global mouse_display
     _virtual_mouse_pos = lambda: pygame.mouse.get_pos()
+    
     if rect.collidepoint(_virtual_mouse_pos()):
+        mouse_display = cursor_hover
+   
+  
         
     
 if joker_manager is None:
@@ -3825,6 +3811,7 @@ if joker_manager is None:
 
 while game:
     while startGame == False:
+        mouse_display = cursor_normal
         if Music.toggle:
             if not mainMusicPlaying:
                 mainMusic.play(-1)
@@ -3832,16 +3819,16 @@ while game:
         else:
             mainMusic.stop()
             mainMusicPlaying = False
-        cursor_pos = _virtual_mouse_pos()
-        hovering = False
+        mouse_pos = _virtual_mouse_pos()
+        
         for toggle in guiToggleList:
-            if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
-                hovering = True
-                break
+            if toggle.should_draw:
+                mouse_hover(toggle.rect)
+                
 
         current_blind = get_current_blind()
-        if current_blind and current_blind.rect.collidepoint(cursor_pos) and GameState != "Dead":
-            hovering = True
+        if current_blind and GameState != "Dead":
+            mouse_hover(current_blind.rect)
         for event in pygame.event.get():
             event = _translate_event(event)
             if event.type == pygame.QUIT:
@@ -3927,6 +3914,7 @@ while game:
             letter.draw()
         screen.blit(STARTBUTTON, (STARTBUTTON_X, STARTBUTTON_Y))
         
+        
         if settings2.toggle:
             screen.fill((255,255,255))
             draw_settings()
@@ -3955,6 +3943,7 @@ while game:
                 draw_fox = True
         if draw_fox:
             focy_scare.animate()
+        screen.blit(mouse_display, mouse_pos)
         _flip()
         clock.tick(60)
         currentFrame += 1
@@ -3964,6 +3953,8 @@ while game:
     overlay.set_alpha(128)
     
     while running:
+        active_hover_rects = []
+        mouse_display = cursor_normal
         if Music.toggle:
             if not mainMusicPlaying:
                 mainMusic.play(-1)
@@ -3981,25 +3972,26 @@ while game:
                 joker_manager = initialize_joker_effects(Active_Jokers)
         global discard_queue
         mouse_pos = _virtual_mouse_pos()
-        cursor_pos = _virtual_mouse_pos()
-        hovering = False
         for toggle in guiToggleList:
-            if toggle.should_draw and toggle.rect.collidepoint(cursor_pos):
-                hovering = True
-                break
+            if toggle.should_draw:
+                mouse_hover(toggle.rect)
+                
         hovered_joker = None
+        
         for joker in Active_Jokers:
-            if joker.x > 0 and joker.rect.collidepoint(cursor_pos):
+          
+            if joker.x > 0 and joker.rect.collidepoint(mouse_pos):
                 hovered_joker = joker
                 break
+               
         for joker in Shop_Cards:
-            if isinstance(joker, Joker) and joker.x > 0 and joker.rect.collidepoint(cursor_pos):
+            if isinstance(joker, Joker) and joker.x > 0 and joker.rect.collidepoint(mouse_pos):
                 hovered_joker = joker
                 break
         for card in hand:
-            if card.rect.collidepoint(cursor_pos) and GameState != "Dead":
-                hovering = True
-                break
+            if  GameState != "Dead":
+                mouse_hover(card.rect)
+               
             
         update_gui_buttons()
         if Atttention_helper.toggle and not prev_attention_state:
@@ -4921,6 +4913,7 @@ while game:
         screen.blit(GameBackground_img, (0, 0))
         screen.blit(SideBar_img, (0, 0))
         screen.blit(RunInfo, RunInfo_rect.topleft)
+        active_hover_rects.append(RunInfo_rect)
         if scoring_queue and not calculating:
                     for card in scoring_queue:
                         if card.is_contributing:
@@ -5068,13 +5061,16 @@ while game:
         if GameState == "Cashing":
             screen.blit(CashOutBackground_img, (WIDTH/3.5, HEIGHT / 2))
             screen.blit(CashOutButton_img, (WIDTH/3.2, HEIGHT / 1.9))
+            active_hover_rects.append(CashOut_rect)
         if GameState == "Shop":
             screen.blit(ShopBackground_img, (WIDTH/3, HEIGHT/2))
             screen.blit(RerollButton_img, (WIDTH/2.95, HEIGHT/1.53))
+            active_hover_rects.append(Reroll_rect)
             text, text_rect = PixelFontS.render(f"${rerollCost}", white)
             text_rect.center = (int(WIDTH/2.55), int(HEIGHT / 1.4))
             screen.blit(text, text_rect)
             screen.blit(NextRoundButton_img, (WIDTH/2.95, HEIGHT/1.83))
+            active_hover_rects.append(NextRound_rect)
         if GameState == "Blinds":
             if round_num % 3 == 1:
                 screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/2))
@@ -5083,6 +5079,9 @@ while game:
                 screen.blit(SkipBlind_img, (WIDTH/2.8, HEIGHT/1.18))
                 SelectBlind_rect.topleft = (WIDTH/3.4, HEIGHT/1.93)
                 SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
+                active_hover_rects.append(SelectBlind_rect)
+                active_hover_rects.append(SkipBlind_rect)
+
                 text, text_rect = PixelFontS.render(small_blind.name, black)
                 text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.65))
                 screen.blit(text, text_rect)
@@ -5205,9 +5204,13 @@ while game:
                     text_rect = text.get_rect(center=(WIDTH/7.4, start_y + i * line_height))
                     screen.blit(text, text_rect)
             screen.blit(Playhand_img, (int(0 + playhandw/4), HEIGHT - int(playhandh *2 )))
+            active_hover_rects.append(Playhand_rect)
             screen.blit(Discardhand_img, (int(WIDTH - (playhandw + playhandw/4)), HEIGHT - int(playhandh *2 )))
+            active_hover_rects.append(Discardhand_rect)
             screen.blit(SortbuttonSuit_img,(int(WIDTH/2 - (sortrankw +sortrankw/2)), int(HEIGHT - int(sortrankh +sortrankh/10))))
+            active_hover_rects.append(SortbuttonSuit_rect)
             screen.blit(SortbuttonRank_img,(int (WIDTH/2 + (sortrankw/2)), int(HEIGHT - int(sortrankh + sortrankh/10))))
+            active_hover_rects.append(SortbuttonRank_rect)
 
         screen.blit(JokerBG_img,(WIDTH/2.7, HEIGHT/30))
         text, _ = PixelFontXS.render(f"{len(Active_Jokers)} / {maxJokerCount}", white)
@@ -5238,6 +5241,7 @@ while game:
             if buyX > 0:
                 screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 ShopBuy_rect = ShopBuy_img.get_rect()
+                active_hover_rects.append(ShopBuy_rect)
                 ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
                 text, _ = PixelFontS.render(f"{joker.price}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
@@ -5248,6 +5252,7 @@ while game:
                 screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 SellButton_rect = SellButton_img.get_rect()
                 SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                active_hover_rects.append(SellButton_rect)
                 text, _ = PixelFontS.render(f"{int(joker.price / 2)}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
@@ -5257,6 +5262,7 @@ while game:
                 screen.blit(SellButton_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 SellButton_rect = SellButton_img.get_rect()
                 SellButton_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                active_hover_rects.append(SellButton_rect)
                 text, _ = PixelFontS.render(f"{int(joker.price / 2)}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
@@ -5274,6 +5280,7 @@ while game:
                 screen.blit(CantUseButton_img, (CuseX + WIDTH/30, CuseY - HEIGHT/30))
             UseButton_rect = UseButton_img.get_rect()
             UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+            active_hover_rects.append(UseButton_rect)
         for joker in PackCards:
             limit = get_card_limit(joker.name)
             if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
@@ -5288,12 +5295,14 @@ while game:
                 screen.blit(CantUseButton_img, (CuseX + WIDTH/30, CuseY - HEIGHT/30))
             UseButton_rect = UseButton_img.get_rect()
             UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
+            active_hover_rects.append(UseButton_rect)
         for joker in ShopPacks:
             buyX, buyY = get_selected_Shop_Cards(joker)
             if buyX > 0:
                 screen.blit(ShopBuy_img, (buyX - WIDTH/30, buyY + HEIGHT/15))
                 ShopBuy_rect = ShopBuy_img.get_rect()
                 ShopBuy_rect.topleft = (buyX - WIDTH/30, buyY + HEIGHT/15)
+                active_hover_rects.append(ShopBuy_rect)
                 text, _ = PixelFontS.render(f"{joker.price}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
@@ -5381,6 +5390,7 @@ while game:
             screen.fill((255,255,255))
             draw_settings()
             screen.blit(xbutton,((WIDTH - xbutton_rect.width),0))
+            active_hover_rects.append(xbutton_rect)
 
         chip_indicators = [indicator for indicator in chip_indicators if indicator.update()]
         for indicator in chip_indicators:
@@ -5396,6 +5406,11 @@ while game:
             screen.blit(MenuBlinds_img, (WIDTH/1.67 , HEIGHT/8))
             screen.blit(MenuVouchers_img, (WIDTH/2.4 , HEIGHT/8))
             screen.blit(MenuPokerHands_img, (WIDTH/4.25 , HEIGHT/8))
+            active_hover_rects.append(MenuBackButton_rect)
+            active_hover_rects.append(MenuBlindsButton_rect)
+            active_hover_rects.append(MenuVouchersButton_rect)
+            active_hover_rects.append(MenuPokerHandsButton_rect)
+
             if selectedMenu == "Hands":
                 screen.blit(Pointer_img, (WIDTH/3.5 , HEIGHT/16))
                 i = 0
@@ -5486,11 +5501,7 @@ while game:
                     bar_y = int((-scroll_offset / total_height) * view_height + 100)
                     pygame.draw.rect(screen, (100, 100, 100), (WIDTH - 40, bar_y, 20, bar_height))
                 screen.blit(xbutton, (WIDTH - xbutton_rect.width, 0))
-        if not settings:
-            if hovering:
-                screen.blit(cursor_hover, cursor_pos)
-            else:
-                screen.blit(cursor_normal, cursor_pos)
+        
         if GameState == "Playing":
             if current_blind.name == "The Eye":
                 blurred = boss_debuff()
@@ -5540,6 +5551,9 @@ while game:
             transparent_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
             transparent_surface.fill((255, 36, 222, 50))
             screen.blit(transparent_surface, (0, 0))
+        for rect in active_hover_rects:
+            mouse_hover(rect)
+        screen.blit(mouse_display, mouse_pos)
         _flip()  
         clock.tick(60)
         currentFrame += 1
