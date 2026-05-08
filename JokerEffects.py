@@ -9,6 +9,8 @@ poolMoney = 0
 skipMult = 1
 exponentJoker = 1
 
+
+
 def reset_joker_variables():
     global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker
     wetFloorValue = 0
@@ -391,8 +393,10 @@ def DeadFrog_effect(context):
     hand = context.get("hand_type", 0)
     if hand != most_hand:
         FrogCounter += 1
+    
     context["chips"] = context.get('chips', 0) + (20 * FrogCounter)
     context.setdefault('triggered_jokers', []).append('Dead Frog')
+    print(FrogCounter)
     return context
 
 def OopyGoopy_effect(context):
