@@ -16,6 +16,7 @@ import pyperclip
 import colorsys
 import JokerEffects
 import copy
+import operator
 from JokerEffects import JokerEffectsManager, JOKER_REGISTRY, initialize_joker_effects
 pygame.init()
 pygame.freetype.init()
@@ -182,7 +183,22 @@ scroll_offset = 0
 scroll_speed = 30
 line_height = OSDmono.get_sized_height()
 jevilActive = False
-
+hands_played = {
+    'High Card': 0,
+    'Pair': 0,
+    'Two Pair': 0,
+    'Three of a Kind': 0,
+    'Straight': 0,
+    'Flush': 0,
+    'Full House': 0,
+    'Four of a Kind': 0,
+    'Straight Flush': 0,
+    'Royal Flush': 0,
+    'Five of a Kind': 0,
+    'Flush Five': 0,
+    'Flush House': 0,
+    'Huh of a What': 0
+}
 for line in help_lines:
     clean_line = html.unescape(line.replace('\t', '    ').rstrip())
 
@@ -5611,17 +5627,20 @@ while game:
                 scoring_in_progress = False
                 scored = True
         if scored:
+            if saved_hand in hands_played:
+                hands_played[saved_hand] += 1
             for joker in Active_Jokers:
                 if joker.name == "Pool Table":
                     JokerEffects.poolMoney += 0.1
-    
             selected_cards = [card for card in hand if card.state in ("played", "scored")]
-          
+
             if len(selected_cards) > 0:
                 hand_type_temp, contributing_temp = detect_hand(selected_cards)
             else:
                 hand_type_temp = saved_hand
                 contributing_temp = []
+            sorted_dict = dict(sorted(hands_played.items(), key=operator.itemgetter(1), reverse=True))
+            first_key = next(iter(sorted_dict))
             context = {
                 'chips': saved_base_chips,
                 'mult': saved_base_mult,
@@ -5634,7 +5653,7 @@ while game:
                 'rulesHand': RulesHand,
                 'blind': current_blind,
                 'bosses': boss_blinds,
-                "most_played" : max(hand_plays.items(), key=lambda item: item[1])
+                "most_played" : first_key,
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
@@ -5711,10 +5730,8 @@ while game:
                         current_score = round(final_score * ease_progress)
                     saved_base_chips = round((saved_base_chips * saved_level) * (1.0 - ease_progress))
                     saved_base_mult = round((saved_base_mult * saved_level) * (1.0 - ease_progress) * (1.5 ** steelnum))
-                    if saved_hand != 'Royal Flush':
-                        hand_plays[saved_hand] += 1
-                    else:
-                        hand_plays['Straight Flush'] += 1
+                    
+                    
                     if saved_base_mult * saved_base_chips > highest_hand:
                         highest_hand = saved_base_mult * saved_base_chips
                     if calc_progress >= 1.0:
