@@ -1712,6 +1712,8 @@ SCORED_POSITIONS = [
 SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"]
 RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 RANKS_WRITTEN = ["Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King", "Ace"]
+FACES_WRITTEN = ["Jack", "Queen", "King"]
+NUMBERS_WRITTEN = ["Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
 RANK_VALUES = {
     "Two": 2,
     "Three": 3,
@@ -3409,7 +3411,7 @@ def get_card_limit(name):
             return 6
 
 def get_spectral_effect(name):
-    global money, lastFool, selected_cards, perm_deck, hand, deck, Active_Jokers, GameState, PackCards
+    global money, lastFool, selected_cards, perm_deck, hand, deck, Active_Jokers, GameState, PackCards, max_handsize
     if name == "Ankh":
         if len(Active_Jokers) > 0:
             copied = random.choice(Active_Jokers)
@@ -3444,35 +3446,276 @@ def get_spectral_effect(name):
             perm_deck.append(newcard)
             perm_deck.append(newcard2)
     if name == "Deja Vu":
-        pass
+        for card in selected_cards:
+            card.seal = "Red"
     if name == "Ectoplasm":
-        pass
+        max_handsize -= 1
+        for i in range(len(Active_Jokers)):
+            negative = random.choice(Active_Jokers)
+            if negative.edition == None:
+                break
+        if negative.edition == None:
+            negative.edition = "Negative"
     if name == "Familiar":
-        pass
+        if GameState == "Playing":
+            rand1 = hand.pop(randindex := random.randrange(len(hand)))
+            for i in range(3):
+                randrank = random.choice(FACES_WRITTEN)
+                randsuit = random.choice(SUITS)
+                num = random.randint(1 , 100)
+                if num > 87:
+                    enhancement = "Bonus"
+                elif num > 75:
+                    enhancement = "Glass"
+                elif num > 63:
+                    enhancement = "Gold"
+                elif num > 50:
+                    enhancement = "Lucky"
+                elif num > 38:
+                    enhancement = "Mult"
+                elif num > 25:
+                    enhancement = "Steel"
+                elif num > 13:
+                    enhancement = "Glitched"
+                filename = f"{randrank}Of{randsuit}.png"
+                filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                if enhancement == "Glitched":
+                    filename = f"GlitchBaseSpriteSheet.png"
+                    filepath = os.path.join(SPRITESHEETS_DIR, filename)
+                image = pygame.image.load(filepath).convert_alpha()
+                newcard = Card(randrank, randsuit, image, slot=len(hand) + 1 , enhancement=enhancement)
+                newcard.refresh_image()
+                hand.append(newcard)
+                perm_deck.append(newcard)
+        else:
+            rand1 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            for i in range(3):
+                randrank = random.choice(FACES_WRITTEN)
+                randsuit = random.choice(SUITS)
+                num = random.randint(1 , 100)
+                if num > 87:
+                    enhancement = "Bonus"
+                elif num > 75:
+                    enhancement = "Glass"
+                elif num > 63:
+                    enhancement = "Gold"
+                elif num > 50:
+                    enhancement = "Lucky"
+                elif num > 38:
+                    enhancement = "Mult"
+                elif num > 25:
+                    enhancement = "Steel"
+                elif num > 13:
+                    enhancement = "Glitched"
+                filename = f"{randrank}Of{randsuit}.png"
+                filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                if enhancement == "Glitched":
+                    filename = f"GlitchBaseSpriteSheet.png"
+                    filepath = os.path.join(SPRITESHEETS_DIR, filename)
+                image = pygame.image.load(filepath).convert_alpha()
+                newcard = Card(randrank, randsuit, image, enhancement=enhancement)
+                newcard.refresh_image()
+                PackCards.append(newcard)
+                perm_deck.append(newcard)
     if name == "Grim":
-        pass
+        if GameState == "Playing":
+            rand1 = hand.pop(randindex := random.randrange(len(hand)))
+            randrank = "Ace"
+            for i in range(2):
+                randsuit = random.choice(SUITS)
+                num = random.randint(1 , 100)
+                if num > 87:
+                    enhancement = "Bonus"
+                elif num > 75:
+                    enhancement = "Glass"
+                elif num > 63:
+                    enhancement = "Gold"
+                elif num > 50:
+                    enhancement = "Lucky"
+                elif num > 38:
+                    enhancement = "Mult"
+                elif num > 25:
+                    enhancement = "Steel"
+                elif num > 13:
+                    enhancement = "Glitched"
+                filename = f"{randrank}Of{randsuit}.png"
+                filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                if enhancement == "Glitched":
+                    filename = f"GlitchBaseSpriteSheet.png"
+                    filepath = os.path.join(SPRITESHEETS_DIR, filename)
+                image = pygame.image.load(filepath).convert_alpha()
+                newcard = Card(randrank, randsuit, image, slot=len(hand) + 1 , enhancement=enhancement)
+                newcard.refresh_image()
+                hand.append(newcard)
+                perm_deck.append(newcard)
+        else:
+            rand1 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            for i in range(2):
+                randrank = random.choice(RANKS_WRITTEN)
+                randsuit = random.choice(SUITS)
+                num = random.randint(1 , 100)
+                if num > 87:
+                    enhancement = "Bonus"
+                elif num > 75:
+                    enhancement = "Glass"
+                elif num > 63:
+                    enhancement = "Gold"
+                elif num > 50:
+                    enhancement = "Lucky"
+                elif num > 38:
+                    enhancement = "Mult"
+                elif num > 25:
+                    enhancement = "Steel"
+                elif num > 13:
+                    enhancement = "Glitched"
+                filename = f"{randrank}Of{randsuit}.png"
+                filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                if enhancement == "Glitched":
+                    filename = f"GlitchBaseSpriteSheet.png"
+                    filepath = os.path.join(SPRITESHEETS_DIR, filename)
+                image = pygame.image.load(filepath).convert_alpha()
+                newcard = Card(randrank, randsuit, image, enhancement=enhancement)
+                newcard.refresh_image()
+                PackCards.append(newcard)
+                perm_deck.append(newcard)
     if name == "Hex":
-        pass
+        if len(Active_Jokers) > 0:
+            hexed = random.choice(Active_Jokers)
+            Active_Jokers.clear()
+            hexed.edition = "Polychrome"
+            Active_Jokers.append(hexed)
     if name == "Immolate":
-        pass
+        money += 20
+        if GameState == "Playing":
+            rand1 = hand.pop(randindex := random.randrange(len(hand)))
+            rand2 = hand.pop(randindex := random.randrange(len(hand)))
+            rand3 = hand.pop(randindex := random.randrange(len(hand)))
+            rand4 = hand.pop(randindex := random.randrange(len(hand)))
+            rand5 = hand.pop(randindex := random.randrange(len(hand)))
+        else:
+            rand1 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            rand2 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            rand3 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            rand4 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            rand5 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+        perm_deck.pop(rand1)
+        perm_deck.pop(rand2)
+        perm_deck.pop(rand3)
+        perm_deck.pop(rand4)
+        perm_deck.pop(rand5)
     if name == "Incantation":
-        pass
+        if GameState == "Playing":
+            rand1 = hand.pop(randindex := random.randrange(len(hand)))
+            for i in range(4):
+                randrank = random.choice(NUMBERS_WRITTEN)
+                randsuit = random.choice(SUITS)
+                num = random.randint(1 , 100)
+                if num > 87:
+                    enhancement = "Bonus"
+                elif num > 75:
+                    enhancement = "Glass"
+                elif num > 63:
+                    enhancement = "Gold"
+                elif num > 50:
+                    enhancement = "Lucky"
+                elif num > 38:
+                    enhancement = "Mult"
+                elif num > 25:
+                    enhancement = "Steel"
+                elif num > 13:
+                    enhancement = "Glitched"
+                filename = f"{randrank}Of{randsuit}.png"
+                filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                if enhancement == "Glitched":
+                    filename = f"GlitchBaseSpriteSheet.png"
+                    filepath = os.path.join(SPRITESHEETS_DIR, filename)
+                image = pygame.image.load(filepath).convert_alpha()
+                newcard = Card(randrank, randsuit, image, slot=len(hand) + 1 , enhancement=enhancement)
+                newcard.refresh_image()
+                hand.append(newcard)
+                perm_deck.append(newcard)
+        else:
+            rand1 = PackCards.pop(randindex := random.randrange(len(PackCards)))
+            for i in range(4):
+                randrank = random.choice(NUMBERS_WRITTEN)
+                randsuit = random.choice(SUITS)
+                num = random.randint(1 , 100)
+                if num > 87:
+                    enhancement = "Bonus"
+                elif num > 75:
+                    enhancement = "Glass"
+                elif num > 63:
+                    enhancement = "Gold"
+                elif num > 50:
+                    enhancement = "Lucky"
+                elif num > 38:
+                    enhancement = "Mult"
+                elif num > 25:
+                    enhancement = "Steel"
+                elif num > 13:
+                    enhancement = "Glitched"
+                filename = f"{randrank}Of{randsuit}.png"
+                filepath = os.path.join(SUITS_DIR, randsuit, filename)
+                if enhancement == "Glitched":
+                    filename = f"GlitchBaseSpriteSheet.png"
+                    filepath = os.path.join(SPRITESHEETS_DIR, filename)
+                image = pygame.image.load(filepath).convert_alpha()
+                newcard = Card(randrank, randsuit, image, enhancement=enhancement)
+                newcard.refresh_image()
+                PackCards.append(newcard)
+                perm_deck.append(newcard)
     if name == "Medium":
-        pass
+        for card in selected_cards:
+            card.seal = "Purple"
     if name == "Ouija":
-        pass
+        max_handsize -= 1
+        rand = random.randint(0, 13)
+        randrank = RANKS_WRITTEN[rand]
+        randvalue = RANK_VALUES[randrank]
+        if GameState == "Playing":
+            for card in hand:
+                card.rank = randrank
+                card.value = randvalue
+                card.chip_value = randvalue
+                card.refresh_image()
+        else:
+            for card in PackCards:
+                card.rank = randrank
+                card.value = randvalue
+                card.chip_value = randvalue
+                card.refresh_image()
+        for card in perm_deck:
+            card.rank = randrank
+            card.value = randvalue
+            card.chip_value = randvalue
     if name == "Sigil":
-        pass
+        randsuit = random.choice(SUITS)
+        if GameState == "Playing":
+            for card in hand:
+                card.suit = randsuit
+                card.refresh_image()
+        else:
+            for card in PackCards:
+                card.suit = randsuit
+                card.refresh_image()
+        for card in perm_deck:
+            card.suit = randsuit
     if name == "Talisman":
-        pass
+        for card in selected_cards:
+            card.seal = "Gold"
     if name == "The Soul":
-        pass
+        if len(Active_Jokers) < maxJokerCount:
+            Active_Jokers.append(random.choice(Legendary_Jokers))
     if name == "Trance":
-        pass
+        for card in selected_cards:
+            card.seal = "Blue"
     if name == "True Shadow":
-        pass
+        for l in Hand_levels:
+            Hand_levels[l] += 1
     if name == "Wraith":
-        pass
+        money = 0
+        if len(Active_Jokers) < maxJokerCount:
+            Active_Jokers.append(random.choice(Rare_Jokers))
 
 def get_tarot_effect(name):
     global money, lastFool, selected_cards, perm_deck, hand, deck
