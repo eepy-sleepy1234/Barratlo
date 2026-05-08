@@ -3749,6 +3749,11 @@ def get_shadow_effect(name):
 init_video()
 game = True
 
+def mouse_hover(rect):
+    _virtual_mouse_pos = lambda: pygame.mouse.get_pos()
+    if rect.collidepoint(_virtual_mouse_pos()):
+        
+    
 if joker_manager is None:
     joker_manager = initialize_joker_effects(Active_Jokers)
 
@@ -3870,11 +3875,7 @@ while game:
 
         dev_commands()
         blit_img()
-   
-        if hovering:
-            screen.blit(cursor_hover, cursor_pos)
-        else:
-            screen.blit(cursor_normal, cursor_pos)   
+
 
         if Focy.toggle: 
             if random.randint(min(base_chance, 20000), 20000)  == 20000:
