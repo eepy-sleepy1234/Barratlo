@@ -31,8 +31,12 @@ _real_screen = pygame.display.set_mode((REAL_W, REAL_H), pygame.NOFRAME)
 screen = pygame.Surface((VW, VH))
 
 def _flip():
-    pygame.transform.scale(screen, (REAL_W, REAL_H), _real_screen)
-    pygame.display.flip()
+    if REAL_W == VW and REAL_H == VH:
+        _real_screen.blit(screen, (0, 0)) 
+        pygame.display.flip()
+    else:
+        pygame.transform.scale(screen, (REAL_W, REAL_H), _real_screen)
+        pygame.display.flip()
 
 def _virtual_mouse_pos():
     rx, ry = pygame.mouse.get_pos()
@@ -287,7 +291,7 @@ soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3")
 invinciblesound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "Invincible.mp3"))
 # ==================== SPRITESHEETS ====================
 FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
-SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
+##SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
 SOSERIOUS = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SoSerious.png'))
 SETTINGSIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'SettingsButton.png'))
 SHOPANIMATIONIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'Shop_Animation.png'))
@@ -505,6 +509,9 @@ Pirate_Mode = User_settings('ARR')
 Hood_Mode = User_settings('Gangsta')
 SUFFIXES = [""]
 REPLACEMENTS = [""]
+
+
+
 # ==================== KAWAII MODE ====================
 _KAWAII_SUFFIXES = [" uwu", " owo", " :3", " >w<", " ^-^", " ~nyaa~", "~"]
 
@@ -544,6 +551,8 @@ _HOOD_REPLACEMENTS = [
     ("you ", "u "), ("You ", "U "),
     ("ing", "in'"), ("ING", "IN'"),
 ]
+
+
 
 def _kawaii(text):
     if text is not None:
@@ -592,7 +601,78 @@ def dev_commands():
 
 dev_code = "talabro"
 dev_progress = ""
-           
+
+SHEET_PATH = os.path.join(SPRITESHEETS_DIR, 'Suits.png')
+suitsheet = pygame.image.load(SHEET_PATH).convert_alpha()
+sheet_w, sheet_h = suitsheet.get_size()
+frame_w = sheet_w // 4
+base_suits = []
+for i in range(4):
+
+    frame = pygame.Surface(
+        (frame_w, sheet_h),
+        pygame.SRCALPHA
+    )
+
+    frame.blit(
+        suitsheet,
+        (0, 0),
+        (i * frame_w, 0, frame_w, sheet_h)
+    )
+
+    base_suits.append(frame)
+
+
+rings = [
+    {'radius':   70, 'count':  4, 'speed': 2,   'angle': 0,           'dir':  1, 'size': 20},
+    {'radius':  140, 'count':  8, 'speed': 1.5, 'angle': math.pi/8,   'dir': -1, 'size': 32},
+    {'radius':  280, 'count': 12, 'speed': 1,   'angle': 0,           'dir':  1, 'size': 46},
+    {'radius':  560, 'count': 16, 'speed': 0.5, 'angle': math.pi/16,  'dir': -1, 'size': 60},
+    {'radius':  840, 'count': 16, 'speed': 0.25, 'angle': math.pi/16,  'dir': 1, 'size': 75},
+]
+
+for ring in rings:
+    s = ring['size']
+    ring['suits'] = [
+        pygame.transform.scale(suit, (s, s))
+        for suit in base_suits
+    ]
+    ring['half'] = s // 2
+    ring['offsets'] = [
+        (i / ring['count']) * math.tau
+        for i in range(ring['count'])
+    ]
+
+cx, cy = WIDTH // 2, HEIGHT // 2
+
+_ring_surface = pygame.Surface((VW, VH), pygame.SRCALPHA)
+
+
+def animate_ring():
+    _ring_surface.fill((0, 0, 0, 0))
+
+    for ring in rings:
+        ring['angle'] += ring['speed'] * ring['dir'] * dt
+
+        angle   = ring['angle']
+        radius  = ring['radius']
+        half    = ring['half']
+        offsets = ring['offsets']
+        suits   = ring['suits']
+        count   = ring['count']
+
+        for i in range(count):
+            a = angle + offsets[i]
+            x = cx + int(math.cos(a) * radius)
+            y = cy + int(math.sin(a) * radius)
+            if -half < x < WIDTH + half and -half < y < HEIGHT + half:
+                rotation_deg = -math.degrees(a) + 90
+                rotated = pygame.transform.rotate(suits[i % 4], rotation_deg)
+                rw, rh = rotated.get_size()
+                _ring_surface.blit(rotated, (x - rw // 2, y - rh // 2))
+
+    screen.blit(_ring_surface, (0, 0))
+    
 def reset_deck_for_new_round():
     global deck, hand
     hand.clear()
@@ -1431,13 +1511,13 @@ class starting_letters():
         if self.delay > 0:
             self.delay -= 1
             return
-    
+        
         if not hasattr(self, 'bob_timer'):
             self.bob_timer = 0
-    
+
         if startAnimation:
-            self.bob_timer += 0.05  
-            bob_offset = math.sin(self.bob_timer) * (LETTERH/3)  
+            self.bob_timer += 0.05
+            bob_offset = math.sin(self.bob_timer) * (LETTERH / 3)
             self.ypos = self.main_ypos + bob_offset
 def update_card_animation():
     global endBG
@@ -1485,19 +1565,16 @@ def letter_classes():
     shuffled_letters = LetterPosx.copy()
     
     while True:
-        random.shuffle(shuffled_letters)
-        StartingB.target_x = shuffled_letters[0]
-        StartingA.target_x = shuffled_letters[1]
-        StartingL.target_x = shuffled_letters[2]
-        StartingA2.target_x = shuffled_letters[3]
-        StartingT.target_x = shuffled_letters[4]
-        StartingR.target_x = shuffled_letters[5]
-        StartingO.target_x = shuffled_letters[6]
-        temp_order = sorted(Letters, key=lambda letter: letter.target_x)
-        temp_string = ''.join([letter.letter for letter in temp_order])
+        shuffled = Letters.copy()
+        random.shuffle(shuffled)
+
+        temp_string = ''.join(letter.letter for letter in shuffled)
+
         if temp_string != "BALATRO":
             break
 
+    for i, letter in enumerate(shuffled):
+        letter.target_x = LetterPosx[i]
 def animate_letters():
     global letter_animation
     screen.fill((255,255,255))
@@ -2329,7 +2406,7 @@ class Draggable_Animation(Animation):
         self.rect.x = int(self.xpos)
         self.rect.y = int(self.ypos)
         
-spinningBG = Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
+#spinningBG = Animation(SPINNINGBGIMG, 1980, 1080, 24, 71, 0, 0, WIDTH, HEIGHT)
 settingsButton = Animation(SETTINGSIMG, 333, 333, 23, 50, WIDTH - WIDTH/6,HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
 soserious = Draggable_Animation(SOSERIOUS, 250, 250, 24, 39, (WIDTH/1.5)-250, (HEIGHT/2)-250, int(WIDTH/5), int(WIDTH/5))
 setting_rect = pygame.Rect(WIDTH-WIDTH/6 , HEIGHT - WIDTH/6, WIDTH/6, WIDTH/6)
@@ -4101,6 +4178,8 @@ if joker_manager is None:
 
 while game:
     while startGame == False:
+        
+        dt = clock.tick(60) / 1000.0
         mouse_display = cursor_normal
         if Music.toggle:
             if not mainMusicPlaying:
@@ -4170,8 +4249,9 @@ while game:
                         buttonClick.play(0)
                         settings2.toggle = False
             
-        screen.fill((0, 0, 0))  
-        spinningBG.animate()
+        screen.fill((255, 255, 255))
+        animate_ring()
+        #spinningBG.animate()
         settingsButton.animate()
 
         if Atttention_helper.toggle and not prev_attention_state:
@@ -4198,7 +4278,7 @@ while game:
             fade_surface.set_alpha(fade_alpha) 
             screen.blit(fade_surface, (0, 0))
 
-        pygame.draw.circle(screen, (255, 255, 255), (WIDTH//2, HEIGHT//2), WIDTH//37)
+        
         for letter in Letters:
             letter.animate()
             letter.draw()
@@ -4234,6 +4314,7 @@ while game:
         if draw_fox:
             focy_scare.animate()
         screen.blit(mouse_display, mouse_pos)
+        
         _flip()
         clock.tick(60)
         currentFrame += 1
