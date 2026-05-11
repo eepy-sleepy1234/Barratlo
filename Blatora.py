@@ -1790,6 +1790,7 @@ class Card:
         self.seal_scaling_complete = False
         self.enhancement_scoring_complete = False
         self.edition_scoring_complete = False
+        self.scoring_progress = 0
         self.rank = rank
         self.suit = suit
         self.saved_rank = rank
@@ -1921,6 +1922,7 @@ class Card:
                     self.growing = False
                     self.scaling_done = True
                     self.scoring_complete = True
+                    self.scoring_progress += 1
                     self.scoring_animating = False
                     self.scaling_delay = 10
                     self.angle = 0
@@ -5243,7 +5245,10 @@ while game:
                                                     card.scoring_complete = True
                                                     scoring_queue.remove(card)
                                                     if len(scoring_queue) > 0:
-                                                        scoring_queue[0].scaling = True
+                                                        if scoring_queue[0].card_id == card.card_id and len(scoring_queue) > 1:
+                                                            scoring_queue[1].scaling = True
+                                                        else:
+                                                            scoring_queue[0].scaling = True
                                             case "Glass":
                                                 num = random.randint(min(base_chance, 4), 4)
                                                 saved_base_mult *= 2
@@ -5268,11 +5273,12 @@ while game:
                                                 money += 3
                                             case _:
                                                 card.seal_scoring_complete = True
-                                    card.base_scoring_complete = True
-                                    card.scoring_complete = False
+                                    if card.scoring_progress > 1:
+                                        card.base_scoring_complete = True
+                                        card.scoring_complete = False
                                 elif card.base_scoring_complete:
                                     if not card.is_debuffed:
-                                        if not card.enhancement_scoring_complete:
+                                        if card.scoring_progress == 2:
                                             if card.enhancement_timer > 0:
                                                 card.enhancement_timer -= 1
                                             else:
@@ -5294,7 +5300,7 @@ while game:
                                                 if card.scoring_complete:
                                                     card.scoring_complete = False
                                                     card.enhancement_scoring_complete = True
-                                        elif not card.edition_scoring_complete:
+                                        elif card.scoring_progress == 3:
                                             if card.enhancement_timer > 0:
                                                 card.enhancement_timer -= 1
                                             else:
@@ -5311,7 +5317,7 @@ while game:
                                                 if card.scoring_complete:
                                                     card.scoring_complete = False
                                                     card.edition_scoring_complete = True
-                                        elif not card.seal_scaling_complete:
+                                        elif card.scoring_progress == 4:
                                             if card.enhancement_timer > 0:
                                                 card.enhancement_timer -= 1
                                             else:
