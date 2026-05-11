@@ -1536,21 +1536,25 @@ def pop_and_check_retrigger(card, scoring_queue):
     if not scoring_queue:
         return
     scoring_queue.pop(0)
+    if card.seal == "Red" and not card.seal_triggered:
+        card.retriggers_remaining += 1
+    card.seal_triggered = True
     if card.retriggers_remaining > 0:
         card.retriggers_remaining -= 1
-        card.scoring_complete      = False
+        card.scoring_complete = False
         card.base_scoring_complete = False
-        card.scaling               = True
-        card.scaling_done          = False
-        card.growing               = False
-        card.scale                 = 1.0
-        card.scaling_delay         = 0
-        card.rotation_speed        = 0
-        card.angle                 = 0
-        card.state                 = "played"
-        card.scoring_animating     = True
-        card.scoring_y             = 0 
-        card.scoring_x             = 0
+        card.scoring_progress = 1
+        card.scaling = True
+        card.scaling_done = False
+        card.growing = False
+        card.scale = 1.0
+        card.scaling_delay = 0
+        card.rotation_speed = 0
+        card.angle = 0
+        card.state = "played"
+        card.scoring_animating = True
+        card.scoring_y = 0
+        card.scoring_x = 0
         scoring_queue.insert(0, card)
     else:
         card.state = "scored"
@@ -1697,6 +1701,7 @@ is_straight = False
 is_flush = False
 ShopCount = 2
 totalReward = 0
+scoreSpeed = 0.1
 
 SCORED_POSITIONS = [
     (WIDTH//2.86, HEIGHT//2.29),
@@ -1790,7 +1795,10 @@ class Card:
         self.seal_scaling_complete = False
         self.enhancement_scoring_complete = False
         self.edition_scoring_complete = False
-        self.scoring_progress = 0
+        self.seal_triggered = False
+        self.scoring_progress = 1
+        self._lucky_num = 0
+        self._lucky_num1 = 0
         self.rank = rank
         self.suit = suit
         self.saved_rank = rank
@@ -1881,6 +1889,7 @@ class Card:
                 self.y += self.vy
         self.angle += self.rotation_speed
     def trigger(self, type, amount):
+        global scoreSpeed
         match type:
             case "Mult":
                 color = red
@@ -1903,14 +1912,14 @@ class Card:
                 color = black
         if card.scoring_animating:
             if self.scaling_delay < 10:
-                self.scaling_delay += 1
+                self.scaling_delay += 10 * scoreSpeed
             elif not self.growing:
                 if self.scale < 1.4:
                     self.scale += 0.1
-                    self.rotation_speed = -3
+                    self.rotation_speed = -30 * scoreSpeed
                 else:
                     self.scale = 1.4
-                    self.rotation_speed = 3
+                    self.rotation_speed = 30 * scoreSpeed
                     self.growing = True
             else:
                 if self.scale > 1.0:
@@ -1926,6 +1935,7 @@ class Card:
                     self.scoring_animating = False
                     self.scaling_delay = 10
                     self.angle = 0
+                    scoreSpeed += 0.01
                     if type != "Break":
                         if type != "Debuff":
                             indicator = ChipIndicator(int(self.x + 30), int(self.y - 130), amount, color)
@@ -1945,14 +1955,14 @@ class ChipIndicator:
         self.start_y = y
         self.value = value
         self.alpha = 255
-        self.lifetime = 60
+        self.lifetime = 20
         self.age = 0
         self.color = color
     def update(self):
         self.age += 1
         self.y = self.start_y - (self.age * 0.1)
-        if self.age > 40:
-            self.alpha = int(255 * (1 - (self.age - 40) / 20))
+        if self.age > (self.lifetime * 2 / 3):
+            self.alpha = int(255 * (1 - (self.age - (self.lifetime * 2 / 3)) / (self.lifetime / 3)))
         return self.age < self.lifetime
     def draw(self, surface):
         diamond_size = HEIGHT/13.33
@@ -2672,11 +2682,11 @@ class Joker:
                 self.y = self.target_y
         if self.scaling:
             if self.scaling_delay < 30:
-                self.scaling_delay += 1
+                self.scaling_delay += 10 * scoreSpeed
             else:
                 if not self.growing:
                     if self.scale > 0.51:
-                        self.scale -= 0.1
+                        self.scale -= scoreSpeed
                         self.rotation_speed = 5
                     else:
                         self.scale = 0.5
@@ -2684,7 +2694,7 @@ class Joker:
                         self.growing = True
                 else:
                     if self.scale < 1.0:
-                        self.scale += 0.1
+                        self.scale += scoreSpeed
                     else:
                         self.scale = 1.0
                         self.rotation_speed = 0
@@ -2836,7 +2846,7 @@ class Consumable:
                 self.y = self.target_y
         if self.scaling:
             if self.scaling_delay < 30:
-                self.scaling_delay += 1
+                self.scaling_delay += 10 * scoreSpeed
             else:
                 if not self.growing:
                     if self.scale > 0.51:
@@ -2988,7 +2998,7 @@ class Cardpack:
                 self.y = self.target_y
         if self.scaling:
             if self.scaling_delay < 30:
-                self.scaling_delay += 1
+                self.scaling_delay += 10 * scoreSpeed
             else:
                 if not self.growing:
                     if self.scale > 0.51:
@@ -4555,6 +4565,7 @@ while game:
                                 dev_selection = False
                                 scoring_queue = contributing.copy()
                                 for card in contributing:
+                                    card.seal_triggered = False
                                     card.retriggers = 0
                                     card.retriggers_remaining = 0
 
@@ -5208,162 +5219,170 @@ while game:
         screen.blit(RunInfo, RunInfo_rect.topleft)
         active_hover_rects.append(RunInfo_rect)
         if scoring_queue and not calculating:
-                    for card in scoring_queue:
-                        if card.is_contributing:
-                            card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
-                            if scoring_queue[0] == card:
-                                if len(scoring_queue) > 0:
-                                    scoring_queue[0].scaling = True
-                                if not card.base_scoring_complete:
-                                    if not card.is_debuffed:
-                                        card.trigger("Chips", card.chip_value)
-                                    else:
-                                        card.trigger("Debuff", 0)
-                                if card.scoring_complete:
-                                    if not card.base_scoring_complete:
-                                        if not card.is_debuffed:
-                                            saved_base_chips += card.chip_value
-                                        card.rotation_speed = 0
-                                        card.angle = 0
-                                    if not card.is_debuffed:
-                                        card.enhancement_scoring_complete = False
-                                        card.edition_scoring_complete = False
-                                        card.seal_scoring_complete = False
-                                        match card.enhancement:
-                                            case "Mult":
-                                                saved_base_mult += 4
-                                            case "Bonus":
-                                                saved_base_chips += 30
-                                            case "Lucky":
-                                                num = random.randint(min(base_chance, 5), 5)
-                                                if num == 5:
-                                                    saved_base_mult += 20
-                                                num1 = random.randint(min(base_chance, 5), 15)
-                                                if num1 == 15:
-                                                    money += 20
-                                                if num1 != 15 and num != 5:
-                                                    card.scoring_complete = True
-                                                    scoring_queue.remove(card)
-                                                    if len(scoring_queue) > 0:
-                                                        if scoring_queue[0].card_id == card.card_id and len(scoring_queue) > 1:
-                                                            scoring_queue[1].scaling = True
-                                                        else:
-                                                            scoring_queue[0].scaling = True
-                                            case "Glass":
-                                                num = random.randint(min(base_chance, 4), 4)
-                                                saved_base_mult *= 2
-                                                if num == 4:
-                                                    perm_deck.remove(card)
-                                                    card.trigger("Break", 0)
-                                            case _:
-                                                card.enhancement_scoring_complete = True
-                                        match card.edition:
-                                            case "Foil":
-                                                saved_base_chips += 50
-                                            case "Holographic":
-                                                saved_base_mult += 10
-                                            case "Polychrome":
-                                                saved_base_mult *= 1.5
-                                            case _:
-                                                card.edition_scoring_complete = True
-                                        match card.seal:
-                                            case "Red":
-                                                card.retriggers_remaining += 1
-                                            case "Gold":
-                                                money += 3
-                                            case _:
-                                                card.seal_scoring_complete = True
-                                    if card.scoring_progress > 1:
-                                        card.base_scoring_complete = True
-                                        card.scoring_complete = False
-                                elif card.base_scoring_complete:
-                                    if not card.is_debuffed:
-                                        if card.scoring_progress == 2:
-                                            if card.enhancement_timer > 0:
-                                                card.enhancement_timer -= 1
-                                            else:
-                                                match card.enhancement:
-                                                    case "Mult":
-                                                        card.trigger("Mult", 4)
-                                                    case "Bonus":
-                                                        card.trigger("Chips", 30)
-                                                    case "Lucky":
-                                                        if num == 5:
-                                                            card.trigger("Mult", 20)
-                                                        if num1 == 15:
-                                                            card.trigger("Money", 20)
-                                                    case "Glass":
-                                                        card.trigger("XMult", 2)
-                                                    case _:
-                                                        pass
-                                                card.enhancement_timer = 10
-                                                if card.scoring_complete:
-                                                    card.scoring_complete = False
-                                                    card.enhancement_scoring_complete = True
-                                        elif card.scoring_progress == 3:
-                                            if card.enhancement_timer > 0:
-                                                card.enhancement_timer -= 1
-                                            else:
-                                                match card.edition:
-                                                    case "Foil":
-                                                        card.trigger("Chips", 50)
-                                                    case "Holographic":
-                                                        card.trigger("Mult", 10)
-                                                    case "Polychrome":
-                                                        card.trigger("XMult", 1.5)
-                                                    case _:
-                                                        pass
-                                                card.enhancement_timer = 10
-                                                if card.scoring_complete:
-                                                    card.scoring_complete = False
-                                                    card.edition_scoring_complete = True
-                                        elif card.scoring_progress == 4:
-                                            if card.enhancement_timer > 0:
-                                                card.enhancement_timer -= 1
-                                            else:
-                                                match card.seal:
-                                                    case "Red":
-                                                        card.trigger("Again", 0)
-                                                    case "Gold":
-                                                        card.trigger("Money", 3)
-                                                    case _:
-                                                        pass
-                                                if card.scoring_complete:
-                                                    card.seal_scoring_complete = True
-                                    else:
-                                        card.trigger("Debuff", 0)
-                                if card.base_scoring_complete:
-                                    if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
-                                        if card.scoring_complete:
-                                            pop_and_check_retrigger(card, scoring_queue)
-                                            card.enhancement_timer = 10
-                                            card.base_scoring_complete = False
-                                            card.scoring_complete = False
-                                            card.scoring_animating = False
-                                    else:
-                                        pop_and_check_retrigger(card, scoring_queue)
-                                        card.enhancement_timer = 10
-                                        card.base_scoring_complete = False
-                                        card.scoring_complete = False
-                                        card.scoring_animating = False
+            card = scoring_queue[0]
+            if card.is_contributing:
+                card_play_counts[card.card_id] = card_play_counts.get(card.card_id, 0)
+                card.scaling = True
+                if not card.base_scoring_complete:
+                    if not card.is_debuffed:
+                        card.scoring_animating = True
+                        card.trigger("Chips", card.chip_value)
+                    else:
+                        card.scoring_animating = True
+                        card.trigger("Debuff", 0)
+                    if card.scoring_complete:
+                        if not card.is_debuffed:
+                            saved_base_chips += card.chip_value
+                        card.rotation_speed = 0
+                        card.angle = 0
+                        card.scoring_complete = False
+                        card.base_scoring_complete = True
+                        card.scaling_delay = 10
+                        if card.enhancement == "Lucky" and not card.is_debuffed:
+                            card._lucky_num  = random.randint(min(base_chance, 5), 5)
+                            card._lucky_num1 = random.randint(min(base_chance, 5), 15)
+                elif card.scoring_progress == 2:
+                    if not card.is_debuffed:
+                        if card.enhancement_timer > 0:
+                            card.enhancement_timer -= 1
+                        else:
+                            has_enhancement = card.enhancement in ("Mult", "Bonus", "Lucky", "Glass")
+                            if has_enhancement:
+                                card.scoring_animating = True
+                                match card.enhancement:
+                                    case "Mult":
+                                        card.trigger("Mult", 4)
+                                    case "Bonus":
+                                        card.trigger("Chips", 30)
+                                    case "Lucky":
+                                        num  = getattr(card, '_lucky_num',  1)
+                                        num1 = getattr(card, '_lucky_num1', 1)
+                                        if num == 5:
+                                            card.trigger("Mult", 20)
+                                        elif num1 == 15:
+                                            card.trigger("Money", 20)
+                                        else:
+                                            card.scoring_progress += 1
+                                    case "Glass":
+                                        card.trigger("XMult", 2)
+                            else:
+                                card.scoring_progress += 1
+                                card.enhancement_scoring_complete = True
+                                card.scaling_delay = 10
+                            if card.scoring_complete:
+                                match card.enhancement:
+                                    case "Mult":
+                                        saved_base_mult += 4
+                                    case "Bonus":
+                                        saved_base_chips += 30
+                                    case "Lucky":
+                                        num  = getattr(card, '_lucky_num',  1)
+                                        num1 = getattr(card, '_lucky_num1', 1)
+                                        if num == 5:
+                                            saved_base_mult += 20
+                                        if num1 == 15:
+                                            money += 20
+                                    case "Glass":
+                                        brk = random.randint(min(base_chance, 4), 4)
+                                        saved_base_mult *= 2
+                                        if brk == 4:
+                                            if card in perm_deck:
+                                                perm_deck.remove(card)
+                                            card.scoring_animating = True
+                                            card.trigger("Break", 0)
+                                card.scoring_complete = False
+                                card.enhancement_scoring_complete = True
+                                card.scaling_delay = 10
+                    else:
+                        card.scoring_animating = True
+                        card.trigger("Debuff", 0)
+                        if card.scoring_complete:
+                            card.scoring_complete = False
+                            card.enhancement_scoring_complete = True
+                elif card.scoring_progress == 3:
+                    if not card.is_debuffed:
+                        if card.enhancement_timer > 0:
+                            card.enhancement_timer -= 1
+                        else:
+                            has_edition = card.edition in ("Foil", "Holographic", "Polychrome")
+                            if has_edition:
+                                card.scoring_animating = True
+                                match card.edition:
+                                    case "Foil":
+                                        card.trigger("Chips", 50)
+                                    case "Holographic":
+                                        card.trigger("Mult", 10)
+                                    case "Polychrome":
+                                        card.trigger("XMult", 1.5)
+                            else:
+                                card.scoring_progress += 1
+                                card.edition_scoring_complete = True
+                            if card.scoring_complete:
+                                match card.edition:
+                                    case "Foil":
+                                        saved_base_chips += 50
+                                    case "Holographic":
+                                        saved_base_mult += 10
+                                    case "Polychrome":
+                                        saved_base_mult *= 1.5
+                                card.scoring_complete = False
+                                card.edition_scoring_complete = True
+                                card.scaling_delay = 10
+                    else:
+                        card.scoring_animating = True
+                        card.trigger("Debuff", 0)
+                        if card.scoring_complete:
+                            card.scoring_complete = False
+                            card.edition_scoring_complete = True
+                elif card.scoring_progress == 4:
+                    if not card.is_debuffed:
+                        if card.enhancement_timer > 0:
+                            card.enhancement_timer -= 1
+                        else:
+                            if card.seal in ("Red", "Gold"):
+                                card.scoring_animating = True
+                                match card.seal:
+                                    case "Red":
+                                        card.trigger("Again", 0)
+                                    case "Gold":
+                                        card.trigger("Money", 3)
+                            else:
+                                card.scoring_progress += 1
+                                card.seal_scoring_complete = True
 
-                                context = {
-                                    'card': card,
-                                    'chips': saved_base_chips,
-                                    'mult': saved_base_mult,
-                                    'active_jokers': Active_Jokers,
-                                    'hand_type': saved_hand,
-                                    'deck': deck,
-                                    'card_play_counts': card_play_counts, 
-                                }
-                                context = joker_manager.trigger('on_card_scored', context)
-                                saved_base_chips = context['chips']
-                                saved_base_mult = context['mult']
-                                
-                                if 'triggered_jokers' in context:
-                                    for joker_name in context['triggered_jokers']:
-                                        if joker_name == "Jevil":
-                                            jevilActive = True
+                            if card.scoring_complete:
+                                if card.seal == "Gold":
+                                    money += 3
+                                card.scoring_complete = False
+                                card.seal_scoring_complete = True
+                    else:
+                        card.scoring_animating = True
+                        card.trigger("Debuff", 0)
+                        if card.scoring_complete:
+                            card.scoring_complete = False
+                            card.seal_scoring_complete = True
+                if card.base_scoring_complete and card.scoring_progress >= 5:
+                    pop_and_check_retrigger(card, scoring_queue)
+                    card.enhancement_timer = 10
+                    card.base_scoring_complete = False
+                    card.scoring_complete = False
+                    card.scoring_animating = False
+                context = {
+                    'card': card,
+                    'chips': saved_base_chips,
+                    'mult': saved_base_mult,
+                    'active_jokers': Active_Jokers,
+                    'hand_type': saved_hand,
+                    'deck': deck,
+                    'card_play_counts': card_play_counts,
+                }
+                context = joker_manager.trigger('on_card_scored', context)
+                saved_base_chips = context['chips']
+                saved_base_mult = context['mult']
+                if 'triggered_jokers' in context:
+                    for joker_name in context['triggered_jokers']:
+                        if joker_name == "Jevil":
+                            jevilActive = True
                                         
         if not calculating:
             selected_cards = [card for card in hand if card.state in ("selected", "played", "scoring", "scored")]
@@ -6011,6 +6030,7 @@ while game:
                 total_score = math.inf
                 final_score = math.inf
                 calculating = False
+                scoreSpeed = 0.1
                 discard_queue = []
                 discard_timer = 0
                 for c in hand:
