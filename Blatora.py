@@ -374,6 +374,10 @@ MenuHandType_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, 
 MenuBack_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBack.png")), (WIDTH/1.81, HEIGHT/16.824))
 
 # ==================== OVERLAYS ====================
+RedSeal_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "RedSeal.png")), (WIDTH/37.5, HEIGHT/36.35))
+GoldSeal_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "GoldSeal.png")), (WIDTH/37.5, HEIGHT/36.35))
+PurpleSeal_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "PurpleSeal.png")), (WIDTH/37.5, HEIGHT/36.35))
+BlueSeal_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "BlueSeal.png")), (WIDTH/37.5, HEIGHT/36.35))
 Foil_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Foil.png")), (WIDTH/12.5, HEIGHT/7.27))
 Holo_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Holographic.png")), (WIDTH/12.5, HEIGHT/7.27))
 Poly_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Polychrome.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -2217,6 +2221,23 @@ def draw_hand(surface, cards, center_x, center_y, spread=20, max_vertical_offset
                 scaled_overlay = pygame.transform.smoothscale(Poly_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
+        match card.seal:
+            case "Red":
+                scaled_overlay = pygame.transform.smoothscale(RedSeal_img, (scaled_w / 3, scaled_h / 5))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (scaled_w / 7, scaled_h / 7))
+            case "Gold":
+                scaled_overlay = pygame.transform.smoothscale(GoldSeal_img, (scaled_w / 3, scaled_h / 5))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (scaled_w / 7, scaled_h / 7))
+            case "Blue":
+                scaled_overlay = pygame.transform.smoothscale(BlueSeal_img, (scaled_w / 3, scaled_h / 5))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (scaled_w / 7, scaled_h / 7))
+            case "Purple":
+                scaled_overlay = pygame.transform.smoothscale(PurpleSeal_img, (scaled_w / 3, scaled_h / 5))
+                scaled_img = scaled_img.copy()
+                scaled_img.blit(scaled_overlay, (scaled_w / 7, scaled_h / 7))
         if card.is_frozen:
             if card.freeze_timer == 3:
                 scaled_overlay = pygame.transform.smoothscale(Frozen_img, (scaled_w, scaled_h))
