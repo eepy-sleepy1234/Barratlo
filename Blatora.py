@@ -1787,6 +1787,9 @@ class Card:
         self.growing = False
         self.scaling_done = False
         self.scoring_complete = False
+        self.seal_scaling_complete = False
+        self.enhancement_scoring_complete = False
+        self.edition_scoring_complete = False
         self.rank = rank
         self.suit = suit
         self.saved_rank = rank
@@ -1888,6 +1891,9 @@ class Card:
                 color = yellow
             case "XMult":
                 color = red
+            case "Again":
+                color = red
+                amount = "Again!"
             case "Break":
                 color = None
             case "Debuff":
@@ -5218,6 +5224,9 @@ while game:
                                         card.rotation_speed = 0
                                         card.angle = 0
                                     if not card.is_debuffed:
+                                        card.enhancement_scoring_complete = False
+                                        card.edition_scoring_complete = False
+                                        card.seal_scoring_complete = False
                                         match card.enhancement:
                                             case "Mult":
                                                 saved_base_mult += 4
@@ -5241,6 +5250,8 @@ while game:
                                                 if num == 4:
                                                     perm_deck.remove(card)
                                                     card.trigger("Break", 0)
+                                            case _:
+                                                card.enhancement_scoring_complete = True
                                         match card.edition:
                                             case "Foil":
                                                 saved_base_chips += 50
@@ -5248,38 +5259,73 @@ while game:
                                                 saved_base_mult += 10
                                             case "Polychrome":
                                                 saved_base_mult *= 1.5
+                                            case _:
+                                                card.edition_scoring_complete = True
+                                        match card.seal:
+                                            case "Red":
+                                                card.retriggers_remaining += 1
+                                            case "Gold":
+                                                money += 3
+                                            case _:
+                                                card.seal_scoring_complete = True
                                     card.base_scoring_complete = True
                                     card.scoring_complete = False
                                 elif card.base_scoring_complete:
-                                    if card.enhancement_timer > 0:
-                                        card.enhancement_timer -= 1
+                                    if not card.is_debuffed:
+                                        if not card.enhancement_scoring_complete:
+                                            if card.enhancement_timer > 0:
+                                                card.enhancement_timer -= 1
+                                            else:
+                                                match card.enhancement:
+                                                    case "Mult":
+                                                        card.trigger("Mult", 4)
+                                                    case "Bonus":
+                                                        card.trigger("Chips", 30)
+                                                    case "Lucky":
+                                                        if num == 5:
+                                                            card.trigger("Mult", 20)
+                                                        if num1 == 15:
+                                                            card.trigger("Money", 20)
+                                                    case "Glass":
+                                                        card.trigger("XMult", 2)
+                                                    case _:
+                                                        pass
+                                                card.enhancement_timer = 10
+                                                if card.scoring_complete:
+                                                    card.scoring_complete = False
+                                                    card.enhancement_scoring_complete = True
+                                        elif not card.edition_scoring_complete:
+                                            if card.enhancement_timer > 0:
+                                                card.enhancement_timer -= 1
+                                            else:
+                                                match card.edition:
+                                                    case "Foil":
+                                                        card.trigger("Chips", 50)
+                                                    case "Holographic":
+                                                        card.trigger("Mult", 10)
+                                                    case "Polychrome":
+                                                        card.trigger("XMult", 1.5)
+                                                    case _:
+                                                        pass
+                                                card.enhancement_timer = 10
+                                                if card.scoring_complete:
+                                                    card.scoring_complete = False
+                                                    card.edition_scoring_complete = True
+                                        elif not card.seal_scaling_complete:
+                                            if card.enhancement_timer > 0:
+                                                card.enhancement_timer -= 1
+                                            else:
+                                                match card.seal:
+                                                    case "Red":
+                                                        card.trigger("Again", 0)
+                                                    case "Gold":
+                                                        card.trigger("Money", 3)
+                                                    case _:
+                                                        pass
+                                                if card.scoring_complete:
+                                                    card.seal_scoring_complete = True
                                     else:
-                                        if not card.is_debuffed:
-                                            match card.enhancement:
-                                                case "Mult":
-                                                    card.trigger("Mult", 4)
-                                                case "Bonus":
-                                                    card.trigger("Chips", 30)
-                                                case "Lucky":
-                                                    if num == 5:
-                                                        card.trigger("Mult", 20)
-                                                    if num1 == 15:
-                                                        card.trigger("Money", 20)
-                                                case "Glass":
-                                                    card.trigger("XMult", 2)
-                                                case _:
-                                                    pass
-                                            match card.edition:
-                                                case "Foil":
-                                                    card.trigger("Chips", 50)
-                                                case "Holographic":
-                                                    card.trigger("Mult", 10)
-                                                case "Polychrome":
-                                                    card.trigger("XMult", 1.5)
-                                                case _:
-                                                    pass
-                                        else:
-                                            card.trigger("Debuff", 0)
+                                        card.trigger("Debuff", 0)
                                 if card.base_scoring_complete:
                                     if card.enhancement in ("Glass", "Lucky", "Mult", "Bonus"):
                                         if card.scoring_complete:
