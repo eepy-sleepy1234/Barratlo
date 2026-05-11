@@ -5923,6 +5923,12 @@ while game:
             card.update()
             if card.state == "discarded":
                 if not calculating and not scoring_in_progress and card.x > WIDTH + 200:
+                    if card.seal == "Purple" and len(Held_Consumables) < maxConsCount:
+                        while True:
+                            card = random.choice(TarotCards)
+                            if card not in Shop_Cards and card not in Held_Consumables and card.name != "The Soul":
+                                break
+                        Held_Consumables.append(card)
                     index = card.slot
                     hand.remove(card)
                     context = {'card': card, 'active_jokers': Active_Jokers}
