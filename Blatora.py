@@ -376,6 +376,9 @@ MenuVouchers_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, 
 MenuPokerHands_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuPokerHands.png")), (WIDTH/6.462, HEIGHT/9.533))
 MenuHandType_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuHandType.png")), (WIDTH/1.892, HEIGHT/26))
 MenuBack_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBack.png")), (WIDTH/1.81, HEIGHT/16.824))
+FullPeekMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "FullPeekMenu.png")), (WIDTH/1.1, HEIGHT/1.1))
+FullDeckButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "FullDeckButton.png")), (WIDTH/5.526, HEIGHT/16.824))
+RemainingButton_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "RemainingButton.png")), (WIDTH/5.526, HEIGHT/16.824))
 
 # ==================== OVERLAYS ====================
 RedSeal_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "RedSeal.png")), (WIDTH/37.5, HEIGHT/36.35))
@@ -444,6 +447,10 @@ MenuVouchersButton_rect = MenuVouchers_img.get_rect()
 MenuVouchersButton_rect.topleft = (WIDTH/2.4 , HEIGHT/8)
 RunInfo_rect = RunInfo.get_rect()
 RunInfo_rect.topleft = (WIDTH/80, HEIGHT/1.67)
+RemainingButton_rect = RemainingButton_img.get_rect()
+RemainingButton_rect.topleft = (WIDTH/2.4 , HEIGHT/12)
+FullDeckButton_rect = FullDeckButton_img.get_rect()
+FullDeckButton_rect.topleft = (WIDTH/1.46 , HEIGHT/12)
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
@@ -1653,6 +1660,8 @@ packHand = []
 scoring_queue = []
 selectedMenu = "Hands"
 menuOpen = False
+fullPeekOpen = True
+PeekSelected = "Remaining"
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
@@ -4462,8 +4471,9 @@ while game:
                     if RunInfo_rect.collidepoint(mouse_pos):
                         menuOpen = True
 
-                    if MenuBackButton_rect.collidepoint(mouse_pos) and menuOpen:
+                    if MenuBackButton_rect.collidepoint(mouse_pos) and (menuOpen or fullPeekOpen):
                         menuOpen = False
+                        fullPeekOpen = False
 
                     if MenuPokerHandsButton_rect.collidepoint(mouse_pos) and menuOpen:
                         selectedMenu = "Hands"
@@ -4473,6 +4483,12 @@ while game:
 
                     if MenuBlindsButton_rect.collidepoint(mouse_pos) and menuOpen:
                         selectedMenu = "Blinds"
+
+                    if RemainingButton_rect.collidepoint(mouse_pos) and fullPeekOpen:
+                        PeekSelected = "Remaining"
+
+                    if FullDeckButton_rect.collidepoint(mouse_pos) and fullPeekOpen:
+                        PeekSelected = "Full"
 
                     if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                         GameState = "Shop"
@@ -5874,6 +5890,141 @@ while game:
             elif selectedMenu == "Vouchers":
                 screen.blit(Pointer_img, (WIDTH/2.14 , HEIGHT/16))
 
+        if fullPeekOpen:
+                dimScreen = pygame.Surface((WIDTH, HEIGHT))
+                dimScreen.fill((0, 0, 0))
+                dimScreen.set_alpha(50)
+                screen.blit(dimScreen, (0, 0))
+                screen.blit(FullPeekMenu_img, (WIDTH/20 , HEIGHT/20))
+                screen.blit(MenuBack_img, (WIDTH/4.53 , HEIGHT/1.15))
+                screen.blit(RemainingButton_img, (WIDTH/2.4 , HEIGHT/12))
+                screen.blit(FullDeckButton_img, (WIDTH/1.46 , HEIGHT/12))
+                active_hover_rects.append(MenuBackButton_rect)
+                active_hover_rects.append(RemainingButton_rect)
+                active_hover_rects.append(FullDeckButton_rect)
+
+                if PeekSelected == "Remaining":
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Ace"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT/1.9))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank in ("King", "Queen", "Jack")))), white)
+                    text_rect = text.get_rect(center=(WIDTH/5.4, HEIGHT/1.9))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank in ("Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One")))), white)
+                    text_rect = text.get_rect(center=(WIDTH/4.4, HEIGHT/1.9))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.suit == "Spades"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/6.28, HEIGHT/1.5))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.suit == "Hearts"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/4.77, HEIGHT/1.5))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.suit == "Clubs"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/6.28, HEIGHT/1.285))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.suit == "Diamonds"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/4.77, HEIGHT/1.285))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Ace"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/4.45))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "King"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/3.69))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Queen"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/3.14))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Jack"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/2.735))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Ten"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/2.424))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Nine"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/2.175))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Eight"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.966))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Seven"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.799))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Six"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.658))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Five"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.534))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Four"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.435))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Three"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.343))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Two"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.264))
+                    screen.blit(text, text_rect)
+                if PeekSelected == "Full":
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Ace"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT/1.9))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank in ("King", "Queen", "Jack")))), white)
+                    text_rect = text.get_rect(center=(WIDTH/5.4, HEIGHT/1.9))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank in ("Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two", "One")))), white)
+                    text_rect = text.get_rect(center=(WIDTH/4.4, HEIGHT/1.9))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.suit == "Spades"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/6.28, HEIGHT/1.5))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.suit == "Hearts"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/4.77, HEIGHT/1.5))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.suit == "Clubs"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/6.28, HEIGHT/1.285))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.suit == "Diamonds"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/4.77, HEIGHT/1.285))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Ace"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/4.45))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "King"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/3.69))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Queen"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/3.14))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Jack"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/2.735))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Ten"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/2.424))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Nine"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/2.175))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Eight"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.966))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Seven"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.799))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Six"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.658))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Five"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.534))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Four"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.435))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Three"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.343))
+                    screen.blit(text, text_rect)
+                    text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Two"))), white)
+                    text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.264))
+                    screen.blit(text, text_rect)
 
         if GameState == "Dead":
             redScreen = pygame.Surface((WIDTH, HEIGHT))
