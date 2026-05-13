@@ -389,6 +389,7 @@ Foil_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR
 Holo_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Holographic.png")), (WIDTH/12.5, HEIGHT/7.27))
 Poly_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "Polychrome.png")), (WIDTH/12.5, HEIGHT/7.27))
 Debuff_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "DebuffOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
+cardShadow = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "CardShadow.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen3_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay3.png")), (WIDTH/12.5, HEIGHT/7.27))
@@ -1767,6 +1768,19 @@ hand_plays = {
     "Flush Five": 0,
     "Huh of a What": 0
 }
+
+_peek_drag_state = {
+    'card': None,
+    'row': None,
+    'offset_x': 0,
+    'offset_y': 0,
+    'cur_x': 0,
+    'cur_y': 0,
+    'drag_start': (0, 0),
+    'was_dragged': False,
+}
+_peek_card_positions = {}
+
 scored = False
 scoring_in_progress = False
 calculating = False
@@ -4332,7 +4346,8 @@ while game:
                 draw_fox = True
         if draw_fox:
             focy_scare.animate()
-        screen.blit(mouse_display, mouse_pos)
+        if not settings:
+            screen.blit(mouse_display, mouse_pos)
         
         _flip()
         clock.tick(60)
@@ -4344,7 +4359,8 @@ while game:
     
     while running:
         active_hover_rects = []
-        mouse_display = cursor_normal
+        if not settings:
+            mouse_display = cursor_normal
         if Music.toggle:
             if not mainMusicPlaying:
                 mainMusic.play(-1)
@@ -5904,6 +5920,148 @@ while game:
                 active_hover_rects.append(FullDeckButton_rect)
 
                 if PeekSelected == "Remaining":
+                    PEEK_SECTION_X = int(WIDTH / 2.5)
+                    PEEK_SECTION_Y = int(HEIGHT / 4)
+                    PEEK_SECTION_W = int(WIDTH / 2.1)
+                    PEEK_SECTION_H = int(HEIGHT / 2)
+                    CARD_SCALE = 0.55
+                    FULL_CW    = int(HEIGHT / 8)
+                    FULL_CH    = int(HEIGHT / 5.82)
+                    MINI_CW    = int(FULL_CW * CARD_SCALE)
+                    MINI_CH    = int(FULL_CH * CARD_SCALE)
+                    SUIT_ORDER = ["Spades", "Hearts", "Clubs", "Diamonds"]
+                    RANK_ORDER = ["Ace", "King", "Queen", "Jack", "Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two"]
+                    NUM_COLS = len(RANK_ORDER)
+                    NUM_ROWS = len(SUIT_ORDER)
+                    ROW_GAP = (PEEK_SECTION_H - MINI_CH) // (NUM_ROWS - 1)
+                    PEEK_ANGLE_RANGE = 4
+                    PEEK_VERT_LIFT   = 6
+                    SPRING_STIFFNESS = 0.18
+                    SPRING_DAMPING   = 0.72
+                    _deck_ids = {c.card_id for c in deck}
+                    _pds      = _peek_drag_state
+                    def _peek_rank_key(c):
+                        r = c.saved_rank if c.enhancement == "Glitched" else c.rank
+                        try:    return RANK_ORDER.index(r)
+                        except: return len(RANK_ORDER)
+                    peek_rows = []
+                    for suit in SUIT_ORDER:
+                        normal, glitch = [], []
+                        for card in perm_deck:
+                            eff = card.saved_suit if card.enhancement == "Glitched" else card.suit
+                            if eff == suit:
+                                (glitch if card.enhancement == "Glitched" else normal).append(card)
+                        normal.sort(key=_peek_rank_key)
+                        glitch.sort(key=_peek_rank_key)
+                        peek_rows.append(normal + glitch)
+                    _mini_shadow = pygame.transform.smoothscale(cardShadow, (MINI_CW, MINI_CH))
+                    _mini_shadow.set_alpha(180)
+                    _mx, _my = _virtual_mouse_pos()
+                    _mb      = pygame.mouse.get_pressed()
+                    if not _mb[0] and _pds['card'] is not None:
+                        _pds['card'] = None
+                        _pds['row']  = None
+                    for row_idx, row_cards in enumerate(peek_rows):
+                        n = len(row_cards)
+                        if n == 0:
+                            continue
+                        row_y_base = PEEK_SECTION_Y + row_idx * ROW_GAP
+                        col_gap = (PEEK_SECTION_W - MINI_CW) // (n - 1) if n > 1 else 0
+                        for col_idx, card in enumerate(row_cards):
+                            t = col_idx / (n - 1) if n > 1 else 0.5
+                            arc_y_lift = -PEEK_VERT_LIFT * (1.0 - 4 * (t - 0.5) ** 2)
+                            target_cx = PEEK_SECTION_X + MINI_CW // 2 + col_idx * col_gap
+                            target_cy = int(row_y_base + arc_y_lift + MINI_CH // 2)
+                            if card.card_id not in _peek_card_positions:
+                                _peek_card_positions[card.card_id] = {
+                                    'cx': float(target_cx), 'cy': float(target_cy),
+                                    'vx': 0.0,             'vy': 0.0,
+                                    'target_cx': float(target_cx),
+                                    'target_cy': float(target_cy),
+                                }
+                            pos = _peek_card_positions[card.card_id]
+                            if _pds['card'] is card:
+                                pos['target_cx'] = float(_mx + _pds['offset_x'])
+                                pos['target_cy'] = float(_my + _pds['offset_y'])
+                            else:
+                                pos['target_cx'] = float(target_cx)
+                                pos['target_cy'] = float(target_cy)
+                            pos['vx'] += (pos['target_cx'] - pos['cx']) * SPRING_STIFFNESS
+                            pos['vy'] += (pos['target_cy'] - pos['cy']) * SPRING_STIFFNESS
+                            pos['vx'] *= SPRING_DAMPING
+                            pos['vy'] *= SPRING_DAMPING
+                            if abs(pos["vx"]) < 0.1:
+                                pos['vx'] = 0
+                            if abs(pos['vy']) < 0.1:
+                                pos["vy"] = 0
+                            pos['cx'] += pos['vx']
+                            pos['cy'] += pos['vy']
+                    _dragged_draw = None
+                    for row_idx, row_cards in enumerate(peek_rows):
+                        n = len(row_cards)
+                        for col_idx, card in enumerate(row_cards):
+                            t = col_idx / (n - 1) if n > 1 else 0.5
+                            arc_angle = (t - 0.5) * -PEEK_ANGLE_RANGE
+                            pos       = _peek_card_positions[card.card_id]
+                            draw_cx   = int(pos['cx'])
+                            draw_cy   = int(pos['cy'])
+                            is_dragging_this = (_pds['card'] is card)
+                            draw_angle = 0.0 if is_dragging_this else arc_angle
+                            if card.enhancement == "Glitched":
+                                mini_img = pygame.transform.smoothscale(glitchimage, (MINI_CW, MINI_CH))
+                            else:
+                                mini_img = pygame.transform.smoothscale(card.image, (MINI_CW, MINI_CH))
+                            enh = card.enhancement if card.enhancement else "Default"
+                            _base_path = os.path.join(BASES_DIR, ("GlitchedBase" if card.enhancement == "Glitched" else enh + "Base") + ".png")
+                            try:
+                                _base_surf = pygame.image.load(_base_path).convert_alpha()
+                            except Exception:
+                                _base_surf = pygame.image.load(os.path.join(BASES_DIR, "DefaultBase.png")).convert_alpha()
+                            mini_base = pygame.transform.scale(_base_surf, (MINI_CW, MINI_CH))
+                            if card.edition == "Foil":
+                                mini_img.blit(pygame.transform.smoothscale(Foil_img,  (MINI_CW, MINI_CH)), (0, 0))
+                            elif card.edition == "Holographic":
+                                mini_img.blit(pygame.transform.smoothscale(Holo_img,  (MINI_CW, MINI_CH)), (0, 0))
+                            elif card.edition == "Polychrome":
+                                mini_img.blit(pygame.transform.smoothscale(Poly_img,  (MINI_CW, MINI_CH)), (0, 0))
+                            _seal_map = {"Red": RedSeal_img, "Gold": GoldSeal_img,
+                                         "Blue": BlueSeal_img, "Purple": PurpleSeal_img}
+                            if card.seal in _seal_map:
+                                _seal_mini = pygame.transform.smoothscale(
+                                    _seal_map[card.seal], (MINI_CW // 3, MINI_CH // 5))
+                                mini_img.blit(_seal_mini, (MINI_CW // 7, MINI_CH // 7))
+                            rotated_base = pygame.transform.rotate(mini_base, draw_angle)
+                            rotated_img  = pygame.transform.rotate(mini_img,  draw_angle)
+                            rect_b = rotated_base.get_rect(center=(draw_cx, draw_cy))
+                            rect_i = rotated_img.get_rect(center=(draw_cx, draw_cy))
+                            if card.card_id not in _deck_ids:
+                                rotated_shadow = pygame.transform.rotate(_mini_shadow, draw_angle)
+                                rect_s = rotated_shadow.get_rect(center=(draw_cx, draw_cy))
+                            if is_dragging_this:
+                                _dragged_draw = (rotated_base, rect_b, rotated_img, rect_i,
+                                                 card.card_id not in _deck_ids,
+                                                 pygame.transform.rotate(_mini_shadow, draw_angle) if card.card_id not in _deck_ids else None,
+                                                 rotated_img.get_rect(center=(draw_cx, draw_cy)))
+                            else:
+                                screen.blit(rotated_base, rect_b.topleft)
+                                screen.blit(rotated_img,  rect_i.topleft)
+                                if card.card_id not in _deck_ids:
+                                    screen.blit(rotated_shadow, rect_s.topleft)
+                            if rect_i.collidepoint(_mx, _my):
+                                mouse_display = cursor_hover
+                            if _mb[0] and _pds['card'] is None and rect_i.collidepoint(_mx, _my):
+                                _pds['card']        = card
+                                _pds['row']         = row_idx
+                                _pds['offset_x']    = draw_cx - _mx
+                                _pds['offset_y']    = draw_cy - _my
+                                _pds['drag_start']  = (_mx, _my)
+                                _pds['was_dragged'] = False
+                    if _dragged_draw:
+                        rb, rect_b, ri, rect_i, has_shadow, rs, rect_s = _dragged_draw
+                        screen.blit(rb, rect_b.topleft)
+                        screen.blit(ri, rect_i.topleft)
+                        if has_shadow and rs:
+                            screen.blit(rs, rect_s.topleft)
                     text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in deck if c.rank == "Ace"))), white)
                     text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT/1.9))
                     screen.blit(text, text_rect)
@@ -5965,6 +6123,140 @@ while game:
                     text_rect = text.get_rect(center=(WIDTH/3.1, HEIGHT/1.264))
                     screen.blit(text, text_rect)
                 if PeekSelected == "Full":
+                    PEEK_SECTION_X = int(WIDTH / 2.5)
+                    PEEK_SECTION_Y = int(HEIGHT / 4)
+                    PEEK_SECTION_W = int(WIDTH / 2.1)
+                    PEEK_SECTION_H = int(HEIGHT / 2)
+                    CARD_SCALE = 0.55
+                    FULL_CW    = int(HEIGHT / 8)
+                    FULL_CH    = int(HEIGHT / 5.82)
+                    MINI_CW    = int(FULL_CW * CARD_SCALE)
+                    MINI_CH    = int(FULL_CH * CARD_SCALE)
+                    SUIT_ORDER = ["Spades", "Hearts", "Clubs", "Diamonds"]
+                    RANK_ORDER = ["Ace", "King", "Queen", "Jack", "Ten", "Nine", "Eight", "Seven", "Six", "Five", "Four", "Three", "Two"]
+                    NUM_COLS = len(RANK_ORDER)
+                    NUM_ROWS = len(SUIT_ORDER)
+                    ROW_GAP = (PEEK_SECTION_H - MINI_CH) // (NUM_ROWS - 1)
+                    PEEK_ANGLE_RANGE = 4
+                    PEEK_VERT_LIFT   = 6
+                    SPRING_STIFFNESS = 0.18
+                    SPRING_DAMPING   = 0.72
+                    _deck_ids = {c.card_id for c in deck}
+                    _pds      = _peek_drag_state
+                    def _peek_rank_key(c):
+                        r = c.saved_rank if c.enhancement == "Glitched" else c.rank
+                        try:    return RANK_ORDER.index(r)
+                        except: return len(RANK_ORDER)
+                    peek_rows = []
+                    for suit in SUIT_ORDER:
+                        normal, glitch = [], []
+                        for card in perm_deck:
+                            eff = card.saved_suit if card.enhancement == "Glitched" else card.suit
+                            if eff == suit:
+                                (glitch if card.enhancement == "Glitched" else normal).append(card)
+                        normal.sort(key=_peek_rank_key)
+                        glitch.sort(key=_peek_rank_key)
+                        peek_rows.append(normal + glitch)
+                    _mini_shadow = pygame.transform.smoothscale(cardShadow, (MINI_CW, MINI_CH))
+                    _mini_shadow.set_alpha(180)
+                    _mx, _my = _virtual_mouse_pos()
+                    _mb      = pygame.mouse.get_pressed()
+                    if not _mb[0] and _pds['card'] is not None:
+                        _pds['card'] = None
+                        _pds['row']  = None
+                    for row_idx, row_cards in enumerate(peek_rows):
+                        n = len(row_cards)
+                        if n == 0:
+                            continue
+                        row_y_base = PEEK_SECTION_Y + row_idx * ROW_GAP
+                        col_gap = (PEEK_SECTION_W - MINI_CW) // (n - 1) if n > 1 else 0
+                        for col_idx, card in enumerate(row_cards):
+                            t = col_idx / (n - 1) if n > 1 else 0.5
+                            arc_y_lift = -PEEK_VERT_LIFT * (1.0 - 4 * (t - 0.5) ** 2)
+                            target_cx = PEEK_SECTION_X + MINI_CW // 2 + col_idx * col_gap
+                            target_cy = int(row_y_base + arc_y_lift + MINI_CH // 2)
+                            if card.card_id not in _peek_card_positions:
+                                _peek_card_positions[card.card_id] = {
+                                    'cx': float(target_cx), 'cy': float(target_cy),
+                                    'vx': 0.0,             'vy': 0.0,
+                                    'target_cx': float(target_cx),
+                                    'target_cy': float(target_cy),
+                                }
+                            pos = _peek_card_positions[card.card_id]
+                            if _pds['card'] is card:
+                                pos['target_cx'] = float(_mx + _pds['offset_x'])
+                                pos['target_cy'] = float(_my + _pds['offset_y'])
+                            else:
+                                pos['target_cx'] = float(target_cx)
+                                pos['target_cy'] = float(target_cy)
+                            pos['vx'] += (pos['target_cx'] - pos['cx']) * SPRING_STIFFNESS
+                            pos['vy'] += (pos['target_cy'] - pos['cy']) * SPRING_STIFFNESS
+                            pos['vx'] *= SPRING_DAMPING
+                            pos['vy'] *= SPRING_DAMPING
+                            if abs(pos["vx"]) < 0.1:
+                                pos['vx'] = 0
+                            if abs(pos['vy']) < 0.1:
+                                pos["vy"] = 0
+                            pos['cx'] += pos['vx']
+                            pos['cy'] += pos['vy']
+                    _dragged_draw = None
+                    for row_idx, row_cards in enumerate(peek_rows):
+                        n = len(row_cards)
+                        for col_idx, card in enumerate(row_cards):
+                            t = col_idx / (n - 1) if n > 1 else 0.5
+                            arc_angle = (t - 0.5) * -PEEK_ANGLE_RANGE
+                            pos       = _peek_card_positions[card.card_id]
+                            draw_cx   = int(pos['cx'])
+                            draw_cy   = int(pos['cy'])
+                            is_dragging_this = (_pds['card'] is card)
+                            draw_angle = 0.0 if is_dragging_this else arc_angle
+                            if card.enhancement == "Glitched":
+                                mini_img = pygame.transform.smoothscale(glitchimage, (MINI_CW, MINI_CH))
+                            else:
+                                mini_img = pygame.transform.smoothscale(card.image, (MINI_CW, MINI_CH))
+                            enh = card.enhancement if card.enhancement else "Default"
+                            _base_path = os.path.join(BASES_DIR, ("GlitchedBase" if card.enhancement == "Glitched" else enh + "Base") + ".png")
+                            try:
+                                _base_surf = pygame.image.load(_base_path).convert_alpha()
+                            except Exception:
+                                _base_surf = pygame.image.load(os.path.join(BASES_DIR, "DefaultBase.png")).convert_alpha()
+                            mini_base = pygame.transform.scale(_base_surf, (MINI_CW, MINI_CH))
+                            if card.edition == "Foil":
+                                mini_img.blit(pygame.transform.smoothscale(Foil_img,  (MINI_CW, MINI_CH)), (0, 0))
+                            elif card.edition == "Holographic":
+                                mini_img.blit(pygame.transform.smoothscale(Holo_img,  (MINI_CW, MINI_CH)), (0, 0))
+                            elif card.edition == "Polychrome":
+                                mini_img.blit(pygame.transform.smoothscale(Poly_img,  (MINI_CW, MINI_CH)), (0, 0))
+                            _seal_map = {"Red": RedSeal_img, "Gold": GoldSeal_img,
+                                         "Blue": BlueSeal_img, "Purple": PurpleSeal_img}
+                            if card.seal in _seal_map:
+                                _seal_mini = pygame.transform.smoothscale(
+                                    _seal_map[card.seal], (MINI_CW // 3, MINI_CH // 5))
+                                mini_img.blit(_seal_mini, (MINI_CW // 7, MINI_CH // 7))
+                            rotated_base = pygame.transform.rotate(mini_base, draw_angle)
+                            rotated_img  = pygame.transform.rotate(mini_img,  draw_angle)
+                            rect_b = rotated_base.get_rect(center=(draw_cx, draw_cy))
+                            rect_i = rotated_img.get_rect(center=(draw_cx, draw_cy))
+                            if is_dragging_this:
+                                _dragged_draw = (rotated_base, rect_b, rotated_img, rect_i, False, None, rotated_img.get_rect(center=(draw_cx, draw_cy)))
+                            else:
+                                screen.blit(rotated_base, rect_b.topleft)
+                                screen.blit(rotated_img,  rect_i.topleft)
+                            if rect_i.collidepoint(_mx, _my):
+                                mouse_display = cursor_hover
+                            if _mb[0] and _pds['card'] is None and rect_i.collidepoint(_mx, _my):
+                                _pds['card']        = card
+                                _pds['row']         = row_idx
+                                _pds['offset_x']    = draw_cx - _mx
+                                _pds['offset_y']    = draw_cy - _my
+                                _pds['drag_start']  = (_mx, _my)
+                                _pds['was_dragged'] = False
+                    if _dragged_draw:
+                        rb, rect_b, ri, rect_i, has_shadow, rs, rect_s = _dragged_draw
+                        screen.blit(rb, rect_b.topleft)
+                        screen.blit(ri, rect_i.topleft)
+                        if has_shadow and rs:
+                            screen.blit(rs, rect_s.topleft)
                     text, _ = PixelFontS.render(str(sum(1 for _ in (c for c in perm_deck if c.rank == "Ace"))), white)
                     text_rect = text.get_rect(center=(WIDTH/6.9, HEIGHT/1.9))
                     screen.blit(text, text_rect)
@@ -6141,7 +6433,8 @@ while game:
             screen.blit(transparent_surface, (0, 0))
         for rect in active_hover_rects:
             mouse_hover(rect)
-        screen.blit(mouse_display, mouse_pos)
+        if not settings:
+            screen.blit(mouse_display, mouse_pos)
         _flip()  
         clock.tick(60)
         currentFrame += 1
