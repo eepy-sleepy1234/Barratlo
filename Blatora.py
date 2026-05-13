@@ -66,6 +66,7 @@ CONS_DIR = os.path.join(ASSETS_DIR, "ConsCards")
 JOKERSOUND_DIR = os.path.join(SOUNDS_DIR, "Jokers")
 BASES_DIR = os.path.join(ASSETS_DIR, "CardBases")
 PACKS_DIR = os.path.join(ASSETS_DIR, "CardPacks")
+DECKS_DIR = os.path.join(ASSETS_DIR, "Decks")
 scroll_offset = 0
 scroll_speed = 30
 hover_list = []
@@ -394,6 +395,15 @@ Frozen_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_D
 Frozen2_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay2.png")), (WIDTH/12.5, HEIGHT/7.27))
 Frozen3_img = pygame.transform.smoothscale(load_image_safe(os.path.join(OVERLAY_DIR, "FrozenOverlay3.png")), (WIDTH/12.5, HEIGHT/7.27))
 
+# ==================== DECK IMAGES ======================
+RedDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "RedDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+BlueDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "BlueDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+GreenDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "GreenDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+YellowDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "YellowDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+BlackDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "BlackDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+ShatteredDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "ShatteredDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+SpiderDeck_img = pygame.transform.smoothscale(load_image_safe(os.path.join(DECKS_DIR, "SpiderDeck.png")), (HEIGHT/8, HEIGHT/5.82))
+
 # ==================== BUTTON RECTANGLES ====================
 STARTBUTTON_X = int((WIDTH/2) - ((WIDTH/4.4)/2))
 STARTBUTTON_Y = (HEIGHT/2) + CENTERLETTERH/2
@@ -452,6 +462,8 @@ RemainingButton_rect = RemainingButton_img.get_rect()
 RemainingButton_rect.topleft = (WIDTH/2.4 , HEIGHT/12)
 FullDeckButton_rect = FullDeckButton_img.get_rect()
 FullDeckButton_rect.topleft = (WIDTH/1.46 , HEIGHT/12)
+deck_rect = RedDeck_img.get_rect()
+deck_rect.topleft = (WIDTH/1.13 , HEIGHT/1.6)
 # ==================== LETTER IMAGES ====================
 for root, dirs, files in os.walk(LETTERS_DIR):
     for filename in files:
@@ -1661,8 +1673,9 @@ packHand = []
 scoring_queue = []
 selectedMenu = "Hands"
 menuOpen = False
-fullPeekOpen = True
+fullPeekOpen = False
 PeekSelected = "Remaining"
+CurrentDeck = "Red"
 joker_manager = None
 shopJokerSelected = False
 ActiveJokerSelected = False
@@ -4486,6 +4499,7 @@ while game:
                         
                     if RunInfo_rect.collidepoint(mouse_pos):
                         menuOpen = True
+                        fullPeekOpen = False
 
                     if MenuBackButton_rect.collidepoint(mouse_pos) and (menuOpen or fullPeekOpen):
                         menuOpen = False
@@ -4505,6 +4519,10 @@ while game:
 
                     if FullDeckButton_rect.collidepoint(mouse_pos) and fullPeekOpen:
                         PeekSelected = "Full"
+
+                    if deck_rect.collidepoint(mouse_pos) and GameState == "Playing":
+                        fullPeekOpen = True
+                        menuOpen = False
 
                     if CashOut_rect.collidepoint(mouse_pos) and GameState == "Cashing":
                         GameState = "Shop"
@@ -5656,6 +5674,21 @@ while game:
         text_rect = text.get_rect(center=(WIDTH/7.7, HEIGHT / 1.595))
         screen.blit(text, text_rect)
         if GameState == "Playing":
+            match CurrentDeck:
+                case "Red":
+                    screen.blit(RedDeck_img, deck_rect.topleft)
+                case "Blue":
+                    screen.blit(BlueDeck_img, deck_rect.topleft)
+                case "Green":
+                    screen.blit(GreenDeck_img, deck_rect.topleft)
+                case "Yellow":
+                    screen.blit(YellowDeck_img, deck_rect.topleft)
+                case "Black":
+                    screen.blit(BlackDeck_img, deck_rect.topleft)
+                case "Shattered":
+                    screen.blit(ShatteredDeck_img, deck_rect.topleft)
+                case "Spider":
+                    screen.blit(SpiderDeck_img, deck_rect.topleft)
             text, _ = PixelFontXS.render(f"{'$' * blind_reward}", yellow)
             text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
             screen.blit(text, text_rect)
