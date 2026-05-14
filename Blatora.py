@@ -2225,7 +2225,7 @@ def boss_debuff():
             for card in deck:
                 if card.suit in ("Hearts", "Diamonds") or card.enhancement == "Wild":
                     card.is_frozen = True
-                    card.freeze_timer = 4
+                    card.freeze_timer = 3
         if current_blind.name == "The Splinter":
             for card in deck:
                 if card.suit in ("Spades", "Clubs") or card.enhancement == "Wild":
@@ -6371,8 +6371,8 @@ while game:
                 if not calculating and not scoring_in_progress and card.x > WIDTH + 200:
                     if card.seal == "Purple" and len(Held_Consumables) < maxConsCount:
                         while True:
-                            card = random.choice(TarotCards)
-                            if card not in Shop_Cards and card not in Held_Consumables and card.name != "The Soul":
+                            n = random.choice(TarotCards)
+                            if n not in Shop_Cards and n not in Held_Consumables and n.name != "The Soul":
                                 break
                         Held_Consumables.append(card)
                     index = card.slot
