@@ -401,7 +401,19 @@ def Worm_effect(context):
     return
 
 def Virus_effect(context):
-    return
+    deck = context.get('deck')
+    perm_deck = context.get('perm_deck')
+    glitch = context.get('glitch')
+    if deck is None or perm_deck is None:
+        return context
+    from Blatora import Card
+    newcard = Card(2, "Glitched", glitch, enhancement="Glitched")
+    newcard.chip_value = 50
+    newcard.rank = 0
+    deck.append(newcard)
+    perm_deck.append(newcard)
+    context.setdefault('triggered_jokers', []).append('Virus')
+    return context
 
 def Spyware_effect(context):
     return
@@ -624,13 +636,13 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True
     },
     'Virus': {
-        'events': [('on_hand_played', Virus_effect)],
+        'events': [('on_round_start', Virus_effect)],
         'description': 'When blind is selected, add a Glitched card to your deck',
         'Oopy Goopy': True
     },
     'Spyware': {
         'events': [('on_hand_played', Spyware_effect)],
-        'description': 'Glitched cards give [mult]+2[/mult] mult when held in hand',
+        'description': 'Glitched cards give [red]+2[/red] mult when held in hand',
         'Oopy Goopy': True
     },
     'Ransomware': {

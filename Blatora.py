@@ -5272,11 +5272,6 @@ while game:
                         shopJokerSelected = False
                         for card in deck:
                             card.is_debuffed = False
-                        context = {
-                            'active_jokers': Active_Jokers,
-                            'deck': deck,
-                        }
-                        context = joker_manager.trigger('on_round_start', context)
                         break
                     if SelectBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         buttonClick.play(0)
@@ -5284,7 +5279,7 @@ while game:
                         current_blind = None
                         victory = False
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
-                        context = {'active_jokers': Active_Jokers, 'round_num': round_num}
+                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': os.path.join(SPRITESHEETS_DIR, "GlitchBaseSpriteSheet.png"),}
                         context = joker_manager.trigger('on_round_start', context)
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
