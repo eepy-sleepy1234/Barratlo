@@ -1606,9 +1606,7 @@ def letter_classes():
         shuffled = Letters.copy()
         random.shuffle(shuffled)
 
-        temp_string = ''.join(letter.letter for letter in shuffled)
-
-        if temp_string != "BALATRO":
+        if shuffled != Letters:
             break
 
     for i, letter in enumerate(shuffled):
@@ -5950,7 +5948,7 @@ while game:
                     text, _ = PixelFontS.render(f"{Hand_Mult[h] * Hand_levels[h]}", white)
                     text_rect = text.get_rect(center=(WIDTH/1.505, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
-                    text, _ = PixelFontS.render(f"{int(hand_plays[h] / 50)}", white)
+                    text, _ = PixelFontS.render(f"{int(hands_played[h])}", white)
                     text_rect = text.get_rect(center=(WIDTH/1.345, HEIGHT/3.69 + i * 60))
                     screen.blit(text, text_rect)
             elif selectedMenu == "Blinds":
