@@ -447,6 +447,8 @@ def OopyGoopy_effect(context):
     
     return context
 
+
+
 JOKER_REGISTRY = {
     'Bald Joker': {
         'events': [('on_hand_played', Bald_effect)],
@@ -570,7 +572,7 @@ JOKER_REGISTRY = {
     },
     'Ptsd Joker': {
         'events': [('on_hand_played', PTSD_effect)],
-        'description': 'Adds X0.1 Mult for every consecutive hand that isn\'t your last played hand',
+        'description': 'Adds [red]x.1 [/red]Mult every time you play a hand that isnt the last hand you played{break}[grey]Currently[/grey][red]X{value}[/red][grey][/grey]',
         'Oopy Goopy': True
     },
     'Wet Floor Joker': {
@@ -596,7 +598,7 @@ JOKER_REGISTRY = {
     'Oopy Goopy': {
         'events': [('on_hand_played', OopyGoopy_effect)],
         'description': 'Duplicates the joker to the right of it and double its effect',
-        'Oopy Goopy': True 
+        'Oopy Goopy': False
     },
     'Hopscotch': {
         'events': [('on_hand_played', Skip_effect)],

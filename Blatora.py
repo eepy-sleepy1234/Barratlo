@@ -1096,7 +1096,9 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
     scale     = font.scale
     lh        = pixel_line_height(scale)
     max_width = box_w - padding * 2
-    space_w   = _measure_width(' ', scale)
+    space_w = _measure_width('a a', scale) - _measure_width('aa', scale)
+    if space_w <= 0:
+            space_w = scale * 3
 
     rendered_lines = []
 
@@ -1140,11 +1142,32 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             y += lh
             continue
         line_words, indent_px = entry
-        draw_x = padding + indent_px
-        for word, col in line_words:
-            surf, _ = render_pixel(word + ' ', col, scale)
+        draw_x = padding + int(indent_px)
+
+        # Group consecutive same-color words into phrases.
+        # Rendering "hello world" as ONE string lets freetype handle spacing
+        # natively via glyph advance widths, instead of losing it word-by-word.
+        phrases = []
+        if line_words:
+            cur_col = line_words[0][1]
+            cur_words = [line_words[0][0]]
+            for word, col in line_words[1:]:
+                if col == cur_col:
+                    cur_words.append(word)
+                else:
+                    phrases.append((' '.join(cur_words), cur_col))
+                    cur_col = col
+                    cur_words = [word]
+            phrases.append((' '.join(cur_words), cur_col))
+
+        for i, (phrase, col) in enumerate(phrases):
+            surf, _ = render_pixel(phrase, col, scale)
             box_surf.blit(surf, (draw_x, y))
             draw_x += surf.get_width()
+            # Between different-color segments, add manual space
+            if i < len(phrases) - 1:
+                draw_x += space_w
+
         y += lh
 
     return box_surf
@@ -2694,6 +2717,7 @@ def get_file_contents(folder, names):
 
 joker_folder = os.path.join(TEXT_PATH, "Jokers")
 jokerDescription = get_file_contents(joker_folder, get_file_names(joker_folder))
+from JokerEffects import JOKER_REGISTRY
 class Joker:
     card_id_counter = 0
     def __init__(self, image, rarity, name, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -2731,25 +2755,25 @@ class Joker:
         self.drag_offset_y = 0
         self.was_dragged = False
         self.scoring_animating = False
-        self.description = ""
+        self.description = JOKER_REGISTRY.get(self.name, {}).get('description', "")
         self.idx = 0
         prices = {'C': 3, 'U': 6, 'R': 8, 'L': 20, 'S': 15}
         self.price = prices.get(self.rarity, 0) 
         self.sound = jokerSound.get(self.name)
-        def playsound(self, loop):   
+
+    def playsound(self, loop):   
             if self.sound:
                 if loop:
                     self.sound.play(-1)
                 else:
                     self.sound.play(0)
 
-        if self.name in jokerDescription:
-            self.description = jokerDescription[self.name]
+        
+        
            
     def get_description(self):
-        if self.name not in jokerDescription:
-            return ""
-        desc = jokerDescription[self.name]
+        
+        desc = self.description
         if self.name == "Wet Floor Joker":
             desc = desc.replace("{value}", str(JokerEffects.wetFloorValue))
         elif self.name == "Ptsd Joker":
