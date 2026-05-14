@@ -1143,10 +1143,6 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             continue
         line_words, indent_px = entry
         draw_x = padding + int(indent_px)
-
-        # Group consecutive same-color words into phrases.
-        # Rendering "hello world" as ONE string lets freetype handle spacing
-        # natively via glyph advance widths, instead of losing it word-by-word.
         phrases = []
         if line_words:
             cur_col = line_words[0][1]
@@ -1164,7 +1160,6 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             surf, _ = render_pixel(phrase, col, scale)
             box_surf.blit(surf, (draw_x, y))
             draw_x += surf.get_width()
-            # Between different-color segments, add manual space
             if i < len(phrases) - 1:
                 draw_x += space_w
 
