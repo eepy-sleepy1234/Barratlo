@@ -9,8 +9,6 @@ poolMoney = 0
 skipMult = 1
 exponentJoker = 1
 
-
-
 def reset_joker_variables():
     global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker
     wetFloorValue = 0
@@ -251,7 +249,7 @@ def Exponent_effect(context):
             
     
     return context
-def Invincible_effect(context):
+def Unbeatable_effect(context):
     return context
 
 def Lucky_effect(context):
@@ -452,62 +450,62 @@ def OopyGoopy_effect(context):
 JOKER_REGISTRY = {
     'Bald Joker': {
         'events': [('on_hand_played', Bald_effect)],
-        'description': '+4 mult to every card with a rank under 10',
+        'description': '[red]+4[/red] mult to every card with a rank under [orange]10[/orange]',
         'Oopy Goopy': True
     },
     'Clever Joker': {
         'events': [('on_hand_played', Clever_effect)],
-        'description': '+80 Chips if the played hand contains a Two Pair',
+        'description': '[blue]+80[/blue] Chips if the played hand contains a Two Pair',
         'Oopy Goopy': True
     },
     'Crafty Joker': {
         'events': [('on_hand_played', Crafty_effect)],
-        'description': '+80 Chips if the played hand contains a Flush',
+        'description': '[blue]+80[/blue] Chips if the played hand contains a Flush',
         'Oopy Goopy': True
     },
     'Crazy Joker': {
         'events': [('on_hand_played', Crazy_effect)],
-        'description': '+12 Mult if the played hand contains a Straight',
+        'description': '[red]+12[/red] Mult if the played hand contains a Straight',
         'Oopy Goopy': True
     },
     'Devious Joker': {
         'events': [('on_hand_played', Devious_effect)],
-        'description': '+100 Chips if the played hand contains a Straight',
+        'description': '[blue]+100[/blue] Chips if the played hand contains a Straight',
         'Oopy Goopy': True
     },
     'Disguised Joker': {
         'events': [('on_hand_played', Disguised_effect)],
-        'description': 'X2 Mult, but you can\'t see the boss blind before the blind',
+        'description': '[red]X2[/red] Mult, but you can\'t see the boss blind before the blind',
         'Oopy Goopy': True
     },
     'Droll Joker': {
         'events': [('on_hand_played', Droll_effect)],
-        'description': '+10 Mult if the played hand contains a Flush',
+        'description': '[red]+10[/red] Mult if the played hand contains a Flush',
         'Oopy Goopy': True
     },
     'Jolly Joker': {
         'events': [('on_hand_played', Jolly_effect)],
-        'description': '+8 Mult if the played hand contains a Pair',
+        'description': '[red]+8[/red] Mult if the played hand contains a Pair',
         'Oopy Goopy': True
     },
     'Mad Joker': {
         'events': [('on_hand_played', Mad_effect)],
-        'description': '+20 Mult if the played hand contains a Four of a Kind',
+        'description': '[red]+20[/red] Mult if the played hand contains a Four of a Kind',
         'Oopy Goopy': True
     },
     'Sly Joker': {
         'events': [('on_hand_played', Sly_effect)],
-        'description': '+50 Chips if the played hand contains a Pair',
+        'description': '[blue]+50[/blue] Chips if the played hand contains a Pair',
         'Oopy Goopy': True
     },
     'Wily Joker': {
         'events': [('on_hand_played', Wily_effect)],
-        'description': '+100 Chips if the played hand contains a Straight',
+        'description': '[blue]+100[/blue] Chips if the played hand contains a Straight',
         'Oopy Goopy': True
     },
     'Zany Joker': {
         'events': [('on_hand_played', Zany_effect)],
-        'description': '+12 Mult if the played hand contains a Three of a Kind',
+        'description': '[red]+12[/red] Mult if the played hand contains a Three of a Kind',
         'Oopy Goopy': True
     },
     'Hacked Joker': {
@@ -515,9 +513,9 @@ JOKER_REGISTRY = {
         'description': 'Retriggers your 5 most played cards',
         'Oopy Goopy': True
     },
-    'Invincible Joker': {
-        'events': [('on_hand_played', Invincible_effect)],
-        'description': 'If blind is lost, complete blind as if it was won. Do not collect any money and destry Invincible Joker. Cannot be destroyed in any other way',
+    'Unbeatable Joker': {
+        'events': [('on_hand_played', Unbeatable_effect)],
+        'description': 'If blind is lost, complete blind as if it was won. Do not collect any money and destroy this Joker. Cannot be destroyed in any other way',
         'Oopy Goopy': False
     },
     'Lucky Joker': {
@@ -527,17 +525,17 @@ JOKER_REGISTRY = {
     },
     'Michigan Joker': {
         'events': [('on_scoring_start', Michigan_effect)],
-        'description': 'If the hand includes a Heart or a Spade, retrigger all scored cards once. Do not retrigger if hand has both',
+        'description': 'If the hand includes a Heart or a Spade but not both, retrigger all scored cards once',
         'Oopy Goopy': True
     },
     'Pool Table': {
         'events': [('on_round_end', PoolTable_effect)],
-        'description': '+ S0.1 earned at the end of round for every hand left',
+        'description': '+ [yellow]$0.1[/yellow] earned at the end of round for every hand left',
         'Oopy Goopy': False
     },
     'Rules Card': {
         'events': [('on_hand_played', RulesCard_effect)],
-        'description': 'Rewards you $4 for playing (hand)',
+        'description': 'Rewards you [yellow]$4[/yellow] for playing (hand)',
         'Oopy Goopy': True
     },
     'The Jonkler Baby': {
@@ -547,7 +545,7 @@ JOKER_REGISTRY = {
     },
     'Upside Down Joker': {
         'events': [('on_scoring_start', UpsideDown_effect)],
-        'description': 'counts 6\'s and 9\'s as the same card, retrigger both', #Temporarly only retriggers them
+        'description': 'counts [orange]6\'s[/orange] and [orange]9\'s[/orange] as the same card, retrigger both', #Temporarly only retriggers them
         'Oopy Goopy': True
     },
     'Getting An Upgrade': {
@@ -557,32 +555,32 @@ JOKER_REGISTRY = {
     },
     'Fly Deity': {
         'events': [('on_hand_played', FlyDeity_effect)],
-        'description': 'give +5 chips on Small and Big Blind, give +50 mult on Boss Blinds',
+        'description': 'give [blue]+5[/blue] chips on Small and Big Blind, give [red]+50[/red] mult on Boss Blinds',
         'Oopy Goopy': True
     },
     'Yin Joker': {
         'events': [('on_hand_played', Yin_effect)],
-        'description': '+4 mult, becomes YinYang Joker when Yang Joker is also active',
+        'description': '[red]+4[/red] mult',
         'Oopy Goopy': True
     },
     'Yang Joker': {
         'events': [('on_hand_played', Yang_effect)],
-        'description': '+4 mult, becomes YinYang Joker when Yin Joker is also active',
+        'description': '[red]+4[/red] mult',
         'Oopy Goopy': True
     },
     'Ptsd Joker': {
         'events': [('on_hand_played', PTSD_effect)],
-        'description': 'Adds [red]x.1 [/red]Mult every time you play a hand that isnt the last hand you played{break}[grey]Currently[/grey][red]X{value}[/red][grey][/grey]',
+        'description': 'Adds [red]x.1[/red] Mult every time you play a hand that isnt the last hand you played{break}[grey]Currently[/grey][red]X{value}[/red][grey][/grey]',
         'Oopy Goopy': True
     },
     'Wet Floor Joker': {
         'events': [('on_hand_played', WetFloor_effect)],
-        'description': '+1 Mult for every hand played without a numbered card',
+        'description': '[red]+1[/red] Mult for every hand played without a numbered card',
         'Oopy Goopy': True
     },
     'Yin Yang': {
         'events': [('on_hand_played', YinYang_effect)],
-        'description': 'If Hand played with exactly two colors X5 Mult, otherwise gives X1.5 Mult',
+        'description': 'If Hand played with exactly two colors [red]X5[/red] Mult, otherwise gives [red]X1.5[/red] Mult',
         'Oopy Goopy': True
     },
     'Fountain': {
@@ -597,27 +595,27 @@ JOKER_REGISTRY = {
     },
     'Oopy Goopy': {
         'events': [('on_hand_played', OopyGoopy_effect)],
-        'description': 'Duplicates the joker to the right of it and double its effect',
+        'description': 'Copies the effect of the joker to the right of it and double its effect',
         'Oopy Goopy': False
     },
     'Hopscotch': {
         'events': [('on_hand_played', Skip_effect)],
-        'description': 'Gains X0.25 Mult For Every Skipped Blind',
+        'description': 'Gains [red]X0.25[/red] Mult For Every Skipped Blind',
         'Oopy Goopy': True 
     },
     'Exponent Joker': {
         'events': [('on_hand_played', Exponent_effect)],
-        'description': 'Gains ^0.1 each time a Full House is played that contains a four and a two',
+        'description': 'Gains [red]^0.1[/red] mult each time a Full House is played that contains a four and a two',
         'Oopy Goopy': True
     },
     'Useful Joker': {
         'events': [('on_hand_played', Useful_effect)],
-        'description': '+1 Mult when hand contains a card',
+        'description': '[red]+1[/red] Mult when hand contains a card',
         'Oopy Goopy': True
     },
     'Dead Frog': {
         'events': [('on_hand_played', DeadFrog_effect)],
-        'description': 'This joker gains +20 chips when played hand is not most played hand',
+        'description': 'This joker gains [blue]+20[/blue] chips when played hand is not most played hand',
         'Oopy Goopy': True
     },
     'Worm': {
@@ -627,17 +625,17 @@ JOKER_REGISTRY = {
     },
     'Virus': {
         'events': [('on_hand_played', Virus_effect)],
-        'description': 'inserts its own code',
+        'description': 'When blind is selected, add a Glitched card to your deck',
         'Oopy Goopy': True
     },
     'Spyware': {
         'events': [('on_hand_played', Spyware_effect)],
-        'description': 'something with seeing stuff',
+        'description': 'Glitched cards give [mult]+2[/mult] mult when held in hand',
         'Oopy Goopy': True
     },
     'Ransomware': {
         'events': [('on_hand_played', Ransomware_effect)],
-        'description': 'something with money',
+        'description': 'Each played Glitched card gives [yellow]+ $1[/yellow]',
         'Oopy Goopy': True
     },
     'Lost King': {
