@@ -1733,6 +1733,10 @@ purchases = 0
 rerolls = 0
 cards_found = 0
 lastFool = None
+useX = -100
+useY = -100
+CuseX = -100
+CuseY = -100
 locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
 unlocked_hands = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush"]
 locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
@@ -6083,14 +6087,17 @@ while game:
                 text, _ = PixelFontS.render(f"{int(joker.price / 2)}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
+        jcount = 0
         for joker in Held_Consumables:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
-                useX, useY = get_selected_Shop_Cards(joker)
-                CuseX, CuseY = -100, -100
-            else:
-                useX, useY = -100, -100
-                CuseX, CuseY = get_selected_Shop_Cards(joker)
+            if joker.state == "selected":
+                jcount += 1
+                if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6):
+                    useX, useY = get_selected_Shop_Cards(joker)
+                    CuseX, CuseY = -100, -100
+                else:
+                    useX, useY = -100, -100
+                    CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
             elif CuseX > 0:
@@ -6100,12 +6107,14 @@ while game:
             active_hover_rects.append(UseButton_rect)
         for joker in PackCards:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
-                useX, useY = get_selected_Shop_Cards(joker)
-                CuseX, CuseY = -100, -100
-            else:
-                useX, useY = -100, -100
-                CuseX, CuseY = get_selected_Shop_Cards(joker)
+            if joker.state == "selected":
+                jcount += 1
+                if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
+                    useX, useY = get_selected_Shop_Cards(joker)
+                    CuseX, CuseY = -100, -100
+                else:
+                    useX, useY = -100, -100
+                    CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
             elif CuseX > 0:
@@ -6113,6 +6122,11 @@ while game:
             UseButton_rect = UseButton_img.get_rect()
             UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
             active_hover_rects.append(UseButton_rect)
+        if jcount == 0:
+            useX = -100
+            useY = -100
+            CuseX = -100
+            CuseY = -100
         for joker in ShopPacks:
             buyX, buyY = get_selected_Shop_Cards(joker)
             if buyX > 0:
@@ -6537,6 +6551,14 @@ while game:
             saved_base_chips = context['chips']
             saved_base_mult = context['mult']
             money = context['money']
+            for joker in Active_Jokers:
+                match joker.edition:
+                    case "Foil":
+                        saved_base_chips += 50
+                    case "Holographic":
+                        saved_base_mult += 10
+                    case "Polychrome":
+                        saved_base_mult *= 1.5
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             scored = False
