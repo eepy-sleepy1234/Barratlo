@@ -71,7 +71,7 @@ scroll_offset = 0
 scroll_speed = 30
 hover_list = []
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
-has_invincible = False
+has_conquistador = False
 screen_rect = screen.get_rect()
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     try:
@@ -289,7 +289,7 @@ def close_video():
 # ==================== SOUNDS ====================
 foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
-invinciblesound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "Invincible.mp3"))
+conquistadorsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "conquistador.mp3"))
 # ==================== SPRITESHEETS ====================
 FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
 ##SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
@@ -370,7 +370,7 @@ DeadBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DeadB
 NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRunButton.png")), (WIDTH/6.8, HEIGHT/20))
 MainMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MainMenuButton.png")), (WIDTH/6.8, HEIGHT/20))
 Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyButton.png")), (WIDTH/6.8, HEIGHT/20))
-Invincible_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "InvincibleSplash.png")), (WIDTH,HEIGHT))
+conquistador_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "conquistadorSplash.png")), (WIDTH,HEIGHT))
 GameMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GameMenu.png")), (WIDTH/1.68, HEIGHT/1.1))
 MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBlinds.png")), (WIDTH/6.462, HEIGHT/9.533))
 MenuVouchers_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuVouchers.png")), (WIDTH/6.462, HEIGHT/9.533))
@@ -1903,7 +1903,7 @@ BOSS_DESC = {
     "Wisteria Harmony": "[insert angel chorus here]",
     }
 
-invincibleActive = False
+conquistadorActive = False
 class Card:
     card_id_counter = 0
     def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -2875,15 +2875,15 @@ def calculate_target_score(ante, round_num):
         return int(base_score * multipliers[4])
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
-invincibleSplashEffect = False
-invincibleSplashTimer  = 0
-def invincibleSplash():
-    global invincibleSplashTimer
-    invincibleSplashTimer -= 1
-    if invincibleSplashTimer <= 0:
-        invincibleSplashEffect = False
+conquistadorSplashEffect = False
+conquistadorSplashTimer  = 0
+def conquistadorSplash():
+    global conquistadorSplashTimer
+    conquistadorSplashTimer -= 1
+    if conquistadorSplashTimer <= 0:
+        conquistadorSplashEffect = False
     else:
-        screen.blit(Invincible_img, (0,0))
+        screen.blit(conquistador_img, (0,0))
 
 def get_current_blind():
     global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState, boss_blind
@@ -6334,19 +6334,19 @@ while game:
         
         if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
             if hands <= 0 or len(hand) < 1:
-                has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
+                has_conquistador = any(joker.name == "Conquistador" for joker in Active_Jokers)
                 
-                if has_invincible:
-                    Active_Jokers = [j for j in Active_Jokers if j.name != "Invincible Joker"]
+                if has_conquistador:
+                    Active_Jokers = [j for j in Active_Jokers if j.name != "Conquistador"]
                     joker_manager = initialize_joker_effects(Active_Jokers)
                     total_score = target_score
                     victory = True
                     GameState = "Cashing"
                     advance_to_next_blind()
                     get_current_blind()
-                    invincibleSplashTimer = 180
-                    invinciblesound.play(0)
-                    invincibleSplashEffect = True
+                    conquistadorSplashTimer = 180
+                    conquistadorsound.play(0)
+                    conquistadorSplashEffect = True
                     for card in hand:
                         discard_queue.append(card)
                     discarding = True
@@ -6355,8 +6355,8 @@ while game:
                     most_played = max(hand_plays.items(), key=lambda item: item[1])
                     most_played = most_played[0]
         draw_dev_command_bar()
-        if invincibleSplashEffect:
-            invincibleSplash()
+        if conquistadorSplashEffect:
+            conquistadorSplash()
 
         animateGlitch()
         if Kawaii_Mode.toggle:
