@@ -8,7 +8,7 @@ YinYang_Active = False
 poolMoney = 0
 skipMult = 1
 exponentJoker = 1
-
+luck = 1
 def reset_joker_variables():
     global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker
     wetFloorValue = 0
@@ -119,8 +119,13 @@ def Clever_effect(context):
         context['chips'] = context.get('chips', 0) + 80 
         context.setdefault('triggered_jokers', []).append('Clever Joker')
     return context
-
+Disguised = False
 def Disguised_effect(context):
+    global Disguised
+    Disguised = True
+    mult = context.get('mult', 0)
+    context['mult'] = mult * 2
+    
     return context
 
 def Crafty_effect(context):
@@ -253,6 +258,7 @@ def Unbeatable_effect(context):
     return context
 
 def Lucky_effect(context):
+    #Main Code
     return context
 
 def Michigan_effect(context):
@@ -307,6 +313,7 @@ def UpsideDown_effect(context):
     return context
 
 def GettingAnUpgrade_effect(context):
+    #Done in main code
     return context
 
 def FlyDeity_effect(context):
@@ -532,7 +539,7 @@ JOKER_REGISTRY = {
     },
     'Lucky Joker': {
         'events': [('on_round_start', Lucky_effect)],
-        'description': 'Doubles chances',
+        'description': 'Doubles chances{break}[grey]Currently[/grey][red]X{value}[/red]',
         'Oopy Goopy': True
     },
     'Michigan Joker': {

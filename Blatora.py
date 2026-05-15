@@ -496,6 +496,8 @@ setting_height = HEIGHT/5
 settingsList = []
 devtoggle = ""
 
+
+
 class User_settings():
     def __init__(self,name, visible = True):
         
@@ -2798,12 +2800,14 @@ def shopAnimaton():
             shop_down = False
         if shop_down:
             shopAnimation.animate()
-
+BLIND_INVISIBLE = False
+NOBLIND = load_image_safe(os.path.join(BLINDS_DIR, "NOBLIND.png"))
 class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
         self.image = image
         self.imageS = pygame.transform.scale(self.image, (HEIGHT/10, HEIGHT/10))
+        
         self.x = x
         self.y = y
         self.target_x = x
@@ -3046,6 +3050,8 @@ class Joker:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
             else:
                 desc = desc.replace("{value}", str(RulesHand))
+        elif self.name == "Lucky Joker":
+            desc = desc.replace("{value}", str(JokerEffects.luck))
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -5180,6 +5186,8 @@ while game:
                                     RulesHand = None
                                 if card.name == "Getting An Upgrade":
                                     rare_joker = True
+                                if card.name == "Disguised Joker":
+                                    JokerEffects.Disguised = False
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -5879,23 +5887,31 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.48))
+            if JokerEffects.Disguised:
+                bossIMG = NOBLIND
+                text, _ = PixelFontS.render("N/A", black)
+                
+            else:
+                bossIMG = boss_blind.imageS
+                text, _ = PixelFontS.render(boss_blind.name, black)
+                
+            
+
             if round_num % 3 == 0:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
                 SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
-                text, _ = PixelFontS.render(boss_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
                 screen.blit(text, text_rect)
-                screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.59))
+                screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.59))
             else:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
-                text, _ = PixelFontS.render(boss_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
-                screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.48))
+                screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.48))
         
         if not calculating:
             if scoring_in_progress:
@@ -6354,12 +6370,17 @@ while game:
         _flip()  
         clock.tick(60)
         currentFrame += 1
-
+        luck = 1
         for joker in Active_Jokers:
+            
             if joker.name == "Rules Card":
                 if RulesHand is None:
                     RulesHand = random.choice(["Two Pair","High Card","Three of a Kind","Four of a Kind","Five of a Kind","Flush House","Flush Five","Straight","Straight Flush","Full House","Flush House","Pair","Flush","Royal Flush"])
-            
+            if joker.name == "Disguised Joker":
+                JokerEffects.Disguised = True
+            if joker.name == "Lucky Joker":
+                luck *= 2
+            JokerEffects.luck = luck
         for card in hand:
             card.update()
             if card.state == "discarded":
