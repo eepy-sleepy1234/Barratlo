@@ -3167,7 +3167,7 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
                 scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
-            match card.edition:
+            match joker.edition:
                 case "Foil":
                     scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
                     scaled_img = scaled_img.copy()
@@ -4435,7 +4435,7 @@ def get_tarot_effect(name):
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
         wheelnum = random.randint(min(base_chance, 4), 4)
-        if wheelnum == 4:
+        if wheelnum <= 5:
             jonker = random.choice(Active_Jokers)
             wheelnum2 = random.randint(1, 3)
             if wheelnum2 == 1:
@@ -6383,7 +6383,7 @@ while game:
             
             if joker.name == "Rules Card":
                 if RulesHand is None:
-                    RulesHand = random.choice(["Two Pair","High Card","Three of a Kind","Four of a Kind","Five of a Kind","Flush House","Flush Five","Straight","Straight Flush","Full House","Flush House","Pair","Flush","Royal Flush"])
+                    RulesHand = random.choice(unlocked_hands)
             if joker.name == "Disguised Joker":
                 JokerEffects.Disguised = True
             if joker.name == "Lucky Joker":
