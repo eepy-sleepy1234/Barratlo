@@ -6,11 +6,17 @@ last_hand_counter = 0
 FrogCounter = 0
 YinYang_Active = False
 poolMoney = 0
+BunsKingScale = {
+    'TimesMult' : 0,
+    'AddMult' : 0,
+    'AddChips' : 0,
+}
 skipMult = 1
 exponentJoker = 1
-
+luck = 1
+bunsking = False
 def reset_joker_variables():
-    global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker
+    global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker,bunsking,luck,BunsKingScale
     wetFloorValue = 0
     last_hand = 0
     last_hand_counter = 0
@@ -19,6 +25,13 @@ def reset_joker_variables():
     poolMoney = 0
     skipMult = 1
     exponentJoker = 1
+    luck = 1
+    bunsking = False
+    BunsKingScale['TimesMult'] = 0
+    BunsKingScale['AddMult'] = 0
+    BunsKingScale['AddChips'] = 0
+
+
 
 class JokerEffectsManager:
     def __init__(self):
@@ -120,8 +133,13 @@ def Clever_effect(context):
         context['chips'] = context.get('chips', 0) + 80 
         context.setdefault('triggered_jokers', []).append('Clever Joker')
     return context
-
+Disguised = False
 def Disguised_effect(context):
+    global Disguised
+    Disguised = True
+    mult = context.get('mult', 0)
+    context['mult'] = mult * 2
+    
     return context
 
 def Crafty_effect(context):
@@ -250,10 +268,11 @@ def Exponent_effect(context):
             
     
     return context
-def Unbeatable_effect(context):
+def Conquistador_effect(context):
     return context
 
 def Lucky_effect(context):
+    #Main Code
     return context
 
 def Michigan_effect(context):
@@ -308,6 +327,7 @@ def UpsideDown_effect(context):
     return context
 
 def GettingAnUpgrade_effect(context):
+    #Done in main code
     return context
 
 def FlyDeity_effect(context):
@@ -341,9 +361,11 @@ def PTSD_effect(context):
         last_hand_counter = 0
         
     else:
-        
-        last_hand_counter += 0.1
-        context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
+        if bunsking:
+            BunsKingScale['AddMult'] += 0.1
+        else:
+            last_hand_counter += 0.1
+            context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
     context.setdefault('triggered_jokers', []).append('PTSD Joker')
     return context
 
@@ -354,7 +376,11 @@ def WetFloor_effect(context):
     if has_numbered:
         wetFloorValue = 0
     else:
-        wetFloorValue += 1
+        if bunsking:
+            BunsKingScale['AddMult'] += 1
+        else:
+            wetFloorValue += 1
+        
     context.setdefault('triggered_jokers', []).append('Wet Floor Joker')
     context['mult'] = context.get('mult', 0) + wetFloorValue
     return context
@@ -391,7 +417,10 @@ def DeadFrog_effect(context):
     most_hand = context.get("most_played", 0)
     hand = context.get("hand_type", 0)
     if hand != most_hand:
-        FrogCounter += 1
+        if bunsking:
+            BunsKingScale['AddChips'] += 20
+        else:
+            FrogCounter += 1
     
     context["chips"] = context.get('chips', 0) + (20 * FrogCounter)
     context.setdefault('triggered_jokers', []).append('Dead Frog')
@@ -457,7 +486,16 @@ def Ransomware_effect(context):
     return context
 
 def LostKing_effect(context):
-    return
+    mult = context.get('mult', 0)
+    chips = context.get('chips', 0)
+    mult += BunsKingScale['TimesMult'] * mult
+    mult += BunsKingScale['AddMult']
+    chips += BunsKingScale['AddChips']
+    context['mult'] = mult
+    context['chips'] = chips
+    context.setdefault('triggered_jokers', []).append('Lost King')
+
+    return context
 
 def OopyGoopy_effect(context):
     jokers = context.get('active_jokers')
@@ -560,14 +598,14 @@ JOKER_REGISTRY = {
         'description': 'Retriggers your 5 most played cards',
         'Oopy Goopy': True
     },
-    'Unbeatable Joker': {
-        'events': [('on_hand_played', Unbeatable_effect)],
+    'Conquistador': {
+        'events': [('on_hand_played', Conquistador_effect)],
         'description': 'If blind is lost, complete blind as if it was won. Do not collect any money and destroy this Joker. Cannot be destroyed in any other way',
         'Oopy Goopy': False
     },
     'Lucky Joker': {
         'events': [('on_round_start', Lucky_effect)],
-        'description': 'Doubles chances',
+        'description': 'Doubles chances{break}[grey]Currently[/grey][red]X{value}[/red]',
         'Oopy Goopy': True
     },
     'Michigan Joker': {
@@ -687,7 +725,7 @@ JOKER_REGISTRY = {
     },
     'Lost King': {
         'events': [('on_hand_played', LostKing_effect)],
-        'description': 'Steals the scaling from all scaling jokers',
+        'description': 'Steals the scaling from all scaling jokers{break}[grey]Currently[/grey][red]x{value} Mult, +{value2} Mult, +{value3}[/red] [blue]Chips[/blue]',
         'Oopy Goopy': True
     },
 }
