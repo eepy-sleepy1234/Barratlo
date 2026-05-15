@@ -2802,6 +2802,7 @@ def shopAnimaton():
             shopAnimation.animate()
 BLIND_INVISIBLE = False
 NOBLIND = load_image_safe(os.path.join(BLINDS_DIR, "NOBLIND.png"))
+KAWAIIBLIND = load_image_safe(os.path.join(GUI_DIR, "KAWAII.png"))
 class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
@@ -5861,11 +5862,14 @@ while game:
                 SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
                 active_hover_rects.append(SelectBlind_rect)
                 active_hover_rects.append(SkipBlind_rect)
+                
 
                 text, text_rect = PixelFontS.render(small_blind.name, black)
                 text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.59))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/2.97, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
@@ -5875,6 +5879,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.48))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/2.97, HEIGHT/1.48))
             if round_num % 3 == 2:
                 screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
@@ -5886,6 +5892,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.59))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
@@ -5895,6 +5903,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.48))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.48))
             if JokerEffects.Disguised:
                 bossIMG = NOBLIND
                 text, _ = PixelFontS.render("N/A", black)
@@ -5913,6 +5923,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.59))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.305, HEIGHT/1.59))
             else:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
@@ -5920,6 +5932,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.48))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.305, HEIGHT/1.48))
         
         if not calculating:
             if scoring_in_progress:
