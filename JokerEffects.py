@@ -254,7 +254,7 @@ def Exponent_effect(context):
             
     
     return context
-def Unbeatable_effect(context):
+def Conquistador_effect(context):
     return context
 
 def Lucky_effect(context):
@@ -532,8 +532,8 @@ JOKER_REGISTRY = {
         'description': 'Retriggers your 5 most played cards',
         'Oopy Goopy': True
     },
-    'Unbeatable Joker': {
-        'events': [('on_hand_played', Unbeatable_effect)],
+    'Conquistador': {
+        'events': [('on_hand_played', Conquistador_effect)],
         'description': 'If blind is lost, complete blind as if it was won. Do not collect any money and destroy this Joker. Cannot be destroyed in any other way',
         'Oopy Goopy': False
     },
