@@ -3052,6 +3052,11 @@ class Joker:
                 desc = desc.replace("{value}", str(RulesHand))
         elif self.name == "Lucky Joker":
             desc = desc.replace("{value}", str(JokerEffects.luck))
+        elif self.name == "Lost King":
+            desc = desc.replace("{value}", str(JokerEffects.BunsKingScale['TimesMult']))
+            desc = desc.replace("{value2}", str(JokerEffects.BunsKingScale['AddMult']))
+            desc = desc.replace("{value3}", str(JokerEffects.BunsKingScale['AddChips']))
+
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -5313,7 +5318,10 @@ while game:
                         break
                     if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         buttonClick.play(0)
-                        JokerEffects.skipMult += 0.25
+                        if JokerEffects.bunsking:
+                            JokerEffects.BunsKingScale['TimesMult'] += 0.25
+                        else:
+                            JokerEffects.skipMult += 0.25
                         round_num += 1
                         current_blind = None
                         victory = False
@@ -6381,6 +6389,8 @@ while game:
             if joker.name == "Lucky Joker":
                 luck *= 2
             JokerEffects.luck = luck
+            if joker.name == "Lost King":
+                JokerEffects.bunsking = True
         for card in hand:
             card.update()
             if card.state == "discarded":
