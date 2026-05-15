@@ -71,7 +71,7 @@ scroll_offset = 0
 scroll_speed = 30
 hover_list = []
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
-has_invincible = False
+has_conquistador = False
 screen_rect = screen.get_rect()
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     try:
@@ -289,7 +289,7 @@ def close_video():
 # ==================== SOUNDS ====================
 foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
-invinciblesound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "Invincible.mp3"))
+conquistadorsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "conquistador.mp3"))
 # ==================== SPRITESHEETS ====================
 FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
 ##SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
@@ -370,7 +370,7 @@ DeadBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DeadB
 NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRunButton.png")), (WIDTH/6.8, HEIGHT/20))
 MainMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MainMenuButton.png")), (WIDTH/6.8, HEIGHT/20))
 Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyButton.png")), (WIDTH/6.8, HEIGHT/20))
-Invincible_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "InvincibleSplash.png")), (WIDTH,HEIGHT))
+conquistador_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "conquistadorSplash.png")), (WIDTH,HEIGHT))
 GameMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GameMenu.png")), (WIDTH/1.68, HEIGHT/1.1))
 MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBlinds.png")), (WIDTH/6.462, HEIGHT/9.533))
 MenuVouchers_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuVouchers.png")), (WIDTH/6.462, HEIGHT/9.533))
@@ -1903,7 +1903,7 @@ BOSS_DESC = {
     "Wisteria Harmony": "[insert angel chorus here]",
     }
 
-invincibleActive = False
+conquistadorActive = False
 class Card:
     card_id_counter = 0
     def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -2876,15 +2876,15 @@ def calculate_target_score(ante, round_num):
         return int(base_score * multipliers[4])
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
-invincibleSplashEffect = False
-invincibleSplashTimer  = 0
-def invincibleSplash():
-    global invincibleSplashTimer
-    invincibleSplashTimer -= 1
-    if invincibleSplashTimer <= 0:
-        invincibleSplashEffect = False
+conquistadorSplashEffect = False
+conquistadorSplashTimer  = 0
+def conquistadorSplash():
+    global conquistadorSplashTimer
+    conquistadorSplashTimer -= 1
+    if conquistadorSplashTimer <= 0:
+        conquistadorSplashEffect = False
     else:
-        screen.blit(Invincible_img, (0,0))
+        screen.blit(conquistador_img, (0,0))
 
 def get_current_blind():
     global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState, boss_blind
@@ -3806,7 +3806,7 @@ def reset_game_variables():
 def get_card_limit(name):
     match name:
         case "Chariot":
-            return 2
+            return 1
         case "Death":
             return 2
         case "Devil":
@@ -5293,7 +5293,7 @@ while game:
                         current_blind = None
                         victory = False
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
-                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': os.path.join(SPRITESHEETS_DIR, "GlitchBaseSpriteSheet.png"),}
+                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)), 'Card': Card,}
                         context = joker_manager.trigger('on_round_start', context)
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
@@ -6356,19 +6356,19 @@ while game:
         
         if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
             if hands <= 0 or len(hand) < 1:
-                has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
+                has_conquistador = any(joker.name == "Conquistador" for joker in Active_Jokers)
                 
-                if has_invincible:
-                    Active_Jokers = [j for j in Active_Jokers if j.name != "Invincible Joker"]
+                if has_conquistador:
+                    Active_Jokers = [j for j in Active_Jokers if j.name != "Conquistador"]
                     joker_manager = initialize_joker_effects(Active_Jokers)
                     total_score = target_score
                     victory = True
                     GameState = "Cashing"
                     advance_to_next_blind()
                     get_current_blind()
-                    invincibleSplashTimer = 180
-                    invinciblesound.play(0)
-                    invincibleSplashEffect = True
+                    conquistadorSplashTimer = 180
+                    conquistadorsound.play(0)
+                    conquistadorSplashEffect = True
                     for card in hand:
                         discard_queue.append(card)
                     discarding = True
@@ -6377,8 +6377,8 @@ while game:
                     most_played = max(hand_plays.items(), key=lambda item: item[1])
                     most_played = most_played[0]
         draw_dev_command_bar()
-        if invincibleSplashEffect:
-            invincibleSplash()
+        if conquistadorSplashEffect:
+            conquistadorSplash()
 
         animateGlitch()
         if Kawaii_Mode.toggle:
@@ -6486,6 +6486,11 @@ while game:
                 'blind': current_blind,
                 'bosses': boss_blinds,
                 "most_played" : first_key,
+                'first_hand': hands == max_hand - 1,
+                'perm_deck': perm_deck,
+                'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
+                'Card': Card,
+                'hand': hand,
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
@@ -6509,6 +6514,29 @@ while game:
                     steelnum += 1
                     for i in range(20):
                         card.trigger("XMult", 1.5)
+            context = {
+                'chips': saved_base_chips,
+                'mult': saved_base_mult,
+                'active_jokers': Active_Jokers,
+                'hand_type': hand_type_temp,
+                'deck': deck,
+                'hand_played': selected_cards, 
+                'card_play_counts': card_play_counts,
+                'money': money,
+                'rulesHand': RulesHand,
+                'blind': current_blind,
+                'bosses': boss_blinds,
+                "most_played" : first_key,
+                'first_hand': hands == max_hand - 1,
+                'perm_deck': perm_deck,
+                'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
+                'Card': Card,
+                'hand': hand,
+            }
+            context = joker_manager.trigger('on_hand_scored', context)
+            saved_base_chips = context['chips']
+            saved_base_mult = context['mult']
+            money = context['money']
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             scored = False

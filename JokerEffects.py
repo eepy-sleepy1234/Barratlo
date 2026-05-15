@@ -47,6 +47,7 @@ class JokerEffectsManager:
             'copy': [],
             'on_joker_sell': [],
             'on_scoring_start': [],
+            'on_hand_scored': [],
         }
 
     def register_joker(self, joker_name, event_type, effect_function):
@@ -361,7 +362,7 @@ def PTSD_effect(context):
         
     else:
         if bunsking:
-            BunsKingScale['AddMult'] += 0.1
+            BunsKingScale['TimesMult'] += 0.1
         else:
             last_hand_counter += 0.1
             context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
@@ -371,7 +372,7 @@ def PTSD_effect(context):
 def WetFloor_effect(context):
     global wetFloorValue
     hand_played = [c for c in context.get('hand_played', []) if not isinstance(c, str)]
-    has_numbered = any(2 <= card.value <= 9 for card in hand_played)
+    has_numbered = any(2 <= card.value <= 10 for card in hand_played)
     if has_numbered:
         wetFloorValue = 0
     else:
@@ -427,28 +428,62 @@ def DeadFrog_effect(context):
     return context
 
 def Worm_effect(context):
-    return
+    first_hand = context.get('first_hand')
+    playedhand = context.get('hand_played')
+    hand = context.get('hand')
+    if first_hand:
+        for card in playedhand:
+            if card.enhancement == "Glitched":
+                deck = context.get('deck')
+                perm_deck = context.get('perm_deck')
+                glitch = context.get('glitch')
+                Card = context.get('Card')
+                if deck is None or perm_deck is None:
+                    return context
+                newcard = Card("Two", "Glitched", glitch, enhancement="Glitched")
+                newcard.chip_value = 50
+                newcard.rank = 0
+                newcard.value = 0
+                newcard.slot = len(hand) + 1
+                perm_deck.append(newcard)
+                hand.append(newcard)
+                context.setdefault('triggered_jokers', []).append('Virus')
+                return context
+        return context
+    else:
+        return context
 
 def Virus_effect(context):
     deck = context.get('deck')
     perm_deck = context.get('perm_deck')
     glitch = context.get('glitch')
+    Card = context.get('Card')
     if deck is None or perm_deck is None:
         return context
-    from Blatora import Card
-    newcard = Card(2, "Glitched", glitch, enhancement="Glitched")
+    newcard = Card("Two", "Glitched", glitch, enhancement="Glitched")
     newcard.chip_value = 50
     newcard.rank = 0
+    newcard.value = 0
     deck.append(newcard)
     perm_deck.append(newcard)
     context.setdefault('triggered_jokers', []).append('Virus')
     return context
 
 def Spyware_effect(context):
-    return
+    hand = context.get('hand')
+    for card in hand:
+        if card.enhancement == "Glitched":
+            context['mult'] = context.get('mult') + 2
+            context.setdefault('triggered_jokers', []).append('Spyware')
+    return context
 
 def Ransomware_effect(context):
-    return
+    hand_played = context.get('hand_played', [])
+    for card in hand_played:
+        if card.enhancement == "Glitched":
+            context['money'] = context.get('money') + 1
+            context.setdefault('triggered_jokers', []).append('Ransomware')
+    return context
 
 def LostKing_effect(context):
     mult = context.get('mult', 0)
@@ -679,7 +714,7 @@ JOKER_REGISTRY = {
         'Oopy Goopy': True
     },
     'Spyware': {
-        'events': [('on_hand_played', Spyware_effect)],
+        'events': [('on_hand_scored', Spyware_effect)],
         'description': 'Glitched cards give [red]+2[/red] mult when held in hand',
         'Oopy Goopy': True
     },
