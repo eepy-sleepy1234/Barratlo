@@ -362,7 +362,7 @@ def PTSD_effect(context):
         
     else:
         if bunsking:
-            BunsKingScale['AddMult'] += 0.1
+            BunsKingScale['TimesMult'] += 0.1
         else:
             last_hand_counter += 0.1
             context["mult"] = context.get('mult', 0) * (1 + last_hand_counter)
