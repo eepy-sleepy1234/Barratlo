@@ -3794,7 +3794,7 @@ def reset_game_variables():
 def get_card_limit(name):
     match name:
         case "Chariot":
-            return 2
+            return 1
         case "Death":
             return 2
         case "Devil":
@@ -5279,7 +5279,7 @@ while game:
                         current_blind = None
                         victory = False
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
-                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': os.path.join(SPRITESHEETS_DIR, "GlitchBaseSpriteSheet.png"),}
+                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)), 'Card': Card,}
                         context = joker_manager.trigger('on_round_start', context)
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
@@ -6441,6 +6441,11 @@ while game:
                 'blind': current_blind,
                 'bosses': boss_blinds,
                 "most_played" : first_key,
+                'first_hand': hands == max_hand - 1,
+                'perm_deck': perm_deck,
+                'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
+                'Card': Card,
+                'hand': hand,
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
@@ -6464,6 +6469,29 @@ while game:
                     steelnum += 1
                     for i in range(20):
                         card.trigger("XMult", 1.5)
+            context = {
+                'chips': saved_base_chips,
+                'mult': saved_base_mult,
+                'active_jokers': Active_Jokers,
+                'hand_type': hand_type_temp,
+                'deck': deck,
+                'hand_played': selected_cards, 
+                'card_play_counts': card_play_counts,
+                'money': money,
+                'rulesHand': RulesHand,
+                'blind': current_blind,
+                'bosses': boss_blinds,
+                "most_played" : first_key,
+                'first_hand': hands == max_hand - 1,
+                'perm_deck': perm_deck,
+                'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
+                'Card': Card,
+                'hand': hand,
+            }
+            context = joker_manager.trigger('on_hand_scored', context)
+            saved_base_chips = context['chips']
+            saved_base_mult = context['mult']
+            money = context['money']
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             scored = False
