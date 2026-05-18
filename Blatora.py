@@ -2822,6 +2822,7 @@ def shopAnimaton():
             shopAnimation.animate()
 BLIND_INVISIBLE = False
 NOBLIND = load_image_safe(os.path.join(BLINDS_DIR, "NOBLIND.png"))
+NOBLIND = pygame.transform.scale(NOBLIND, (HEIGHT/10, HEIGHT/10))
 KAWAIIBLIND = load_image_safe(os.path.join(GUI_DIR, "KAWAII.png"))
 class Blind:
     def __init__(self, name, image, x, y, state):
@@ -5929,7 +5930,7 @@ while game:
                     screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.48))
             if JokerEffects.Disguised:
                 bossIMG = NOBLIND
-                text, _ = PixelFontS.render("N/A", black)
+                text, _ = PixelFontS.render("Hidden", black)
                 
             else:
                 bossIMG = boss_blind.imageS
