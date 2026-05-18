@@ -351,7 +351,12 @@ Pointer_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "poin
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD, (WIDTH, HEIGHT))
-
+JOKERARE = load_image_safe(os.path.join(GUI_DIR, 'RareJoke.png'))
+JOKECOMMON = load_image_safe(os.path.join(GUI_DIR, 'CommonJoke.png'))
+JOKELEGENDARY = load_image_safe(os.path.join(GUI_DIR, 'LegendaryJoke.png'))
+JOKEUNCOMMON = load_image_safe(os.path.join(GUI_DIR, 'UncommonJoke.png'))
+JOKESECRET = load_image_safe(os.path.join(GUI_DIR, 'SecretJoke.png'))
+JOKERDESC = load_image_safe(os.path.join(GUI_DIR, 'JokerDesc.png'))
 HandBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (HEIGHT/3.33, HEIGHT/7.62))
 ScoreBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (HEIGHT/3.33, HEIGHT/10.66))
 GoalBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (HEIGHT/5.33, HEIGHT/8))
@@ -1094,7 +1099,7 @@ def _parse_segments(line, default_color):
         segments.append((line[last:], default_color))
     return segments
 
-def _compose_text_box(text, font, color, box_w, bg_color, padding):
+def _compose_text_box(text, font, color, box_w, bg_color, padding, bg_image=None):
     scale     = font.scale
     lh        = pixel_line_height(scale)
     max_width = box_w - padding * 2
@@ -1132,12 +1137,15 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             rendered_lines.append((line_words, indent_px))
 
     total_h = len(rendered_lines) * lh + padding * 2
+    
     box_surf = pygame.Surface((box_w, total_h), pygame.SRCALPHA)
 
-    if bg_color:
+    if bg_image:
+        scaled_bg = pygame.transform.scale(bg_image, (box_w, total_h))
+        box_surf.blit(scaled_bg, (0, 0))
+    elif bg_color:
         box_surf.fill(bg_color)
         pygame.draw.rect(box_surf, color, box_surf.get_rect(), 2)
-
     y = padding
     for entry in rendered_lines:
         if not entry:
@@ -1145,6 +1153,7 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             continue
         line_words, indent_px = entry
         draw_x = padding + int(indent_px)
+
         phrases = []
         if line_words:
             cur_col = line_words[0][1]
@@ -1158,23 +1167,30 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
                     cur_words = [word]
             phrases.append((' '.join(cur_words), cur_col))
 
-        for i, (phrase, col) in enumerate(phrases):
-            surf, _ = render_pixel(phrase, col, scale)
+
+        rendered_phrases = [(render_pixel(phrase, col, scale)[0], col)
+                            for phrase, col in phrases]
+        line_w = sum(s.get_width() for s, _ in rendered_phrases)
+        line_w += space_w * max(0, len(rendered_phrases) - 1)
+        draw_x = (box_w - line_w) // 2 
+
+        for i, (surf, col) in enumerate(rendered_phrases):
             box_surf.blit(surf, (draw_x, y))
             draw_x += surf.get_width()
-            if i < len(phrases) - 1:
+            if i < len(rendered_phrases) - 1:
                 draw_x += space_w
 
         y += lh
 
     return box_surf
-
-def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
-    cache_key = (text, font.scale, rect.width, bg_color, color, padding)
+def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10, bg_image=None):
+    cache_key = (text, font.scale, rect.width, bg_color, color, padding, id(bg_image))
     box_surf = _textbox_cache.get(cache_key)
     if box_surf is None:
-        box_surf = _compose_text_box(text, font, color, rect.width, bg_color, padding)
+        
+        box_surf = _compose_text_box(text, font, color, rect.width, bg_color, padding, bg_image)
         _textbox_cache[cache_key] = box_surf
+    
     surface.blit(box_surf, (rect.x, rect.y))
 
 def process_dev_command(command):
@@ -3063,6 +3079,8 @@ class Joker:
             desc = desc.replace("{value3}", str(JokerEffects.BunsKingScale['AddChips']))
 
         desc = desc.replace("{break}", "\n")
+       
+
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
         return desc
@@ -6171,10 +6189,10 @@ while game:
                 tip_x = max(0, min(tip_x, WIDTH - tip_w))
 
                 desc = hovered_joker.get_description()
-                cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10)
+                cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10, id(JOKERDESC))
                 box_surf = _textbox_cache.get(cache_key)
                 if box_surf is None:
-                    box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10)
+                    box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10, bg_image=JOKERDESC)
                     _textbox_cache[cache_key] = box_surf
                 tip_h = box_surf.get_height()
 
@@ -6183,7 +6201,25 @@ while game:
                 else:
                     tip_y = int(hovered_joker.rect.bottom + 10)
                 tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
-                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30))
+                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30), bg_image=JOKERDESC)
+                MAXHIEGHT = tip_rect.top - 10
+                JOKERARITY = hovered_joker.rarity
+                if JOKERARITY == "C":
+                    JOKERARITY = JOKECOMMON
+                elif JOKERARITY == "U":
+                    JOKERARITY = JOKEUNCOMMON
+                elif JOKERARITY == "R":
+                    JOKERARITY = JOKERARE
+                elif JOKERARITY == "L":
+                    JOKERARITY = JOKELEGENDARY
+                elif JOKERARITY == "S":
+                    JOKERARITY = JOKESECRET
+                scale =  tip_w / JOKERARITY.get_width() * 0.5
+                JOKERARITY_scaled = pygame.transform.scale(JOKERARITY, (int(JOKERARITY.get_width() * scale), int(JOKERARITY.get_height() * scale)))
+                screen.blit(JOKERARITY_scaled, (
+                        tip_rect.centerx - JOKERARITY_scaled.get_width() // 2,
+                        tip_rect.bottom - 5
+                    ))
         update_card_animation()
         if SO_SERIOUS.toggle or jonkler_sphere_active:
             soserious.animate()

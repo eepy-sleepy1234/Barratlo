@@ -725,7 +725,7 @@ JOKER_REGISTRY = {
     },
     'Lost King': {
         'events': [('on_hand_played', LostKing_effect)],
-        'description': 'Steals the scaling from all scaling jokers{break}[grey]Currently[/grey][red]x{value} Mult, +{value2} Mult, +{value3}[/red] [blue]Chips[/blue]',
+        'description': 'Steals the scaling from all scaling jokers{break}[grey]Currently[/grey]{break}[red]x{value} Mult[/red]{break}[red]+{value2} Mult[/red]{break}[blue]+{value3} Chips[/blue]',
         'Oopy Goopy': True
     },
 }
