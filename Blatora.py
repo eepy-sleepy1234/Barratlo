@@ -71,7 +71,7 @@ scroll_offset = 0
 scroll_speed = 30
 hover_list = []
 PLACEHOLDER = os.path.join(GUI_DIR, 'placeholder.png')
-has_invincible = False
+has_conquistador = False
 screen_rect = screen.get_rect()
 def load_image_safe(filepath, fallback_path=PLACEHOLDER):
     try:
@@ -289,7 +289,7 @@ def close_video():
 # ==================== SOUNDS ====================
 foxsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "FOCY.mp3"))
 soseriousmusic = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "WHYSOSERIOUS.mp3"))
-invinciblesound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "Invincible.mp3"))
+conquistadorsound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "conquistador.mp3"))
 # ==================== SPRITESHEETS ====================
 FOXYSCARE = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'focy.png'))
 ##SPINNINGBGIMG = load_image_safe(os.path.join(SPRITESHEETS_DIR, 'StartBackground.png'))
@@ -370,7 +370,7 @@ DeadBG_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "DeadB
 NewRun_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "NewRunButton.png")), (WIDTH/6.8, HEIGHT/20))
 MainMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MainMenuButton.png")), (WIDTH/6.8, HEIGHT/20))
 Copy_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "CopyButton.png")), (WIDTH/6.8, HEIGHT/20))
-Invincible_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "InvincibleSplash.png")), (WIDTH,HEIGHT))
+conquistador_img  = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "conquistadorSplash.png")), (WIDTH,HEIGHT))
 GameMenu_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GameMenu.png")), (WIDTH/1.68, HEIGHT/1.1))
 MenuBlinds_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuBlinds.png")), (WIDTH/6.462, HEIGHT/9.533))
 MenuVouchers_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "MenuVouchers.png")), (WIDTH/6.462, HEIGHT/9.533))
@@ -495,6 +495,8 @@ setting_width = WIDTH/6
 setting_height = HEIGHT/5
 settingsList = []
 devtoggle = ""
+
+
 
 class User_settings():
     def __init__(self,name, visible = True):
@@ -1731,6 +1733,10 @@ purchases = 0
 rerolls = 0
 cards_found = 0
 lastFool = None
+useX = -100
+useY = -100
+CuseX = -100
+CuseY = -100
 locked_hands = ["Five of a Kind", "Flush House", "Flush Five", "Huh of a What"]
 unlocked_hands = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush"]
 locked_cards = ["Glitch", "King Shadow", "The Reaper", "Tag Team"]
@@ -1901,7 +1907,7 @@ BOSS_DESC = {
     "Wisteria Harmony": "[insert angel chorus here]",
     }
 
-invincibleActive = False
+conquistadorActive = False
 class Card:
     card_id_counter = 0
     def __init__(self, rank, suit, image, slot=None, state="hand", debuff=False, enhancement=None, edition=None, seal=None):
@@ -2798,12 +2804,15 @@ def shopAnimaton():
             shop_down = False
         if shop_down:
             shopAnimation.animate()
-
+BLIND_INVISIBLE = False
+NOBLIND = load_image_safe(os.path.join(BLINDS_DIR, "NOBLIND.png"))
+KAWAIIBLIND = load_image_safe(os.path.join(GUI_DIR, "KAWAII.png"))
 class Blind:
     def __init__(self, name, image, x, y, state):
         self.name = name
         self.image = image
         self.imageS = pygame.transform.scale(self.image, (HEIGHT/10, HEIGHT/10))
+        
         self.x = x
         self.y = y
         self.target_x = x
@@ -2871,15 +2880,15 @@ def calculate_target_score(ante, round_num):
         return int(base_score * multipliers[4])
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
-invincibleSplashEffect = False
-invincibleSplashTimer  = 0
-def invincibleSplash():
-    global invincibleSplashTimer
-    invincibleSplashTimer -= 1
-    if invincibleSplashTimer <= 0:
-        invincibleSplashEffect = False
+conquistadorSplashEffect = False
+conquistadorSplashTimer  = 0
+def conquistadorSplash():
+    global conquistadorSplashTimer
+    conquistadorSplashTimer -= 1
+    if conquistadorSplashTimer <= 0:
+        conquistadorSplashEffect = False
     else:
-        screen.blit(Invincible_img, (0,0))
+        screen.blit(conquistador_img, (0,0))
 
 def get_current_blind():
     global round_num, ante, current_blind, target_score, blind_reward, victory, total_score, GameState, boss_blind
@@ -3046,6 +3055,13 @@ class Joker:
                 desc = "[yellow]5$[/yellow] For Playing a specified hand. Buy to view hand."
             else:
                 desc = desc.replace("{value}", str(RulesHand))
+        elif self.name == "Lucky Joker":
+            desc = desc.replace("{value}", str(JokerEffects.luck))
+        elif self.name == "Lost King":
+            desc = desc.replace("{value}", str(JokerEffects.BunsKingScale['TimesMult']))
+            desc = desc.replace("{value2}", str(JokerEffects.BunsKingScale['AddMult']))
+            desc = desc.replace("{value3}", str(JokerEffects.BunsKingScale['AddChips']))
+
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -3156,7 +3172,7 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
                 scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
                 scaled_img = scaled_img.copy()
                 scaled_img.blit(scaled_overlay, (0, 0))
-            match card.edition:
+            match joker.edition:
                 case "Foil":
                     scaled_overlay = pygame.transform.smoothscale(Foil_img, (scaled_w, scaled_h))
                     scaled_img = scaled_img.copy()
@@ -3794,7 +3810,7 @@ def reset_game_variables():
 def get_card_limit(name):
     match name:
         case "Chariot":
-            return 2
+            return 1
         case "Death":
             return 2
         case "Devil":
@@ -4424,7 +4440,7 @@ def get_tarot_effect(name):
             lastFool = "Tower"
     if name == "Wheel Of Fortune":
         wheelnum = random.randint(min(base_chance, 4), 4)
-        if wheelnum == 4:
+        if wheelnum <= 5:
             jonker = random.choice(Active_Jokers)
             wheelnum2 = random.randint(1, 3)
             if wheelnum2 == 1:
@@ -5180,6 +5196,8 @@ while game:
                                     RulesHand = None
                                 if card.name == "Getting An Upgrade":
                                     rare_joker = True
+                                if card.name == "Disguised Joker":
+                                    JokerEffects.Disguised = False
                         for card in Held_Consumables:
                             if card.state == "selected":
                                 ActiveJokerSelected = False
@@ -5279,7 +5297,7 @@ while game:
                         current_blind = None
                         victory = False
                         BLIND_X, BLIND_Y = WIDTH/100, HEIGHT/22.86
-                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': os.path.join(SPRITESHEETS_DIR, "GlitchBaseSpriteSheet.png"),}
+                        context = {'active_jokers': Active_Jokers, 'round_num': round_num, 'deck': deck, 'perm_deck': perm_deck, 'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)), 'Card': Card,}
                         context = joker_manager.trigger('on_round_start', context)
                         jonkler_sphere_active = context.get('jonkler_sphere_active', False)
                         if jonkler_sphere_active:
@@ -5305,7 +5323,10 @@ while game:
                         break
                     if SkipBlind_rect.collidepoint(mouse_pos) and GameState == "Blinds":
                         buttonClick.play(0)
-                        JokerEffects.skipMult += 0.25
+                        if JokerEffects.bunsking:
+                            JokerEffects.BunsKingScale['TimesMult'] += 0.25
+                        else:
+                            JokerEffects.skipMult += 0.25
                         round_num += 1
                         current_blind = None
                         victory = False
@@ -5845,11 +5866,14 @@ while game:
                 SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
                 active_hover_rects.append(SelectBlind_rect)
                 active_hover_rects.append(SkipBlind_rect)
+                
 
                 text, text_rect = PixelFontS.render(small_blind.name, black)
                 text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.59))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/2.97, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/3.5, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/3.4, HEIGHT/1.6))
@@ -5859,6 +5883,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.48))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/2.97, HEIGHT/1.48))
             if round_num % 3 == 2:
                 screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.73))
@@ -5870,6 +5896,8 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.59))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.59))
             else:
                 screen.blit(BlindBG_img, (WIDTH/2, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.97, HEIGHT/1.6))
@@ -5879,23 +5907,37 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.48))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.48))
+            if JokerEffects.Disguised:
+                bossIMG = NOBLIND
+                text, _ = PixelFontS.render("N/A", black)
+                
+            else:
+                bossIMG = boss_blind.imageS
+                text, _ = PixelFontS.render(boss_blind.name, black)
+                
+            
+
             if round_num % 3 == 0:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.93))
                 SelectBlind_rect.topleft = (WIDTH/1.38, HEIGHT/1.93)
-                text, _ = PixelFontS.render(boss_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
                 screen.blit(text, text_rect)
-                screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.59))
+                screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.59))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.305, HEIGHT/1.59))
             else:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/1.83))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.6))
                 screen.blit(SelectBlind_img, (WIDTH/1.38, HEIGHT/1.8))
-                text, _ = PixelFontS.render(boss_blind.name, black)
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
-                screen.blit(boss_blind.imageS,(WIDTH/1.305, HEIGHT/1.48))
+                screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.48))
+                if Kawaii_Mode.toggle:
+                    screen.blit(KAWAIIBLIND,(WIDTH/1.305, HEIGHT/1.48))
         
         if not calculating:
             if scoring_in_progress:
@@ -6045,14 +6087,17 @@ while game:
                 text, _ = PixelFontS.render(f"{int(joker.price / 2)}", white)
                 text_rect = text.get_rect(center=(buyX + WIDTH/40, buyY + HEIGHT/8.5))
                 screen.blit(text, text_rect)
+        jcount = 0
         for joker in Held_Consumables:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
-                useX, useY = get_selected_Shop_Cards(joker)
-                CuseX, CuseY = -100, -100
-            else:
-                useX, useY = -100, -100
-                CuseX, CuseY = get_selected_Shop_Cards(joker)
+            if joker.state == "selected":
+                jcount += 1
+                if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6):
+                    useX, useY = get_selected_Shop_Cards(joker)
+                    CuseX, CuseY = -100, -100
+                else:
+                    useX, useY = -100, -100
+                    CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
             elif CuseX > 0:
@@ -6062,12 +6107,14 @@ while game:
             active_hover_rects.append(UseButton_rect)
         for joker in PackCards:
             limit = get_card_limit(joker.name)
-            if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
-                useX, useY = get_selected_Shop_Cards(joker)
-                CuseX, CuseY = -100, -100
-            else:
-                useX, useY = -100, -100
-                CuseX, CuseY = get_selected_Shop_Cards(joker)
+            if joker.state == "selected":
+                jcount += 1
+                if limit >= len(selected_cards) and (len(selected_cards) > 0 or limit == 6) and joker.state == "selected":
+                    useX, useY = get_selected_Shop_Cards(joker)
+                    CuseX, CuseY = -100, -100
+                else:
+                    useX, useY = -100, -100
+                    CuseX, CuseY = get_selected_Shop_Cards(joker)
             if useX > 0:
                 screen.blit(UseButton_img, (useX + WIDTH/30, useY - HEIGHT/30))
             elif CuseX > 0:
@@ -6075,6 +6122,11 @@ while game:
             UseButton_rect = UseButton_img.get_rect()
             UseButton_rect.topleft = (useX + WIDTH/30, useY - HEIGHT/30)
             active_hover_rects.append(UseButton_rect)
+        if jcount == 0:
+            useX = -100
+            useY = -100
+            CuseX = -100
+            CuseY = -100
         for joker in ShopPacks:
             buyX, buyY = get_selected_Shop_Cards(joker)
             if buyX > 0:
@@ -6318,19 +6370,19 @@ while game:
         
         if not calculating and not scoring_in_progress and total_score < target_score and GameState == "Playing":
             if hands <= 0 or len(hand) < 1:
-                has_invincible = any(joker.name == "Invincible Joker" for joker in Active_Jokers)
+                has_conquistador = any(joker.name == "Conquistador" for joker in Active_Jokers)
                 
-                if has_invincible:
-                    Active_Jokers = [j for j in Active_Jokers if j.name != "Invincible Joker"]
+                if has_conquistador:
+                    Active_Jokers = [j for j in Active_Jokers if j.name != "Conquistador"]
                     joker_manager = initialize_joker_effects(Active_Jokers)
                     total_score = target_score
                     victory = True
                     GameState = "Cashing"
                     advance_to_next_blind()
                     get_current_blind()
-                    invincibleSplashTimer = 180
-                    invinciblesound.play(0)
-                    invincibleSplashEffect = True
+                    conquistadorSplashTimer = 180
+                    conquistadorsound.play(0)
+                    conquistadorSplashEffect = True
                     for card in hand:
                         discard_queue.append(card)
                     discarding = True
@@ -6339,8 +6391,8 @@ while game:
                     most_played = max(hand_plays.items(), key=lambda item: item[1])
                     most_played = most_played[0]
         draw_dev_command_bar()
-        if invincibleSplashEffect:
-            invincibleSplash()
+        if conquistadorSplashEffect:
+            conquistadorSplash()
 
         animateGlitch()
         if Kawaii_Mode.toggle:
@@ -6354,12 +6406,19 @@ while game:
         _flip()  
         clock.tick(60)
         currentFrame += 1
-
+        luck = 1
         for joker in Active_Jokers:
+            
             if joker.name == "Rules Card":
                 if RulesHand is None:
-                    RulesHand = random.choice(["Two Pair","High Card","Three of a Kind","Four of a Kind","Five of a Kind","Flush House","Flush Five","Straight","Straight Flush","Full House","Flush House","Pair","Flush","Royal Flush"])
-            
+                    RulesHand = random.choice(unlocked_hands)
+            if joker.name == "Disguised Joker":
+                JokerEffects.Disguised = True
+            if joker.name == "Lucky Joker":
+                luck *= 2
+            JokerEffects.luck = luck
+            if joker.name == "Lost King":
+                JokerEffects.bunsking = True
         for card in hand:
             card.update()
             if card.state == "discarded":
@@ -6441,6 +6500,11 @@ while game:
                 'blind': current_blind,
                 'bosses': boss_blinds,
                 "most_played" : first_key,
+                'first_hand': hands == max_hand - 1,
+                'perm_deck': perm_deck,
+                'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
+                'Card': Card,
+                'hand': hand,
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
@@ -6464,6 +6528,37 @@ while game:
                     steelnum += 1
                     for i in range(20):
                         card.trigger("XMult", 1.5)
+            context = {
+                'chips': saved_base_chips,
+                'mult': saved_base_mult,
+                'active_jokers': Active_Jokers,
+                'hand_type': hand_type_temp,
+                'deck': deck,
+                'hand_played': selected_cards, 
+                'card_play_counts': card_play_counts,
+                'money': money,
+                'rulesHand': RulesHand,
+                'blind': current_blind,
+                'bosses': boss_blinds,
+                "most_played" : first_key,
+                'first_hand': hands == max_hand - 1,
+                'perm_deck': perm_deck,
+                'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
+                'Card': Card,
+                'hand': hand,
+            }
+            context = joker_manager.trigger('on_hand_scored', context)
+            saved_base_chips = context['chips']
+            saved_base_mult = context['mult']
+            money = context['money']
+            for joker in Active_Jokers:
+                match joker.edition:
+                    case "Foil":
+                        saved_base_chips += 50
+                    case "Holographic":
+                        saved_base_mult += 10
+                    case "Polychrome":
+                        saved_base_mult *= 1.5
             calculating = True
             JokerEffects.last_hand = hand_type_temp
             scored = False
