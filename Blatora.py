@@ -6247,7 +6247,6 @@ while game:
                 tip_w = int(WIDTH / 8)
                 tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
                 tip_x = max(0, min(tip_x, WIDTH - tip_w))
-
                 desc = hovered_joker.get_description()
                 _textbox_cache.clear()
                 cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10, id(JOKERDESC))
@@ -6257,7 +6256,7 @@ while game:
                     _textbox_cache[cache_key] = box_surf
                 desc_h = box_surf.get_height()
                 if hovered_joker.rarity == "C":
-                    desc_collor = grey
+                    desc_collor = blue
                 elif hovered_joker.rarity == "U":
                     desc_collor = green
                 elif hovered_joker.rarity == "R":
