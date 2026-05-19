@@ -330,7 +330,7 @@ def GettingAnUpgrade_effect(context):
     #Done in main code
     return context
 
-def FlyDeity_effect(context):
+def ImpendingDoom_effect(context):
     blind = context.get("blind")
     boss = context.get("bosses")
     if blind in boss:
@@ -339,7 +339,7 @@ def FlyDeity_effect(context):
         context['mult'] = context.get("mult") + 5
 
 
-    context.setdefault('triggered_jokers', []).append('Fly Deity')
+    context.setdefault('triggered_jokers', []).append('Impending Doom')
 
     return context
 
@@ -638,8 +638,8 @@ JOKER_REGISTRY = {
         'description': 'Sell to guarantee a rare Joker in the next shop',
         'Oopy Goopy': False
     },
-    'Fly Deity': {
-        'events': [('on_hand_played', FlyDeity_effect)],
+    'Impending Doom': {
+        'events': [('on_hand_played', ImpendingDoom_effect)],
         'description': 'give [blue]+5[/blue] chips on Small and Big Blind, give [red]+50[/red] mult on Boss Blinds',
         'Oopy Goopy': True
     },
