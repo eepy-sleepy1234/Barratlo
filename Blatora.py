@@ -4642,22 +4642,23 @@ while game:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     if start_button_rect.collidepoint(event.pos):
-                        buttonClick.play(0)
-                        card_x = -WIDTH
-                        card_animating = True
-                        running = True
-                        joker_manager = initialize_joker_effects(Active_Jokers)
-                        GameState = "Blinds"
-                        seed = ''
-                        for i in range(8):
-                            num = random.randint(0, 35)
-                            if num > 9:
-                                num -= 9
-                                num = chr(ord('`')+num)
-                            num = str(num)
-                            seed += num
-                        random.seed(seed)
-                        running = True
+                        if card_animating == False:
+                            buttonClick.play(0)
+                            card_x = -WIDTH
+                            card_animating = True
+                            running = True
+                            joker_manager = initialize_joker_effects(Active_Jokers)
+                            GameState = "Blinds"
+                            seed = ''
+                            for i in range(8):
+                                num = random.randint(0, 35)
+                                if num > 9:
+                                    num -= 9
+                                    num = chr(ord('`')+num)
+                                num = str(num)
+                                seed += num
+                            random.seed(seed)
+                            running = True
                     elif settings2.toggle:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
