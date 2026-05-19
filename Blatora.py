@@ -351,6 +351,33 @@ Pointer_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "poin
 # ==================== BACKGROUNDS & PANELS ====================
 STARTCARD = load_image_safe(os.path.join(GUI_DIR, 'StartCard.png'))
 STARTCARD = pygame.transform.smoothscale(STARTCARD, (WIDTH, HEIGHT))
+JOKERARE = load_image_safe(os.path.join(GUI_DIR, 'RareJoke.png'))
+JOKECOMMON = load_image_safe(os.path.join(GUI_DIR, 'CommonJoke.png'))
+JOKELEGENDARY = load_image_safe(os.path.join(GUI_DIR, 'LegendaryJoke.png'))
+JOKEUNCOMMON = load_image_safe(os.path.join(GUI_DIR, 'UncommonJoke.png'))
+JOKESECRET = load_image_safe(os.path.join(GUI_DIR, 'SecretJoke.png'))
+JOKERDESC = load_image_safe(os.path.join(GUI_DIR, 'DescBox9slice.png'))
+JOKERDESCBG = load_image_safe(os.path.join(GUI_DIR, 'DescBack9slice.png'))
+
+JOKERDESKTL = JOKERDESC.subsurface((0,  0,  10,10))
+JOKERDESKTR = JOKERDESC.subsurface((13, 0,  10, 10))
+JOKERDESKBL = JOKERDESC.subsurface((0,  13, 10, 10)) 
+JOKERDESKBR = JOKERDESC.subsurface((13, 13, 10, 10))  
+JOKERDESKTS = JOKERDESC.subsurface((11, 0,  1,  10))
+JOKERDESKBS = JOKERDESC.subsurface((11, 13, 1,  10))
+JOKERDESKLS = JOKERDESC.subsurface((0,  11, 10, 1 ))
+JOKERDESKRS = JOKERDESC.subsurface((13, 11, 10, 1 ))
+JOKERDESKMS = JOKERDESC.subsurface((11, 11, 1,  1 ))
+
+JOKERBGDESKTL = JOKERDESCBG.subsurface((0,  0,  10,10))
+JOKERBGDESKTR = JOKERDESCBG.subsurface((13, 0,  10, 10))
+JOKERBGDESKBL = JOKERDESCBG.subsurface((0,  13, 10, 10))
+JOKERBGDESKBR = JOKERDESCBG.subsurface((13, 13, 10, 10))
+JOKERBGDESKTS = JOKERDESCBG.subsurface((11, 0,  1,  10))
+JOKERBGDESKBS = JOKERDESCBG.subsurface((11, 13, 1,  10))
+JOKERBGDESKLS = JOKERDESCBG.subsurface((0,  11, 10, 1 ))
+JOKERBGDESKRS = JOKERDESCBG.subsurface((13, 11, 10, 1 ))
+JOKERBGDESKMS = JOKERDESCBG.subsurface((11, 11, 1,  1 ))
 
 HandBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (HEIGHT/3.33, HEIGHT/7.62))
 ScoreBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (HEIGHT/3.33, HEIGHT/10.66))
@@ -694,7 +721,45 @@ def animate_ring():
                 _ring_surface.blit(rotated, (x - rw // 2, y - rh // 2))
 
     screen.blit(_ring_surface, (0, 0))
-    
+
+
+def draw_nine_slice(surface, rect, sprite):
+    x, y, w, h = rect.x, rect.y, rect.width, rect.height
+    if sprite == 1:
+
+        lw = JOKERDESKTL.get_width()   
+        rw = JOKERDESKTR.get_width()   
+        th = JOKERDESKTL.get_height()  
+        bh = JOKERDESKBL.get_height()  
+        mw = w - lw - rw               
+        mh = h - th - bh              
+        surface.blit(JOKERDESKTL, (x,        y))
+        surface.blit(JOKERDESKTR, (x+w-rw,   y))
+        surface.blit(JOKERDESKBL, (x,        y+h-bh))
+        surface.blit(JOKERDESKBR, (x+w-rw,   y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERDESKTS, (mw, th)),  (x+lw,    y))
+        surface.blit(pygame.transform.scale(JOKERDESKBS, (mw, bh)),  (x+lw,    y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERDESKLS, (lw, mh)),  (x,       y+th))
+        surface.blit(pygame.transform.scale(JOKERDESKRS, (rw, mh)),  (x+w-rw,  y+th))
+        surface.blit(pygame.transform.scale(JOKERDESKMS, (mw, mh)),  (x+lw,    y+th))
+    if sprite == 2:
+        lw = JOKERBGDESKTL.get_width()
+        rw = JOKERBGDESKTR.get_width()
+        th = JOKERBGDESKTL.get_height()
+        bh = JOKERBGDESKBL.get_height()
+        mw = w - lw - rw
+        mh = h - th - bh
+        surface.blit(JOKERBGDESKTL, (x,        y))
+        surface.blit(JOKERBGDESKTR, (x+w-rw,   y))
+        surface.blit(JOKERBGDESKBL, (x,        y+h-bh))
+        surface.blit(JOKERBGDESKBR, (x+w-rw,   y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERBGDESKTS, (mw, th)),  (x+lw,    y))
+        surface.blit(pygame.transform.scale(JOKERBGDESKBS, (mw, bh)),  (x+lw,    y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERBGDESKLS, (lw, mh)),  (x,       y+th))
+        surface.blit(pygame.transform.scale(JOKERBGDESKRS, (rw, mh)),  (x+w-rw,  y+th))
+        surface.blit(pygame.transform.scale(JOKERBGDESKMS, (mw, mh)),  (x+lw,    y+th))
+
+
 def reset_deck_for_new_round():
     global deck, hand
     hand.clear()
@@ -1071,6 +1136,8 @@ def blit_img():
 
             dev_command = input("Input Developer Command")    
 
+grey = (128, 128, 128)
+pink = (255, 192, 203)
 _COLOR_TAGS = {
     'red':    (230, 50,  50),
     'blue':   (50,  150, 255),
@@ -1094,7 +1161,7 @@ def _parse_segments(line, default_color):
         segments.append((line[last:], default_color))
     return segments
 
-def _compose_text_box(text, font, color, box_w, bg_color, padding):
+def _compose_text_box(text, font, color, box_w, bg_color, padding, bg_image=None):
     scale     = font.scale
     lh        = pixel_line_height(scale)
     max_width = box_w - padding * 2
@@ -1118,11 +1185,11 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
         for seg_text, seg_color in segments:
             for word in seg_text.split(' '):
                 if word:
-                    words.append((word, seg_color))
+                    words.append((word + ' ', seg_color))
 
         line_words, line_width = [], 0
         for word, col in words:
-            w = _measure_width(word + ' ', scale)
+            w = _measure_width(word, scale)
             if line_width + w > max_width - indent_px and line_words:
                 rendered_lines.append((line_words, indent_px))
                 line_words, line_width = [], 0
@@ -1132,12 +1199,15 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             rendered_lines.append((line_words, indent_px))
 
     total_h = len(rendered_lines) * lh + padding * 2
+    
     box_surf = pygame.Surface((box_w, total_h), pygame.SRCALPHA)
 
-    if bg_color:
+    if bg_image:
+        scaled_bg = pygame.transform.scale(bg_image, (box_w, total_h))
+        box_surf.blit(scaled_bg, (0, 0))
+    elif bg_color:
         box_surf.fill(bg_color)
         pygame.draw.rect(box_surf, color, box_surf.get_rect(), 2)
-
     y = padding
     for entry in rendered_lines:
         if not entry:
@@ -1145,6 +1215,7 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
             continue
         line_words, indent_px = entry
         draw_x = padding + int(indent_px)
+
         phrases = []
         if line_words:
             cur_col = line_words[0][1]
@@ -1153,28 +1224,32 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding):
                 if col == cur_col:
                     cur_words.append(word)
                 else:
-                    phrases.append((' '.join(cur_words), cur_col))
+                    phrases.append((''.join(cur_words), cur_col))
                     cur_col = col
                     cur_words = [word]
-            phrases.append((' '.join(cur_words), cur_col))
+            phrases.append((''.join(cur_words), cur_col))
 
-        for i, (phrase, col) in enumerate(phrases):
-            surf, _ = render_pixel(phrase, col, scale)
+        
+        rendered_phrases = [(render_pixel(phrase, col, scale)[0], col)
+                    for phrase, col in phrases]
+        line_w = sum(s.get_width() for s, _ in rendered_phrases)
+        draw_x = (box_w - line_w) // 2
+        
+        for surf, col in rendered_phrases:
             box_surf.blit(surf, (draw_x, y))
             draw_x += surf.get_width()
-            if i < len(phrases) - 1:
-                draw_x += space_w
 
         y += lh
 
     return box_surf
-
-def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10):
-    cache_key = (text, font.scale, rect.width, bg_color, color, padding)
+def draw_text_box(surface, text, font, color, rect, bg_color=None, padding=10, bg_image=None):
+    cache_key = (text, font.scale, rect.width, bg_color, color, padding, id(bg_image))
     box_surf = _textbox_cache.get(cache_key)
     if box_surf is None:
-        box_surf = _compose_text_box(text, font, color, rect.width, bg_color, padding)
+        
+        box_surf = _compose_text_box(text, font, color, rect.width, bg_color, padding, bg_image)
         _textbox_cache[cache_key] = box_surf
+    
     surface.blit(box_surf, (rect.x, rect.y))
 
 def process_dev_command(command):
@@ -3125,6 +3200,8 @@ class Joker:
             desc = desc.replace("{value3}", str(JokerEffects.BunsKingScale['AddChips']))
 
         desc = desc.replace("{break}", "\n")
+       
+
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
         return desc
@@ -3563,7 +3640,7 @@ def wrap_text(text, font, max_width):
     words = text.split(' ')
     lines, current_line, current_w = [], [], 0
     for word in words:
-        w = _measure_width(word + ' ', scale)
+        w = _measure_width(word, scale)
         if current_w + w <= max_width:
             current_line.append(word)
             current_w += w
@@ -4626,22 +4703,23 @@ while game:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     if start_button_rect.collidepoint(event.pos):
-                        buttonClick.play(0)
-                        card_x = -WIDTH
-                        card_animating = True
-                        running = True
-                        joker_manager = initialize_joker_effects(Active_Jokers)
-                        GameState = "Blinds"
-                        seed = ''
-                        for i in range(8):
-                            num = random.randint(0, 35)
-                            if num > 9:
-                                num -= 9
-                                num = chr(ord('`')+num)
-                            num = str(num)
-                            seed += num
-                        random.seed(seed)
-                        running = True
+                        if card_animating == False:
+                            buttonClick.play(0)
+                            card_x = -WIDTH
+                            card_animating = True
+                            running = True
+                            joker_manager = initialize_joker_effects(Active_Jokers)
+                            GameState = "Blinds"
+                            seed = ''
+                            for i in range(8):
+                                num = random.randint(0, 35)
+                                if num > 9:
+                                    num -= 9
+                                    num = chr(ord('`')+num)
+                                num = str(num)
+                                seed += num
+                            random.seed(seed)
+                            running = True
                     elif settings2.toggle:  
                         for setting in settingsList:
                             if setting.rect.collidepoint(event.pos):
@@ -6259,21 +6337,62 @@ while game:
                 tip_w = int(WIDTH / 8)
                 tip_x = int(hovered_joker.rect.centerx - tip_w / 2)
                 tip_x = max(0, min(tip_x, WIDTH - tip_w))
-
                 desc = hovered_joker.get_description()
-                cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10)
+                _textbox_cache.clear()
+                cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10, id(JOKERDESC))
                 box_surf = _textbox_cache.get(cache_key)
                 if box_surf is None:
-                    box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10)
+                    box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10, bg_image=JOKERDESC)
                     _textbox_cache[cache_key] = box_surf
-                tip_h = box_surf.get_height()
-
+                desc_h = box_surf.get_height()
+                if hovered_joker.rarity == "C":
+                    desc_collor = blue
+                elif hovered_joker.rarity == "U":
+                    desc_collor = green
+                elif hovered_joker.rarity == "R":
+                    desc_collor = red
+                elif hovered_joker.rarity == "L":
+                    desc_collor = yellow
+                elif hovered_joker.rarity == "S":
+                    desc_collor = pink
+                name_surf, _ = PixelFontXS.render(hovered_joker.name, desc_collor)
+                name_padding = 6
+                name_h = name_surf.get_height() + name_padding * 2
+                tip_h = desc_h 
                 if hovered_joker.rect.bottom + tip_h > HEIGHT:
                     tip_y = int(hovered_joker.rect.top - tip_h - 10)
                 else:
                     tip_y = int(hovered_joker.rect.bottom + 10)
                 tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
-                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30))
+                bg_rect  = pygame.Rect(tip_x - 10, tip_y - 10, tip_w + 20, tip_h + name_h + 20)
+                draw_nine_slice(screen, bg_rect, 2)
+                draw_nine_slice(screen, tip_rect, 1)
+                desc_rect = pygame.Rect(tip_x, tip_y, tip_w, desc_h)
+                draw_text_box(screen, desc, PixelFontXXS, black, desc_rect, padding=10)
+                name_blit_rect = name_surf.get_rect(
+                    centerx=tip_rect.centerx,
+                    top=tip_rect.bottom + name_padding
+                )
+                screen.blit(name_surf, name_blit_rect)
+
+                MAXHIEGHT = tip_rect.top - 10
+                JOKERARITY = hovered_joker.rarity
+                if JOKERARITY == "C":
+                    JOKERARITY = JOKECOMMON
+                elif JOKERARITY == "U":
+                    JOKERARITY = JOKEUNCOMMON
+                elif JOKERARITY == "R":
+                    JOKERARITY = JOKERARE
+                elif JOKERARITY == "L":
+                    JOKERARITY = JOKELEGENDARY
+                elif JOKERARITY == "S":
+                    JOKERARITY = JOKESECRET
+                scale = tip_w / JOKERARITY.get_width() * 0.5
+                JOKERARITY_scaled = pygame.transform.scale(JOKERARITY, (int(JOKERARITY.get_width() * scale), int(JOKERARITY.get_height() * scale)))
+                screen.blit(JOKERARITY_scaled, (
+                    tip_rect.centerx - JOKERARITY_scaled.get_width() // 2,
+                    bg_rect.bottom
+                ))
         update_card_animation()
         if SO_SERIOUS.toggle or jonkler_sphere_active:
             soserious.animate()
