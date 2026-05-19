@@ -620,7 +620,7 @@ JOKER_REGISTRY = {
     },
     'Rules Card': {
         'events': [('on_hand_played', RulesCard_effect)],
-        'description': 'Rewards you [yellow]$4[/yellow] for playing (hand)',
+        'description': 'Rewards you [yellow]$4[/yellow] for playing {value}',
         'Oopy Goopy': True
     },
     'The Jonkler Baby': {
@@ -700,7 +700,7 @@ JOKER_REGISTRY = {
     },
     'Dead Frog': {
         'events': [('on_hand_played', DeadFrog_effect)],
-        'description': 'This joker gains [blue]+20[/blue] chips when played hand is not most played hand',
+        'description': 'This joker gains [blue]+20[/blue] chips when played hand is not most played hand{break}[grey]Currently[/grey][blue]+{value} Chips[/blue]',
         'Oopy Goopy': True
     },
     'Worm': {

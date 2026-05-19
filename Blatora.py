@@ -6096,12 +6096,17 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.48))
-                if round_num % 3 == 1:
-                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 2)), white)
-                    text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.225))
-                    screen.blit(text, text_rect)
-                elif round_num % 3 == 2:
-                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 1)), white)
+                if not JokerEffects.Disguised:
+                    if round_num % 3 == 1:
+                        text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 2)), white)
+                        text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.225))
+                        screen.blit(text, text_rect)
+                    elif round_num % 3 == 2:
+                        text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 1)), white)
+                        text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.225))
+                        screen.blit(text, text_rect)
+                else:
+                    text, text_rect = PixelFontS.render("???", white)
                     text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.225))
                     screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
