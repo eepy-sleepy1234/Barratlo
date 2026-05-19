@@ -2804,8 +2804,70 @@ def shopAnimaton():
             shop_down = False
         if shop_down:
             shopAnimation.animate()
+
+import pygame
+
+def draw_9slice(surface, image, x, y, width, height, corner_size):
+    c = corner_size
+    img_w, img_h = image.get_size()
+    mid_src_w = img_w - c * 2
+    mid_src_h = img_h - c * 2
+    mid_dst_w = width - c * 2
+    mid_dst_h = height - c * 2
+    slices = {
+        "tl": pygame.Rect(0,           0,           c,         c        ),
+        "tc": pygame.Rect(c,           0,           mid_src_w, c        ),
+        "tr": pygame.Rect(img_w - c,   0,           c,         c        ),
+        "ml": pygame.Rect(0,           c,           c,         mid_src_h),
+        "mc": pygame.Rect(c,           c,           mid_src_w, mid_src_h),
+        "mr": pygame.Rect(img_w - c,   c,           c,         mid_src_h),
+        "bl": pygame.Rect(0,           img_h - c,   c,         c        ),
+        "bc": pygame.Rect(c,           img_h - c,   mid_src_w, c        ),
+        "br": pygame.Rect(img_w - c,   img_h - c,   c,         c        ),
+    }
+    dst_sizes = {
+        "tl": (c,         c        ),
+        "tc": (mid_dst_w, c        ),
+        "tr": (c,         c        ),
+        "ml": (c,         mid_dst_h),
+        "mc": (mid_dst_w, mid_dst_h),
+        "mr": (c,         mid_dst_h),
+        "bl": (c,         c        ),
+        "bc": (mid_dst_w, c        ),
+        "br": (c,         c        ),
+    }
+    dst_positions = {
+        "tl": (x,             y            ),
+        "tc": (x + c,         y            ),
+        "tr": (x + width - c, y            ),
+        "ml": (x,             y + c        ),
+        "mc": (x + c,         y + c        ),
+        "mr": (x + width - c, y + c        ),
+        "bl": (x,             y + height-c ),
+        "bc": (x + c,         y + height-c ),
+        "br": (x + width - c, y + height-c ),
+    }
+    for key in slices:
+        piece = image.subsurface(slices[key])
+        scaled = pygame.transform.scale(piece, dst_sizes[key])
+        surface.blit(scaled, dst_positions[key])
+
+
+def draw_text_with_background(surface, font, text, pos, image, corner_size, padding=16):
+    text_surface = font.render(text, True, (255, 255, 255))
+    text_w, text_h = text_surface.get_size()
+    box_w = text_w + padding * 2
+    box_h = text_h + padding * 2
+    box_w = max(box_w, corner_size * 2 + 1)
+    box_h = max(box_h, corner_size * 2 + 1)
+    bx, by = pos
+    draw_9slice(surface, image, bx, by, box_w, box_h, corner_size)
+    tx = bx + (box_w - text_w) // 2
+    ty = by + (box_h - text_h) // 2
+    surface.blit(text_surface, (tx, ty))
+
 BLIND_INVISIBLE = False
-NOBLIND = load_image_safe(os.path.join(BLINDS_DIR, "NOBLIND.png"))
+NOBLIND = load_image_safe(os.path.join(GUI_DIR, "NOBLIND.png"))
 NOBLIND = pygame.transform.scale(NOBLIND, (HEIGHT/10, HEIGHT/10))
 KAWAIIBLIND = load_image_safe(os.path.join(GUI_DIR, "KAWAII.png"))
 class Blind:
@@ -2813,7 +2875,6 @@ class Blind:
         self.name = name
         self.image = image
         self.imageS = pygame.transform.scale(self.image, (HEIGHT/10, HEIGHT/10))
-        
         self.x = x
         self.y = y
         self.target_x = x
@@ -2878,7 +2939,7 @@ def calculate_target_score(ante, round_num):
         base_score = ANTE_SCALING[ante]
     multipliers = {1: 1.0, 2: 1.5, 3: 2.0, 4: 4.0}
     if current_blind.name == "The Ramp":
-        return int(base_score * multipliers[4])
+        return int(base_score * 2.0)
     else:
         return int(base_score * multipliers[round_num % 3 if round_num % 3 != 0 else 3])
 conquistadorSplashEffect = False
@@ -5867,12 +5928,13 @@ while game:
                 SkipBlind_rect.topleft = (WIDTH/2.8, HEIGHT/1.18)
                 active_hover_rects.append(SelectBlind_rect)
                 active_hover_rects.append(SkipBlind_rect)
-                
-
                 text, text_rect = PixelFontS.render(small_blind.name, black)
                 text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.59))
+                text, text_rect = PixelFontS.render(current_blind.score_required, white)
+                text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.3))
+                screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
                     screen.blit(KAWAIIBLIND,(WIDTH/2.97, HEIGHT/1.59))
             else:
@@ -5884,6 +5946,14 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/2.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(small_blind.imageS,(WIDTH/2.97, HEIGHT/1.48))
+                if round_num % 3 == 2:
+                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num - 1)), white)
+                    text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.225))
+                    screen.blit(text, text_rect)
+                elif round_num % 3 == 0:
+                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num - 2)), white)
+                    text_rect.center = (int(WIDTH/2.72), int(HEIGHT/1.225))
+                    screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
                     screen.blit(KAWAIIBLIND,(WIDTH/2.97, HEIGHT/1.48))
             if round_num % 3 == 2:
@@ -5897,6 +5967,9 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.59))
+                text, text_rect = PixelFontS.render(current_blind.score_required, white)
+                text_rect.center = (int(WIDTH/1.72), int(HEIGHT/1.3))
+                screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
                     screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.59))
             else:
@@ -5908,6 +5981,14 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.72, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(big_blind.imageS,(WIDTH/1.82, HEIGHT/1.48))
+                if round_num % 3 == 1:
+                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 1)), white)
+                    text_rect.center = (int(WIDTH/1.72), int(HEIGHT/1.225))
+                    screen.blit(text, text_rect)
+                elif round_num % 3 == 0:
+                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num - 1)), white)
+                    text_rect.center = (int(WIDTH/1.72), int(HEIGHT/1.225))
+                    screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
                     screen.blit(KAWAIIBLIND,(WIDTH/1.82, HEIGHT/1.48))
             if JokerEffects.Disguised:
@@ -5917,9 +5998,6 @@ while game:
             else:
                 bossIMG = boss_blind.imageS
                 text, _ = PixelFontS.render(boss_blind.name, black)
-                
-            
-
             if round_num % 3 == 0:
                 screen.blit(BossBlindBG_img, (WIDTH/1.4, HEIGHT/2))
                 screen.blit(BlindName_img, (WIDTH/1.38, HEIGHT/1.73))
@@ -5928,6 +6006,9 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.65))
                 screen.blit(text, text_rect)
                 screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.59))
+                text, text_rect = PixelFontS.render(current_blind.score_required, white)
+                text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.3))
+                screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
                     screen.blit(KAWAIIBLIND,(WIDTH/1.305, HEIGHT/1.59))
             else:
@@ -5937,6 +6018,14 @@ while game:
                 text_rect = text.get_rect(center=(WIDTH/1.25, HEIGHT/1.53))
                 screen.blit(text, text_rect)
                 screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.48))
+                if round_num % 3 == 1:
+                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 2)), white)
+                    text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.225))
+                    screen.blit(text, text_rect)
+                elif round_num % 3 == 2:
+                    text, text_rect = PixelFontS.render(str(calculate_target_score(ante, round_num + 1)), white)
+                    text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.225))
+                    screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
                     screen.blit(KAWAIIBLIND,(WIDTH/1.305, HEIGHT/1.48))
         
