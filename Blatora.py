@@ -1234,8 +1234,7 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding, bg_image=None
                     for phrase, col in phrases]
         line_w = sum(s.get_width() for s, _ in rendered_phrases)
         draw_x = (box_w - line_w) // 2
-        print(f"PHRASES: {phrases}")
-        print(f"LINE W: {line_w}, BOX W: {box_w}")
+        
         for surf, col in rendered_phrases:
             box_surf.blit(surf, (draw_x, y))
             draw_x += surf.get_width()
