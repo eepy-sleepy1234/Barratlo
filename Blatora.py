@@ -357,17 +357,27 @@ JOKELEGENDARY = load_image_safe(os.path.join(GUI_DIR, 'LegendaryJoke.png'))
 JOKEUNCOMMON = load_image_safe(os.path.join(GUI_DIR, 'UncommonJoke.png'))
 JOKESECRET = load_image_safe(os.path.join(GUI_DIR, 'SecretJoke.png'))
 JOKERDESC = load_image_safe(os.path.join(GUI_DIR, 'DescBox9slice.png'))
+JOKERDESCBG = load_image_safe(os.path.join(GUI_DIR, 'DescBack9slice.png'))
 
-JOKERDESKTL = JOKERDESC.subsurface((0,  0,  10, 10))
+JOKERDESKTL = JOKERDESC.subsurface((0,  0,  10,10))
 JOKERDESKTR = JOKERDESC.subsurface((13, 0,  10, 10))
-JOKERDESKBL = JOKERDESC.subsurface((0,  12, 10, 12))  # taller due to shadow
-JOKERDESKBR = JOKERDESC.subsurface((13, 12, 10, 12))  # taller due to shadow
-JOKERDESKTS = JOKERDESC.subsurface((10, 0,  3,  10))
-JOKERDESKBS = JOKERDESC.subsurface((10, 12, 3,  12))
-JOKERDESKLS = JOKERDESC.subsurface((0,  10, 10, 2 ))
-JOKERDESKRS = JOKERDESC.subsurface((13, 10, 10, 2 ))
-JOKERDESKMS = JOKERDESC.subsurface((10, 10, 3,  2 ))
+JOKERDESKBL = JOKERDESC.subsurface((0,  13, 10, 10)) 
+JOKERDESKBR = JOKERDESC.subsurface((13, 13, 10, 10))  
+JOKERDESKTS = JOKERDESC.subsurface((11, 0,  1,  10))
+JOKERDESKBS = JOKERDESC.subsurface((11, 13, 1,  10))
+JOKERDESKLS = JOKERDESC.subsurface((0,  11, 10, 1 ))
+JOKERDESKRS = JOKERDESC.subsurface((13, 11, 10, 1 ))
+JOKERDESKMS = JOKERDESC.subsurface((11, 11, 1,  1 ))
 
+JOKERBGDESKTL = JOKERDESCBG.subsurface((0,  0,  10,10))
+JOKERBGDESKTR = JOKERDESCBG.subsurface((13, 0,  10, 10))
+JOKERBGDESKBL = JOKERDESCBG.subsurface((0,  13, 10, 10))
+JOKERBGDESKBR = JOKERDESCBG.subsurface((13, 13, 10, 10))
+JOKERBGDESKTS = JOKERDESCBG.subsurface((11, 0,  1,  10))
+JOKERBGDESKBS = JOKERDESCBG.subsurface((11, 13, 1,  10))
+JOKERBGDESKLS = JOKERDESCBG.subsurface((0,  11, 10, 1 ))
+JOKERBGDESKRS = JOKERDESCBG.subsurface((13, 11, 10, 1 ))
+JOKERBGDESKMS = JOKERDESCBG.subsurface((11, 11, 1,  1 ))
 
 HandBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (HEIGHT/3.33, HEIGHT/7.62))
 ScoreBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (HEIGHT/3.33, HEIGHT/10.66))
@@ -713,29 +723,43 @@ def animate_ring():
     screen.blit(_ring_surface, (0, 0))
 
 
-def draw_nine_slice(surface, rect):
+def draw_nine_slice(surface, rect, sprite):
     x, y, w, h = rect.x, rect.y, rect.width, rect.height
-    
-    lw = JOKERDESKTL.get_width()   # left border width
-    rw = JOKERDESKTR.get_width()   # right border width
-    th = JOKERDESKTL.get_height()  # top border height
-    bh = JOKERDESKBL.get_height()  # bottom border height (taller with shadow)
-    mw = w - lw - rw               # middle width
-    mh = h - th - bh               # middle height
+    if sprite == 1:
 
-    # corners — never scaled
-    surface.blit(JOKERDESKTL, (x,        y))
-    surface.blit(JOKERDESKTR, (x+w-rw,   y))
-    surface.blit(JOKERDESKBL, (x,        y+h-bh))
-    surface.blit(JOKERDESKBR, (x+w-rw,   y+h-bh))
+        lw = JOKERDESKTL.get_width()   
+        rw = JOKERDESKTR.get_width()   
+        th = JOKERDESKTL.get_height()  
+        bh = JOKERDESKBL.get_height()  
+        mw = w - lw - rw               
+        mh = h - th - bh              
+        surface.blit(JOKERDESKTL, (x,        y))
+        surface.blit(JOKERDESKTR, (x+w-rw,   y))
+        surface.blit(JOKERDESKBL, (x,        y+h-bh))
+        surface.blit(JOKERDESKBR, (x+w-rw,   y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERDESKTS, (mw, th)),  (x+lw,    y))
+        surface.blit(pygame.transform.scale(JOKERDESKBS, (mw, bh)),  (x+lw,    y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERDESKLS, (lw, mh)),  (x,       y+th))
+        surface.blit(pygame.transform.scale(JOKERDESKRS, (rw, mh)),  (x+w-rw,  y+th))
+        surface.blit(pygame.transform.scale(JOKERDESKMS, (mw, mh)),  (x+lw,    y+th))
+    if sprite == 2:
+        lw = JOKERBGDESKTL.get_width()
+        rw = JOKERBGDESKTR.get_width()
+        th = JOKERBGDESKTL.get_height()
+        bh = JOKERBGDESKBL.get_height()
+        mw = w - lw - rw
+        mh = h - th - bh
+        surface.blit(JOKERBGDESKTL, (x,        y))
+        surface.blit(JOKERBGDESKTR, (x+w-rw,   y))
+        surface.blit(JOKERBGDESKBL, (x,        y+h-bh))
+        surface.blit(JOKERBGDESKBR, (x+w-rw,   y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERBGDESKTS, (mw, th)),  (x+lw,    y))
+        surface.blit(pygame.transform.scale(JOKERBGDESKBS, (mw, bh)),  (x+lw,    y+h-bh))
+        surface.blit(pygame.transform.scale(JOKERBGDESKLS, (lw, mh)),  (x,       y+th))
+        surface.blit(pygame.transform.scale(JOKERBGDESKRS, (rw, mh)),  (x+w-rw,  y+th))
+        surface.blit(pygame.transform.scale(JOKERBGDESKMS, (mw, mh)),  (x+lw,    y+th))
 
-    # edges — scaled along one axis
-    surface.blit(pygame.transform.scale(JOKERDESKTS, (mw, th)),  (x+lw,    y))
-    surface.blit(pygame.transform.scale(JOKERDESKBS, (mw, bh)),  (x+lw,    y+h-bh))
-    surface.blit(pygame.transform.scale(JOKERDESKLS, (lw, mh)),  (x,       y+th))
-    surface.blit(pygame.transform.scale(JOKERDESKRS, (rw, mh)),  (x+w-rw,  y+th))
 
-    surface.blit(pygame.transform.scale(JOKERDESKMS, (mw, mh)),  (x+lw,    y+th))
 def reset_deck_for_new_round():
     global deck, hand
     hand.clear()
@@ -1112,6 +1136,8 @@ def blit_img():
 
             dev_command = input("Input Developer Command")    
 
+grey = (128, 128, 128)
+pink = (255, 192, 203)
 _COLOR_TAGS = {
     'red':    (230, 50,  50),
     'blue':   (50,  150, 255),
@@ -1203,7 +1229,7 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding, bg_image=None
                     cur_words = [word]
             phrases.append((''.join(cur_words), cur_col))
 
-        print(f"LINE WORDS: {line_words}")
+        
         rendered_phrases = [(render_pixel(phrase, col, scale)[0], col)
                     for phrase, col in phrases]
         line_w = sum(s.get_width() for s, _ in rendered_phrases)
@@ -6230,15 +6256,37 @@ while game:
                 if box_surf is None:
                     box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10, bg_image=JOKERDESC)
                     _textbox_cache[cache_key] = box_surf
-                tip_h = box_surf.get_height()
-
+                desc_h = box_surf.get_height()
+                if hovered_joker.rarity == "C":
+                    desc_collor = grey
+                elif hovered_joker.rarity == "U":
+                    desc_collor = green
+                elif hovered_joker.rarity == "R":
+                    desc_collor = red
+                elif hovered_joker.rarity == "L":
+                    desc_collor = yellow
+                elif hovered_joker.rarity == "S":
+                    desc_collor = pink
+                name_surf, _ = PixelFontXS.render(hovered_joker.name, desc_collor)
+                name_padding = 6
+                name_h = name_surf.get_height() + name_padding * 2
+                tip_h = desc_h 
                 if hovered_joker.rect.bottom + tip_h > HEIGHT:
                     tip_y = int(hovered_joker.rect.top - tip_h - 10)
                 else:
                     tip_y = int(hovered_joker.rect.bottom + 10)
                 tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
-                draw_nine_slice(screen, tip_rect)
-                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, padding=10)
+                bg_rect  = pygame.Rect(tip_x - 10, tip_y - 10, tip_w + 20, tip_h + name_h + 20)
+                draw_nine_slice(screen, bg_rect, 2)
+                draw_nine_slice(screen, tip_rect, 1)
+                desc_rect = pygame.Rect(tip_x, tip_y, tip_w, desc_h)
+                draw_text_box(screen, desc, PixelFontXXS, black, desc_rect, padding=10)
+                name_blit_rect = name_surf.get_rect(
+                    centerx=tip_rect.centerx,
+                    top=tip_rect.bottom + name_padding
+                )
+                screen.blit(name_surf, name_blit_rect)
+
                 MAXHIEGHT = tip_rect.top - 10
                 JOKERARITY = hovered_joker.rarity
                 if JOKERARITY == "C":
@@ -6251,12 +6299,12 @@ while game:
                     JOKERARITY = JOKELEGENDARY
                 elif JOKERARITY == "S":
                     JOKERARITY = JOKESECRET
-                scale =  tip_w / JOKERARITY.get_width() * 0.5
+                scale = tip_w / JOKERARITY.get_width() * 0.5
                 JOKERARITY_scaled = pygame.transform.scale(JOKERARITY, (int(JOKERARITY.get_width() * scale), int(JOKERARITY.get_height() * scale)))
                 screen.blit(JOKERARITY_scaled, (
-                        tip_rect.centerx - JOKERARITY_scaled.get_width() // 2,
-                        tip_rect.bottom - 5
-                    ))
+                    tip_rect.centerx - JOKERARITY_scaled.get_width() // 2,
+                    bg_rect.bottom
+                ))
         update_card_animation()
         if SO_SERIOUS.toggle or jonkler_sphere_active:
             soserious.animate()
