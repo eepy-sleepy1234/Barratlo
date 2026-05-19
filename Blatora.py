@@ -356,7 +356,19 @@ JOKECOMMON = load_image_safe(os.path.join(GUI_DIR, 'CommonJoke.png'))
 JOKELEGENDARY = load_image_safe(os.path.join(GUI_DIR, 'LegendaryJoke.png'))
 JOKEUNCOMMON = load_image_safe(os.path.join(GUI_DIR, 'UncommonJoke.png'))
 JOKESECRET = load_image_safe(os.path.join(GUI_DIR, 'SecretJoke.png'))
-JOKERDESC = load_image_safe(os.path.join(GUI_DIR, 'JokerDesc.png'))
+JOKERDESC = load_image_safe(os.path.join(GUI_DIR, 'DescBox9slice.png'))
+
+JOKERDESKTL = JOKERDESC.subsurface((0,  0,  10, 10))
+JOKERDESKTR = JOKERDESC.subsurface((13, 0,  10, 10))
+JOKERDESKBL = JOKERDESC.subsurface((0,  12, 10, 12))  # taller due to shadow
+JOKERDESKBR = JOKERDESC.subsurface((13, 12, 10, 12))  # taller due to shadow
+JOKERDESKTS = JOKERDESC.subsurface((10, 0,  3,  10))
+JOKERDESKBS = JOKERDESC.subsurface((10, 12, 3,  12))
+JOKERDESKLS = JOKERDESC.subsurface((0,  10, 10, 2 ))
+JOKERDESKRS = JOKERDESC.subsurface((13, 10, 10, 2 ))
+JOKERDESKMS = JOKERDESC.subsurface((10, 10, 3,  2 ))
+
+
 HandBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "Handbackground.png")), (HEIGHT/3.33, HEIGHT/7.62))
 ScoreBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "ScoreBackground.png")), (HEIGHT/3.33, HEIGHT/10.66))
 GoalBackground_img = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, "GoalBackground.png")), (HEIGHT/5.33, HEIGHT/8))
@@ -699,7 +711,31 @@ def animate_ring():
                 _ring_surface.blit(rotated, (x - rw // 2, y - rh // 2))
 
     screen.blit(_ring_surface, (0, 0))
+
+
+def draw_nine_slice(surface, rect):
+    x, y, w, h = rect.x, rect.y, rect.width, rect.height
     
+    lw = JOKERDESKTL.get_width()   # left border width
+    rw = JOKERDESKTR.get_width()   # right border width
+    th = JOKERDESKTL.get_height()  # top border height
+    bh = JOKERDESKBL.get_height()  # bottom border height (taller with shadow)
+    mw = w - lw - rw               # middle width
+    mh = h - th - bh               # middle height
+
+    # corners — never scaled
+    surface.blit(JOKERDESKTL, (x,        y))
+    surface.blit(JOKERDESKTR, (x+w-rw,   y))
+    surface.blit(JOKERDESKBL, (x,        y+h-bh))
+    surface.blit(JOKERDESKBR, (x+w-rw,   y+h-bh))
+
+    # edges — scaled along one axis
+    surface.blit(pygame.transform.scale(JOKERDESKTS, (mw, th)),  (x+lw,    y))
+    surface.blit(pygame.transform.scale(JOKERDESKBS, (mw, bh)),  (x+lw,    y+h-bh))
+    surface.blit(pygame.transform.scale(JOKERDESKLS, (lw, mh)),  (x,       y+th))
+    surface.blit(pygame.transform.scale(JOKERDESKRS, (rw, mh)),  (x+w-rw,  y+th))
+
+    surface.blit(pygame.transform.scale(JOKERDESKMS, (mw, mh)),  (x+lw,    y+th))
 def reset_deck_for_new_round():
     global deck, hand
     hand.clear()
@@ -1123,11 +1159,11 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding, bg_image=None
         for seg_text, seg_color in segments:
             for word in seg_text.split(' '):
                 if word:
-                    words.append((word, seg_color))
+                    words.append((word + ' ', seg_color))
 
         line_words, line_width = [], 0
         for word, col in words:
-            w = _measure_width(word + ' ', scale)
+            w = _measure_width(word, scale)
             if line_width + w > max_width - indent_px and line_words:
                 rendered_lines.append((line_words, indent_px))
                 line_words, line_width = [], 0
@@ -1162,23 +1198,21 @@ def _compose_text_box(text, font, color, box_w, bg_color, padding, bg_image=None
                 if col == cur_col:
                     cur_words.append(word)
                 else:
-                    phrases.append((' '.join(cur_words), cur_col))
+                    phrases.append((''.join(cur_words), cur_col))
                     cur_col = col
                     cur_words = [word]
-            phrases.append((' '.join(cur_words), cur_col))
+            phrases.append((''.join(cur_words), cur_col))
 
-
+        print(f"LINE WORDS: {line_words}")
         rendered_phrases = [(render_pixel(phrase, col, scale)[0], col)
-                            for phrase, col in phrases]
+                    for phrase, col in phrases]
         line_w = sum(s.get_width() for s, _ in rendered_phrases)
-        line_w += space_w * max(0, len(rendered_phrases) - 1)
-        draw_x = (box_w - line_w) // 2 
-
-        for i, (surf, col) in enumerate(rendered_phrases):
+        draw_x = (box_w - line_w) // 2
+        print(f"PHRASES: {phrases}")
+        print(f"LINE W: {line_w}, BOX W: {box_w}")
+        for surf, col in rendered_phrases:
             box_surf.blit(surf, (draw_x, y))
             draw_x += surf.get_width()
-            if i < len(rendered_phrases) - 1:
-                draw_x += space_w
 
         y += lh
 
@@ -3520,7 +3554,7 @@ def wrap_text(text, font, max_width):
     words = text.split(' ')
     lines, current_line, current_w = [], [], 0
     for word in words:
-        w = _measure_width(word + ' ', scale)
+        w = _measure_width(word, scale)
         if current_w + w <= max_width:
             current_line.append(word)
             current_w += w
@@ -6190,6 +6224,7 @@ while game:
                 tip_x = max(0, min(tip_x, WIDTH - tip_w))
 
                 desc = hovered_joker.get_description()
+                _textbox_cache.clear()
                 cache_key = (desc, PixelFontXXS.scale, tip_w, (30, 30, 30), white, 10, id(JOKERDESC))
                 box_surf = _textbox_cache.get(cache_key)
                 if box_surf is None:
@@ -6202,7 +6237,8 @@ while game:
                 else:
                     tip_y = int(hovered_joker.rect.bottom + 10)
                 tip_rect = pygame.Rect(tip_x, tip_y, tip_w, tip_h)
-                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, bg_color=(30, 30, 30), bg_image=JOKERDESC)
+                draw_nine_slice(screen, tip_rect)
+                draw_text_box(screen, desc, PixelFontXXS, white, tip_rect, padding=10)
                 MAXHIEGHT = tip_rect.top - 10
                 JOKERARITY = hovered_joker.rarity
                 if JOKERARITY == "C":
