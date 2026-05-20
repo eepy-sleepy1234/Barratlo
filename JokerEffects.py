@@ -730,6 +730,42 @@ JOKER_REGISTRY = {
     },
 }
 
+SPECTRAL_REGISTRY = {
+    'Ankh': 'Creates a copy of one joker and destroys the rest',
+    'Aura': 'Adds Foil, Holographic, or Polychrome to one selected card',
+    'Cryptid': 'Creates two copies of one selected card',
+    'Deja Vu': 'Adds a red seal to one selected card',
+    'Ectoplasm': 'Adds Negative to one random joker, -1 hand size',
+    'Familiar': 'Destroys one random card and creates three random enhanced face cards',
+    'Grim': 'Destroys one random card and creates two random enhanced aces',
+    'Hex': 'Adds Polychrome to one joker and destroys the rest',
+    'Immolate': 'Destroys five random cards in hand and gives +$20',
+    'Incantation': 'Destroys one random card and creates four random enhanced numbered cards',
+    'Medium': 'Adds a purple seal to one selected card',
+    'Ouija': 'Converts all cards held in hand to one random rank, -1 hand size',
+    'Sigil': 'Converts all cards held in hand to one random suit',
+    'Talisman': 'Adds a gold seal to one selected card',
+    'Trance': 'Adds a blue seal to one selected card',
+    'Wraith': 'Creates a random rare joker and sets money to zero',
+}
+
+SHADOW_REGISTRY = {
+    'Big': '+1 level to Flush',
+    'Fists': '+1 level to Four of a Kind',
+    'Glitch': '+1 level to Huh of a What?',
+    'Ice': '+1 level to Two Pair',
+    'King Shadow': '+1 level to Flush Five',
+    'Quick': '+1 level to Pair',
+    'Shadow': '+1 level to Full House',
+    'Shadowbot': '+1 level to Straight Flush',
+    'Stretch': '+1 level to Straight',
+    'Tag Team': '+1 level to Flush House',
+    'The Doctor': '+1 level to High Card',
+    'The Reaper': '+1 level to Five of a Kind',
+    'Trick': '+1 level to Three of a Kind',
+    'True Shadow': '+1 level to all poker hands',
+}
+
 def initialize_joker_effects(active_jokers):
     manager = JokerEffectsManager()
     for joker in active_jokers:
