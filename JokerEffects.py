@@ -747,6 +747,8 @@ SPECTRAL_REGISTRY = {
     'Talisman': 'Adds a gold seal to one selected card',
     'Trance': 'Adds a blue seal to one selected card',
     'Wraith': 'Creates a random rare joker and sets money to zero',
+    'The Soul': '???',
+    'True Shadow': '+1 level to all poker hands',
 }
 
 SHADOW_REGISTRY = {

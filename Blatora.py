@@ -3116,8 +3116,7 @@ def get_file_contents(folder, names):
             contents[name] = f.read()
     return contents
 
-joker_folder = os.path.join(TEXT_PATH, "Jokers")
-jokerDescription = get_file_contents(joker_folder, get_file_names(joker_folder))
+
 from JokerEffects import JOKER_REGISTRY
 class Joker:
     card_id_counter = 0
@@ -3332,7 +3331,6 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
             surface.blit(rotated, rect.topleft)
             joker.rect = rect
             active_hover_rects.append(joker.rect)
-
 class Consumable:
     card_id_counter = 0
     def __init__(self, image, name, slot=None, state="hand", edition=None):
@@ -3369,6 +3367,15 @@ class Consumable:
         self.scoring_animating = False
         self.idx = 0
         self.price = 3
+        self.description = ""
+
+    def get_description(self):
+        desc = self.description
+        desc = desc.replace("{break}", "\n")
+        desc = desc.replace("[indent]", "    ")
+        desc = desc.replace("[indent2]", "        ")
+        return desc
+
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -3422,6 +3429,8 @@ ShadowCards = []
 SpectralCards = []
 Held_Consumables = []
 maxConsCount = 2
+from JokerEffects import SPECTRAL_REGISTRY
+from JokerEffects import SHADOW_REGISTRY
 for root, dirs, files in os.walk(CONS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -3440,8 +3449,10 @@ for root, dirs, files in os.walk(CONS_DIR):
                 else:
                     TarotCards.append(consumable)
             elif "ShadowCards" in filepath:
+                consumable.description = SHADOW_REGISTRY.get(consumable.name)
                 ShadowCards.append(consumable)
             elif "SpectralCards" in filepath:
+                consumable.description = SPECTRAL_REGISTRY[consumable.name]
                 SpectralCards.append(consumable)
 
 def draw_consumables(surface, cards, center_x, center_y, spread=20):
@@ -4836,15 +4847,25 @@ while game:
         hovered_joker = None
         
         for joker in Active_Jokers:
-          
             if joker.x > 0 and joker.rect.collidepoint(mouse_pos):
                 hovered_joker = joker
                 break
                
         for joker in Shop_Cards:
-            if isinstance(joker, Joker) and joker.x > 0 and joker.rect.collidepoint(mouse_pos):
+            if joker.x > 0 and joker.rect.collidepoint(mouse_pos):
                 hovered_joker = joker
                 break
+
+        for joker in Held_Consumables:
+            if joker.x > 0 and joker.rect.collidepoint(mouse_pos):
+                hovered_joker = joker
+                break
+
+        for joker in PackCards:
+            if joker.x > 0 and joker.rect.collidepoint(mouse_pos):
+                hovered_joker = joker
+                break
+
         for card in hand:
             if  GameState != "Dead":
                 mouse_hover(card.rect)
@@ -6352,17 +6373,20 @@ while game:
                     box_surf = _compose_text_box(desc, PixelFontXXS, white, tip_w, (30, 30, 30), 10, bg_image=JOKERDESC)
                     _textbox_cache[cache_key] = box_surf
                 desc_h = box_surf.get_height()
-                if hovered_joker.rarity == "C":
-                    desc_collor = blue
-                elif hovered_joker.rarity == "U":
-                    desc_collor = green
-                elif hovered_joker.rarity == "R":
-                    desc_collor = red
-                elif hovered_joker.rarity == "L":
-                    desc_collor = yellow
-                elif hovered_joker.rarity == "S":
-                    desc_collor = pink
-                name_surf, _ = PixelFontXS.render(hovered_joker.name, desc_collor)
+                if isinstance(hovered_joker, Joker):
+                    if hovered_joker.rarity == "C":
+                        desc_color = blue
+                    elif hovered_joker.rarity == "U":
+                        desc_color = green
+                    elif hovered_joker.rarity == "R":
+                        desc_color = red
+                    elif hovered_joker.rarity == "L":
+                        desc_color = yellow
+                    elif hovered_joker.rarity == "S":
+                        desc_color = pink
+                else:
+                    desc_color = white
+                name_surf, _ = PixelFontXS.render(hovered_joker.name, desc_color)
                 name_padding = 6
                 name_h = name_surf.get_height() + name_padding * 2
                 tip_h = desc_h 
@@ -6383,23 +6407,24 @@ while game:
                 screen.blit(name_surf, name_blit_rect)
 
                 MAXHIEGHT = tip_rect.top - 10
-                JOKERARITY = hovered_joker.rarity
-                if JOKERARITY == "C":
-                    JOKERARITY = JOKECOMMON
-                elif JOKERARITY == "U":
-                    JOKERARITY = JOKEUNCOMMON
-                elif JOKERARITY == "R":
-                    JOKERARITY = JOKERARE
-                elif JOKERARITY == "L":
-                    JOKERARITY = JOKELEGENDARY
-                elif JOKERARITY == "S":
-                    JOKERARITY = JOKESECRET
-                scale = tip_w / JOKERARITY.get_width() * 0.5
-                JOKERARITY_scaled = pygame.transform.scale(JOKERARITY, (int(JOKERARITY.get_width() * scale), int(JOKERARITY.get_height() * scale)))
-                screen.blit(JOKERARITY_scaled, (
-                    tip_rect.centerx - JOKERARITY_scaled.get_width() // 2,
-                    bg_rect.bottom
-                ))
+                if isinstance(hovered_joker, Joker):
+                    JOKERARITY = hovered_joker.rarity
+                    if JOKERARITY == "C":
+                        JOKERARITY = JOKECOMMON
+                    elif JOKERARITY == "U":
+                        JOKERARITY = JOKEUNCOMMON
+                    elif JOKERARITY == "R":
+                        JOKERARITY = JOKERARE
+                    elif JOKERARITY == "L":
+                        JOKERARITY = JOKELEGENDARY
+                    elif JOKERARITY == "S":
+                        JOKERARITY = JOKESECRET
+                    scale = tip_w / JOKERARITY.get_width() * 0.5
+                    JOKERARITY_scaled = pygame.transform.scale(JOKERARITY, (int(JOKERARITY.get_width() * scale), int(JOKERARITY.get_height() * scale)))
+                    screen.blit(JOKERARITY_scaled, (
+                        tip_rect.centerx - JOKERARITY_scaled.get_width() // 2,
+                        bg_rect.bottom
+                    ))
         update_card_animation()
         if SO_SERIOUS.toggle or jonkler_sphere_active:
             soserious.animate()
