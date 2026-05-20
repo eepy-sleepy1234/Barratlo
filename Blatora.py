@@ -6085,6 +6085,8 @@ while game:
                 screen.blit(text, text_rect)
                 screen.blit(bossIMG,(WIDTH/1.305, HEIGHT/1.59))
                 text, text_rect = PixelFontS.render(current_blind.score_required, white)
+                if JokerEffects.Disguised:
+                    text = "???"
                 text_rect.center = (int(WIDTH/1.25), int(HEIGHT/1.3))
                 screen.blit(text, text_rect)
                 if Kawaii_Mode.toggle:
@@ -6642,7 +6644,7 @@ while game:
                             n = random.choice(TarotCards)
                             if n not in Shop_Cards and n not in Held_Consumables and n.name != "The Soul":
                                 break
-                        Held_Consumables.append(card)
+                        Held_Consumables.append(n)
                     index = card.slot
                     hand.remove(card)
                     context = {'card': card, 'active_jokers': Active_Jokers}
