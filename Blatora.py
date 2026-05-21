@@ -1146,6 +1146,8 @@ _COLOR_TAGS = {
     'green':  (0,   200, 0),
     'white':  (255, 255, 255),
     'grey':   (128, 128, 128),
+    'purple': (153, 102, 204),
+    'teal': (0, 149, 182),
 }
 _TAG_PATTERN = re.compile(r'\[(\w+)\](.*?)\[/\1\]', re.DOTALL)
 
@@ -3370,7 +3372,46 @@ class Consumable:
         self.description = ""
 
     def get_description(self):
+        global lastFool, Active_Jokers, base_chance
         desc = self.description
+        if self.name == "Fool":
+            desc = desc.replace("{value}", str(lastFool))
+        if self.name == "Temperance":
+            price_count = 0
+            for joker in Active_Jokers:
+                price_count += int(joker.price / 2)
+            if price_count > 50:
+                price_count = 50
+            desc = desc.replace("{value}", str(price_count))
+        if self.name == "Wheel Of Fortune":
+            desc = desc.replace("{value1}", str(base_chance))
+            desc = desc.replace("{value2}", str(4))
+        if self.name == "Big":
+            desc = desc.replace("{value}", str(Hand_levels.get('Flush')))
+        if self.name == "Fists":
+            desc = desc.replace("{value}", str(Hand_levels.get('Four of a Kind')))
+        if self.name == "Glitch":
+            desc = desc.replace("{value}", str(Hand_levels.get('Huh of a What')))
+        if self.name == "Ice":
+            desc = desc.replace("{value}", str(Hand_levels.get('Two Pair')))
+        if self.name == "King Shadow":
+            desc = desc.replace("{value}", str(Hand_levels.get('Flush Five')))
+        if self.name == "Quick":
+            desc = desc.replace("{value}", str(Hand_levels.get('Pair')))
+        if self.name == "Shadow":
+            desc = desc.replace("{value}", str(Hand_levels.get('Full House')))
+        if self.name == "Shadowbot":
+            desc = desc.replace("{value}", str(Hand_levels.get('Straight Flush')))
+        if self.name == "Stretch":
+            desc = desc.replace("{value}", str(Hand_levels.get('Straight')))
+        if self.name == "Tag Team":
+            desc = desc.replace("{value}", str(Hand_levels.get('Flush House')))
+        if self.name == "The Doctor":
+            desc = desc.replace("{value}", str(Hand_levels.get('High Card')))
+        if self.name == "The Reaper":
+            desc = desc.replace("{value}", str(Hand_levels.get('Five of a Kind')))
+        if self.name == "Trick":
+            desc = desc.replace("{value}", str(Hand_levels.get('Three of a Kind')))
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -3431,6 +3472,7 @@ Held_Consumables = []
 maxConsCount = 2
 from JokerEffects import SPECTRAL_REGISTRY
 from JokerEffects import SHADOW_REGISTRY
+from JokerEffects import TAROT_REGISTRY
 for root, dirs, files in os.walk(CONS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -3447,6 +3489,7 @@ for root, dirs, files in os.walk(CONS_DIR):
                 elif "SoulShadow" in filepath:
                     SoulShadow = image
                 else:
+                    consumable.description = TAROT_REGISTRY.get(consumable.name)
                     TarotCards.append(consumable)
             elif "ShadowCards" in filepath:
                 consumable.description = SHADOW_REGISTRY.get(consumable.name)
