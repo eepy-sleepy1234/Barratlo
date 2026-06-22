@@ -2019,6 +2019,7 @@ class Card:
         self.card_id = Card.card_id_counter
         self.retriggers = 0 
         self.remaining = 0
+        self.description = ""
         
         self.base_scoring_complete = False
         Card.card_id_counter += 1
@@ -2084,7 +2085,26 @@ class Card:
         )
 
         self.rect = self.image.get_rect()
-
+        
+        
+    def get_description(self):
+        desc = self.description
+        if self.enhancement == "Glitched":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        elif self.enhancement == "Bonus":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        elif self.enhancement == "Glass":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        elif self.enhancement == "Gold":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        elif self.enhancement == "Lucky":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        elif self.enhancement == "Mult":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        elif self.enhancement == "Steel":
+            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+        desc = self.description
+        return desc
     def update(self):
         stiffness = 0.3
         damping = 0.7
