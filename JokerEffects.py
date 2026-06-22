@@ -5,6 +5,7 @@ last_hand = 0
 last_hand_counter = 0
 FrogCounter = 0
 YinYang_Active = False
+Archer_Mult = 0
 poolMoney = 0
 BunsKingScale = {
     'TimesMult' : 0,
@@ -16,7 +17,7 @@ exponentJoker = 1
 luck = 1
 bunsking = False
 def reset_joker_variables():
-    global wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker,bunsking,luck,BunsKingScale
+    global Archer_Mult, wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker,bunsking,luck,BunsKingScale
     wetFloorValue = 0
     last_hand = 0
     last_hand_counter = 0
@@ -30,6 +31,7 @@ def reset_joker_variables():
     BunsKingScale['TimesMult'] = 0
     BunsKingScale['AddMult'] = 0
     BunsKingScale['AddChips'] = 0
+    Archer_Mult = 0
 
 
 
@@ -530,6 +532,22 @@ def OopyGoopy_effect(context):
     
     return context
 
+def Archer_hand_effect(context):
+    mult = context.get('mult', 0)
+    mult += Archer_Mult
+    context['mult'] = mult
+    return context
+def Archer_round_end_effect(context):
+    global Archer_Mult
+    money = context.get('money')
+    if money >= 25:
+        money -= 10
+        Archer_Mult += 5
+        context['money'] = money
+        return context
+    else:
+        return context
+    
 
 
 JOKER_REGISTRY = {
@@ -727,6 +745,14 @@ JOKER_REGISTRY = {
         'events': [('on_hand_played', LostKing_effect)],
         'description': 'Steals the scaling from all scaling jokers{break}[grey]Currently[/grey]{break}[red]x{value} Mult[/red]{break}[red]+{value2} Mult[/red]{break}[blue]+{value3} Chips[/blue]',
         'Oopy Goopy': True
+    },
+    'Archer':{
+        'events': [
+        ('on_hand_played', Archer_hand_effect),
+        ('on_round_end', Archer_round_end_effect)
+        ],
+        'description': 'The wealthy fund your cause{break}At end of round: If you have over [yellow]$25[/yellow], lose [yellow]$10[/yellow]{break}This Joker gains [red]+5 Mult[/red]{break}[grey]Currently[/grey] [red]+{value} Mult[/red]',
+        'Oopy Goopy' : True
     },
 }
 

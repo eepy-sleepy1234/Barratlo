@@ -3219,6 +3219,8 @@ class Joker:
             desc = desc.replace("{value}", str(JokerEffects.BunsKingScale['TimesMult']))
             desc = desc.replace("{value2}", str(JokerEffects.BunsKingScale['AddMult']))
             desc = desc.replace("{value3}", str(JokerEffects.BunsKingScale['AddChips']))
+        elif self.name == "Archer":
+            desc = desc.replace("{value}",str(JokerEffects.Archer_Mult))
 
         desc = desc.replace("{break}", "\n")
        
