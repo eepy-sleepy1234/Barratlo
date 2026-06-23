@@ -548,7 +548,9 @@ def Archer_round_end_effect(context):
     else:
         return context
     
-
+def Leek_effect(context):
+    context['mult'] = (context.get('mult',0) * 3.9)
+    return context
 
 JOKER_REGISTRY = {
     'Bald Joker': {
@@ -753,6 +755,13 @@ JOKER_REGISTRY = {
         ],
         'description': 'The wealthy fund your cause{break}At end of round: If you have over [yellow]$25[/yellow], lose [yellow]$10[/yellow]{break}This Joker gains [red]+5 Mult[/red]{break}[grey]Currently[/grey] [red]+{value} Mult[/red]',
         'Oopy Goopy' : True
+    },
+    'Leek':{
+        'events': [
+            ('on_hand_played', Leek_effect)
+        ],
+        'description' : '[red]x3.9 Mult[/red]',
+        'Oopy Goopy' :True
     },
 }
 
