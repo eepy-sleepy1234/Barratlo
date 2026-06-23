@@ -16,8 +16,9 @@ skipMult = 1
 exponentJoker = 1
 luck = 1
 bunsking = False
+boredtrig = False
 def reset_joker_variables():
-    global Archer_Mult, wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker,bunsking,luck,BunsKingScale
+    global boredtrig, Archer_Mult, wetFloorValue, last_hand, last_hand_counter, FrogCounter, YinYang_Active, poolMoney, skipMult, exponentJoker,bunsking,luck,BunsKingScale
     wetFloorValue = 0
     last_hand = 0
     last_hand_counter = 0
@@ -32,6 +33,7 @@ def reset_joker_variables():
     BunsKingScale['AddMult'] = 0
     BunsKingScale['AddChips'] = 0
     Archer_Mult = 0
+    boredtrig = False
 
 
 
@@ -551,6 +553,19 @@ def Archer_round_end_effect(context):
 def Leek_effect(context):
     context['mult'] = (context.get('mult',0) * 3.9)
     return context
+def Baguette_effect(context):
+    handsLeft = context.get('handsremain')
+    if handsLeft == 0:
+        context['mult'] = context.get('mult', 0) * 5
+    return context
+def Bored_effect(context):
+    global boredtrig
+    if boredtrig:
+        context['mult'] = context.get('mult', 0) *2
+        boredtrig = False
+    else:
+        boredtrig = True
+    return context
 
 JOKER_REGISTRY = {
     'Bald Joker': {
@@ -761,6 +776,20 @@ JOKER_REGISTRY = {
             ('on_hand_played', Leek_effect)
         ],
         'description' : '[red]x3.9 Mult[/red]',
+        'Oopy Goopy' :True
+    },
+    'Emergency Baguette':{
+        'events':[
+            ('on_hand_played', Baguette_effect)
+        ],
+        'description' : '[red]x5 Mult[/red] if hand played is final hand',
+        'Oopy Goopy' :True
+    },
+    'Bored Joker':{
+        'events':[
+            ('on_hand_played', Bored_effect)
+        ],
+        'description' : '[red]x2 Mult[/red] every other hand',
         'Oopy Goopy' :True
     },
 }

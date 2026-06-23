@@ -3275,7 +3275,7 @@ class Joker:
                         self.scaling_delay = 10
                         self.angle = 0
         self.angle += self.rotation_speed
-
+closed_bored = pygame.transform.scale(load_image_safe(os.path.join(GUI_DIR, 'Closed.png')),(HEIGHT/8,HEIGHT/5.82))
 Common_Jokers = []
 Uncommon_Jokers = []
 Rare_Jokers = []
@@ -3328,7 +3328,13 @@ def draw_jokers(surface, cards, center_x, center_y, spread=20):
         angle = joker.angle
         scaled_w = int(joker.image.get_width() * joker.scale)
         scaled_h = int(joker.image.get_height() * joker.scale)
-        scaled_img = pygame.transform.smoothscale(joker.image, (scaled_w, scaled_h))
+        if joker.name == "Bored Joker":
+            if JokerEffects.boredtrig == False:
+                scaled_img = pygame.transform.smoothscale(closed_bored, (scaled_w, scaled_h))
+            else:
+                scaled_img = pygame.transform.smoothscale(joker.image, (scaled_w,scaled_h))
+        else:
+                scaled_img = pygame.transform.smoothscale(joker.image, (scaled_w,scaled_h))
         try:
             if joker.is_debuffed:
                 scaled_overlay = pygame.transform.smoothscale(Debuff_img, (scaled_w, scaled_h))
@@ -6811,6 +6817,9 @@ while game:
                 'glitch': pygame.transform.smoothscale(glitchimage, (136, 187)),
                 'Card': Card,
                 'hand': hand,
+                'handsremain':hands,
+
+
             }
             context = joker_manager.trigger('on_hand_played', context)
             saved_base_chips = context['chips']
