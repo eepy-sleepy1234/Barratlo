@@ -5637,7 +5637,7 @@ while game:
                             card.vx = 0
                             card.vy = 0
                     for card in Shop_Cards:
-                        if getattr(card, "dragging", False):
+                        if getattr(card, "dragging", False) and GameState not in ("TarotPack", "ShadowPack", "SpectralPack", "StandardPack"):
                             card.dragging = False
                             if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                                 if card.state == "selected":
@@ -5738,7 +5738,7 @@ while game:
                             card.vx = 0
                             card.vy = 0
                     for card in ShopPacks:
-                        if getattr(card, "dragging", False):
+                        if getattr(card, "dragging", False) and GameState not in ("TarotPack", "ShadowPack", "SpectralPack", "StandardPack"):
                             card.dragging = False
                             if not card.was_dragged and card.rect.collidepoint(mouse_pos):
                                 if card.state == "selected":
@@ -6275,6 +6275,9 @@ while game:
                     screen.blit(ShatteredDeck_img, deck_rect.topleft)
                 case "Spider":
                     screen.blit(SpiderDeck_img, deck_rect.topleft)
+            text, _ = PixelFontS.render(f"{len(deck)} / {len(perm_deck)}", white)
+            text_rect = text.get_rect(center=(WIDTH/1.088 , HEIGHT/1.65))
+            screen.blit(text, text_rect)
             text, _ = PixelFontXS.render(f"{'$' * blind_reward}", yellow)
             text_rect = text.get_rect(center=(WIDTH/6, HEIGHT / 4.35))
             screen.blit(text, text_rect)
