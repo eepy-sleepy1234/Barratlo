@@ -858,6 +858,14 @@ SHADOW_REGISTRY = {
     'True Shadow': 'Upgrade every [purple]Poker hand[/purple] by [orange]1[/orange] level',
 }
 
+PACK_REGISTRY = {
+    'Standard': 'Choose {value1} of {value2} cards to add to your deck',
+    'Spectral': 'Choose {value1} of {value2} Spectral cards',
+    'Shadow': 'Choose {value1} of {value2} Shadow cards',
+    'Tarot': 'Choose {value1} of {value2} Tarot cards',
+    'Joker': 'Choose {value1} of {value2} Jokers',
+}
+
 def initialize_joker_effects(active_jokers):
     manager = JokerEffectsManager()
     for joker in active_jokers:

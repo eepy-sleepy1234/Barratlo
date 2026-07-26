@@ -3501,6 +3501,7 @@ maxConsCount = 2
 from JokerEffects import SPECTRAL_REGISTRY
 from JokerEffects import SHADOW_REGISTRY
 from JokerEffects import TAROT_REGISTRY
+from JokerEffects import PACK_REGISTRY
 for root, dirs, files in os.walk(CONS_DIR):
     for filename in files:
         if filename.endswith(".png"):
@@ -3571,6 +3572,7 @@ class Cardpack:
         self.growing = False
         self.scaling_done = False
         self.scoring_complete = False
+        self.description =  ""
         self.card_id = Card.card_id_counter
         self.card_id_counter += 1
         self.name = name
@@ -3603,6 +3605,41 @@ class Cardpack:
             self.price = 8
             self.cardNum = 5
             self.selection = 2
+
+    def get_description(self):
+        global lastFool, Active_Jokers, base_chance
+        desc = self.description
+        if self.name == "JokerPack1":
+            desc = desc.replace("{value}", str(lastFool))
+        if self.name == "JokerPack2":
+            price_count = 0
+            for joker in Active_Jokers:
+                price_count += int(joker.price / 2)
+            if price_count > 50:
+                price_count = 50
+            desc = desc.replace("{value}", str(price_count))
+        if self.name == "ShadowPackBlue":
+            desc = desc.replace("{value1}", str(base_chance))
+            desc = desc.replace("{value2}", str(4))
+        if self.name == "ShadowPackRed":
+            desc = desc.replace("{value}", str(Hand_levels.get('Flush')))
+        if self.name == "SpectralPack1":
+            desc = desc.replace("{value}", str(Hand_levels.get('Four of a Kind')))
+        if self.name == "SpectralPack2":
+            desc = desc.replace("{value}", str(Hand_levels.get('Huh of a What')))
+        if self.name == "StandardPack":
+            desc = desc.replace("{value}", str(Hand_levels.get('Two Pair')))
+        if self.name == "StandardPackRed":
+            desc = desc.replace("{value}", str(Hand_levels.get('Flush Five')))
+        if self.name == "TarotPack1":
+            desc = desc.replace("{value}", str(Hand_levels.get('Pair')))
+        if self.name == "TarotPack2":
+            desc = desc.replace("{value}", str(Hand_levels.get('Full House')))
+        desc = desc.replace("{break}", "\n")
+        desc = desc.replace("[indent]", "    ")
+        desc = desc.replace("[indent2]", "        ")
+        return desc
+
     def update(self):
         stiffness = 0.3
         damping = 0.7
@@ -3698,12 +3735,19 @@ for root, dirs, files in os.walk(PACKS_DIR):
             image = pygame.transform.scale(load_image_safe(filepath), (HEIGHT/8, HEIGHT/5.82))
             cardpack = Cardpack(image, Pack_name, size)
             if "Standard" in Pack_name:
+                cardpack.description = PACK_REGISTRY["Standard"]
                 StandardPacks.append(cardpack)
             elif "Shadow" in Pack_name:
+                cardpack.description = PACK_REGISTRY["Shadow"]
                 ShadowPacks.append(cardpack)
             elif "Spectral" in Pack_name:
+                cardpack.description = PACK_REGISTRY["Spectral"]
                 SpectralPacks.append(cardpack)
             elif "Tarot" in Pack_name:
+                cardpack.description = PACK_REGISTRY["Tarot"]
+                TarotPacks.append(cardpack)
+            elif "Joker" in Pack_name:
+                cardpack.description = PACK_REGISTRY["Joker"]
                 TarotPacks.append(cardpack)
 
 def change_notation(number):
@@ -6419,15 +6463,24 @@ while game:
         draw_consumables(screen, Held_Consumables, WIDTH/1.12, HEIGHT/7, spread=consSpacing)
         if GameState in ("TarotPack", "SpectralPack"):
             draw_hand(screen, hand, WIDTH/2, HEIGHT/2, spread=spacing, max_vertical_offset=-30, angle_range=8)
-            consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            if len(PackCards) == 3:
+                consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            elif len(PackCards) == 5:
+                consSpacing = 1000 / len(PackCards) * WIDTH/2500
             draw_consumables(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing)
             screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
         if GameState == "ShadowPack":
-            consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            if len(PackCards) == 3:
+                consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            elif len(PackCards) == 5:
+                consSpacing = 1000 / len(PackCards) * WIDTH/2500
             draw_consumables(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing)
             screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
         if GameState == "StandardPack":
-            consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            if len(PackCards) == 3:
+                consSpacing = 1000 / (len(PackCards) + 1) * WIDTH/2500
+            elif len(PackCards) == 5:
+                consSpacing = 1000 / len(PackCards) * WIDTH/2500
             draw_hand(screen, PackCards, WIDTH/2, HEIGHT/1.3, spread=consSpacing, max_vertical_offset=0, angle_range=0)
             screen.blit(PackDesc_img, (WIDTH/2.6, HEIGHT/1.15))
         if GameState == "Shop":
