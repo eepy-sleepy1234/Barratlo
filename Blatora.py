@@ -3572,7 +3572,7 @@ class Cardpack:
         self.growing = False
         self.scaling_done = False
         self.scoring_complete = False
-        self.description =  ""
+        self.description = ""
         self.card_id = Card.card_id_counter
         self.card_id_counter += 1
         self.name = name
@@ -3597,11 +3597,14 @@ class Cardpack:
         self.price = 3
         self.cardNum = 3
         self.selection = 1
-        if size == "Jumbo":
+        self.size = size
+        if self.size != 'Normal':
+            self.name = f"{size} {name}"
+        if self.size == "Jumbo":
             self.price = 5
             self.cardNum = 5
             self.selection = 1
-        elif size == "Mega":
+        elif self.size == "Mega":
             self.price = 8
             self.cardNum = 5
             self.selection = 2
@@ -3609,32 +3612,15 @@ class Cardpack:
     def get_description(self):
         global lastFool, Active_Jokers, base_chance
         desc = self.description
-        if self.name == "JokerPack1":
-            desc = desc.replace("{value}", str(lastFool))
-        if self.name == "JokerPack2":
-            price_count = 0
-            for joker in Active_Jokers:
-                price_count += int(joker.price / 2)
-            if price_count > 50:
-                price_count = 50
-            desc = desc.replace("{value}", str(price_count))
-        if self.name == "ShadowPackBlue":
-            desc = desc.replace("{value1}", str(base_chance))
-            desc = desc.replace("{value2}", str(4))
-        if self.name == "ShadowPackRed":
-            desc = desc.replace("{value}", str(Hand_levels.get('Flush')))
-        if self.name == "SpectralPack1":
-            desc = desc.replace("{value}", str(Hand_levels.get('Four of a Kind')))
-        if self.name == "SpectralPack2":
-            desc = desc.replace("{value}", str(Hand_levels.get('Huh of a What')))
-        if self.name == "StandardPack":
-            desc = desc.replace("{value}", str(Hand_levels.get('Two Pair')))
-        if self.name == "StandardPackRed":
-            desc = desc.replace("{value}", str(Hand_levels.get('Flush Five')))
-        if self.name == "TarotPack1":
-            desc = desc.replace("{value}", str(Hand_levels.get('Pair')))
-        if self.name == "TarotPack2":
-            desc = desc.replace("{value}", str(Hand_levels.get('Full House')))
+        if self.size == "Jumbo":
+            desc = desc.replace("{value1}", '1')
+            desc = desc.replace('{value2}', '5')
+        if self.name == "Mega":
+            desc = desc.replace('{value1}', '2')
+            desc = desc.replace('{value2}', '5')
+        else:
+            desc = desc.replace('{value1}', '1')
+            desc = desc.replace('{value2}', '3')
         desc = desc.replace("{break}", "\n")
         desc = desc.replace("[indent]", "    ")
         desc = desc.replace("[indent2]", "        ")
@@ -3723,6 +3709,7 @@ for root, dirs, files in os.walk(PACKS_DIR):
         if filename.endswith(".png"):
             filepath = os.path.join(root, filename)
             Pack_name_raw = filename
+            Pack_name_raw = Pack_name_raw.replace(".png", "")
             Pack_name = re.sub(r'(?<!^)(?=[A-Z])', ' ', Pack_name_raw)
             Pack_name = Pack_name.title()
             size = "Normal"
@@ -4981,6 +4968,11 @@ while game:
                 hovered_joker = joker
                 break
 
+        for joker in ShopPacks:
+            if joker.x > 0 and joker.rect.collidepoint(mouse_pos):
+                hovered_joker = joker
+                break
+
         for card in hand:
             if  GameState != "Dead":
                 mouse_hover(card.rect)
@@ -5308,7 +5300,7 @@ while game:
                                 
                     if Discardhand_rect.collidepoint(mouse_pos) and GameState == "Playing":
                         buttonClick.play(0)
-                        if discards > 0 and not scoring_in_progress:
+                        if discards > 0 and not scoring_in_progress and len(selected_cards) > 0:
                             for card in hand:
                                 if card.freeze_timer >= 0:
                                     card.freeze_timer -= 1
@@ -6517,7 +6509,7 @@ while game:
                 name_padding = 6
                 name_h = name_surf.get_height() + name_padding * 2
                 tip_h = desc_h 
-                if hovered_joker.rect.bottom + tip_h > HEIGHT:
+                if hovered_joker.rect.bottom + tip_h > HEIGHT - tip_h:
                     tip_y = int(hovered_joker.rect.top - tip_h - 10)
                 else:
                     tip_y = int(hovered_joker.rect.bottom + 10)
