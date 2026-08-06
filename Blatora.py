@@ -2090,19 +2090,21 @@ class Card:
     def get_description(self):
         desc = self.description
         if self.enhancement == "Glitched":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "+50 chips but card no longer has rank or suit"
         elif self.enhancement == "Bonus":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "+30 extra chips"
         elif self.enhancement == "Glass":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "X2 mult but 1 in 4 chance card breaks"
         elif self.enhancement == "Gold":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "+$3 if held in hand at the end of round"
         elif self.enhancement == "Lucky":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "1 in 5 chance for +20 mult, 1 in 15 chance for +$20"
         elif self.enhancement == "Mult":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "+4 mult"
         elif self.enhancement == "Steel":
-            self.description = "Eepy sleepy put descriptions(Line 2090+)"
+            self.description = "X1.5 mult if held in hand"
+        else:
+            self.description = f"+{self.chip_value}"
         desc = self.description
         return desc
     def update(self):
@@ -5446,6 +5448,14 @@ while game:
                                                 card.x, card.y = WIDTH + 100, HEIGHT - 170
                                                 card.state = "hand"
                                                 hand.append(card)
+                                    if "Joker" in pack.name:
+                                        GameState = "JokerPack"
+                                        for i in range(pack.cardNum):
+                                            while True:
+                                                rand = random.choice([Uncommon_Jokers, Common_Jokers, Rare_Jokers])
+                                                newcard = random.choice(rand)
+                                                if newcard not in PackCards and newcard not in Held_Consumables and newcard not in Shop_Cards and newcard.name not in locked_cards:
+                                                    PackCards.append(newcard)
                                     ShopPacks.remove(pack)
                     if SellButton_rect.collidepoint(mouse_pos):
                         buttonClick.play(0)
